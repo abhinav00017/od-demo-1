@@ -36,3 +36,5 @@ Append only. Newest at the bottom.
 - The whole hub sets `robots: noindex`, so the fictional clinic does not show up on Google.
 - `npm run typecheck` runs `next typegen` first, because `PageProps` and `LayoutProps` come from generated files.
 - Port 3000 was taken by the onlydevs_prod_1 dev server during this build, so the gates ran on 3001. `.claude/launch.json` still says 3000.
+- 20 Oct 2026: hub verified by Abhinav's session (lint, tsc, 84 tests, build, 7 routes in the browser) and deployed. Live at https://od-demo-lyart.vercel.app. See hosting.md.
+- Agent's open questions, not yet answered by Abhinav: Fraunces serif for Lotus headings; "Back to hub" goes to /clinic; cafe name "Bean Street Cafe" and its 6 services; robots noindex everywhere; SVG wordmark later; Lotus tel/WhatsApp links are internal, not real.
