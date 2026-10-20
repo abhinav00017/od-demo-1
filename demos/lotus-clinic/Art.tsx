@@ -44,18 +44,3 @@ export function DoctorCard({ initials, className = "" }: { initials: string; cla
     </div>
   );
 }
-
-export function MapArt() {
-  return (
-    <svg viewBox="0 0 600 360" className="h-auto w-full" aria-hidden>
-      <rect width="600" height="360" className="fill-lotus-mint" />
-      <path d="M0 290 C 120 250, 250 330, 380 300 S 560 240, 600 260 L600 360 L0 360Z" className="fill-lotus-teal" opacity=".35" />
-      <path d="M0 120 H600 M180 0 V360 M0 220 L600 170 M420 0 L460 360" className="stroke-white" strokeWidth="14" fill="none" />
-      <rect x="470" y="30" width="100" height="70" rx="12" className="fill-lotus-sand" />
-      <g transform="translate(272 96)">
-        <path d="M28 0C12.5 0 0 12.3 0 27.5 0 48 28 80 28 80s28-32 28-52.5C56 12.3 43.5 0 28 0Z" className="fill-lotus-rose" />
-        <circle cx="28" cy="27" r="10" className="fill-white" />
-      </g>
-    </svg>
-  );
-}

@@ -1,8 +1,9 @@
 import { CalendarCheck, Clock, Mail, MapPin, MessageCircle, Phone, Quote } from "lucide-react";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
-import { DoctorCard, HeroArt, MapArt } from "./Art";
+import { DoctorCard, HeroArt } from "./Art";
 import { BookingForm, BookingFormFromUrl } from "./BookingForm";
+import { ClinicMap, DirectionsLink, VisitBlock } from "./ClinicMap";
 import { clinic } from "./data";
 import { Eyebrow, LotusButton, LotusContainer, type Nav } from "./LotusSite";
 
@@ -164,6 +165,21 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
+      <section aria-labelledby="visit-heading">
+        <LotusContainer className="py-16 sm:py-24">
+          <div className="max-w-2xl">
+            <Eyebrow>Visit us</Eyebrow>
+            <h2 id="visit-heading" className="mt-3 font-lotus text-3xl leading-tight font-semibold text-lotus-ink sm:text-4xl">
+              Find the clinic
+            </h2>
+            <p className="mt-4 text-lg">Near the Siripuram junction, opposite the city park. Parking in the building.</p>
+          </div>
+          <div className="mt-10">
+            <VisitBlock />
+          </div>
+        </LotusContainer>
+      </section>
+
       <CtaBand nav={nav} />
     </>
   );
@@ -288,11 +304,10 @@ export function LotusContact({ nav }: { nav: Nav }) {
             </LotusButton>
           </li>
         </ul>
-        <div>
-          <div className="overflow-hidden rounded-3xl ring-1 ring-lotus-line">
-            <MapArt />
-          </div>
+        <div className="flex flex-col">
+          <ClinicMap className="min-h-80 flex-1" />
           <p className="mt-3 text-sm">Near the Siripuram junction, opposite the city park. Parking in the building.</p>
+          <DirectionsLink className="mt-5 w-full self-start sm:w-auto" />
         </div>
       </LotusContainer>
     </>

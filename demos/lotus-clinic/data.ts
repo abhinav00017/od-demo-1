@@ -10,6 +10,8 @@ export const clinic = {
   phone: "+91 98765 43210",
   email: "care@lotusclinic.in",
   address: ["Door 9-12-4, 2nd floor", "Beach Road, Siripuram", "Visakhapatnam 530003"],
+  /** What Google Maps searches for. A real junction, so the pin lands in the right part of the city. */
+  mapQuery: "Siripuram Junction, Visakhapatnam",
   hours: [
     { days: "Monday to Saturday", time: "10:00 am – 7:00 pm" },
     { days: "Sunday", time: "Online consultations only" },
