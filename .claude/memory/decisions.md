@@ -11,3 +11,5 @@ Append only. Newest at the bottom.
 - The demo clinic is made up. Never Dr. Gowthami. Name, doctor, photos all fictional.
 - Style: minimal, simple, straight. Neutral palette until brand guidelines arrive.
 - Stack: same as onlydevs_prod_1 so code can move between them later. Next.js App Router, TypeScript, Tailwind v4, Vitest. Static, no database.
+- Brand guidelines received 20 Oct 2026: logo supplied, colours sampled, see brand.md. Hub uses purple #6F32D6, dark #14272F, grey #757E82, light background #F2F7F8.
+- Demo clinic name: Lotus Women's Clinic, Dr. Ananya Rao. Fictional. Abhinav approved.
