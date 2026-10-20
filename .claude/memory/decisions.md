@@ -38,3 +38,10 @@ Append only. Newest at the bottom.
 - Port 3000 was taken by the onlydevs_prod_1 dev server during this build, so the gates ran on 3001. `.claude/launch.json` still says 3000.
 - 20 Oct 2026: hub verified by Abhinav's session (lint, tsc, 84 tests, build, 7 routes in the browser) and deployed. Live at https://od-demo-lyart.vercel.app. See hosting.md.
 - Agent's open questions, not yet answered by Abhinav: Fraunces serif for Lotus headings; "Back to hub" goes to /clinic; cafe name "Bean Street Cafe" and its 6 services; robots noindex everywhere; SVG wordmark later; Lotus tel/WhatsApp links are internal, not real.
+
+## 2026-10-20 (bookings level 2)
+
+- Booking levels defined: 1 = WhatsApp link only (Dr. Gowthami today). 2 = store every booking in Postgres, notify the clinic, password-protected dashboard of upcoming bookings. 3 = level 2 plus real slots, WhatsApp Business API confirmations and reminders, cancel or reschedule by reply.
+- Abhinav chose: build level 2 on the Lotus demo now, upgrade to level 3 later. Level 3 reuses the level 2 bookings table.
+- Add the Google Maps embed to the Lotus demo (home contact block and contact page), as Dr. Gowthami's site has.
+- Level 2 design: Postgres on Vercel (Neon) via DATABASE_URL. Same repository interface backed by an in-memory store when DATABASE_URL is missing, so dev and tests run without a database. Dashboard at /clinic/website/admin behind ADMIN_PASSWORD. Dashboard polls so a new booking appears within seconds. Email notification to the clinic via Resend when RESEND_API_KEY is set; skipped otherwise.
