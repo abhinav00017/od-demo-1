@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Tailwind's default palette is off, so components can only use these.
+ * tests/contrast.test.ts reads this file and checks every text/background pair against WCAG AA.
+ */
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* onlydevs hub (brand.md) */
+  --color-brand: #6f32d6;
+  --color-brand-strong: #5a24b8;
+  --color-brand-soft: #f1eafc;
+  --color-ink: #14272f;
+  /* #757E82 is the brand grey. It measures 4.15:1 on white, so it is used for large text only. */
+  --color-tagline: #757e82;
+  --color-muted: #5e676b;
+  --color-canvas: #f2f7f8;
+  --color-canvas-deep: #eaf2f3;
+  --color-surface: #ffffff;
+  --color-line: #dbe5e7;
+  --color-chip: #e6eef0;
+
+  /* Lotus Women's Clinic (fictional client site): deep teal + soft sand */
+  --color-lotus-teal: #0e5e5a;
+  --color-lotus-teal-deep: #0a4542;
+  --color-lotus-mint: #dcefeb;
+  --color-lotus-sand: #f3e8d8;
+  --color-lotus-cream: #fbf7f0;
+  --color-lotus-ink: #1d2b2a;
+  --color-lotus-body: #485553;
+  --color-lotus-line: #e5d9c6;
+  --color-lotus-rose: #b5485d;
+
+  /* Mock UI: WhatsApp */
+  --color-wa-header: #075e54;
+  --color-wa-green: #25d366;
+  --color-wa-bg: #efe7dd;
+  --color-wa-out: #d9fdd3;
+  --color-wa-in: #ffffff;
+  --color-wa-text: #111b21;
+  --color-wa-time: #5b6b73;
+  --color-wa-tick: #2f8fcf;
+
+  /* Mock UI: Google */
+  --color-g-text: #202124;
+  --color-g-sub: #5f6368;
+  --color-g-blue: #1a73e8;
+  --color-g-green: #137333;
+  --color-g-star: #f4a700;
+  --color-g-map: #e8eef1;
+  --color-g-road: #ffffff;
+  --color-g-park: #cfe8d2;
+  --color-g-water: #aad3ee;
+
+  /* Mock UI: Bean Street Cafe (fictional) */
+  --color-cafe-espresso: #3b2418;
+  --color-cafe-crema: #f6ecdf;
+  --color-cafe-clay: #a24d22;
+  --color-cafe-body: #5a4335;
+
+  --radius-card: 1.5rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-lotus: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-brand);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  [data-site="lotus"] :focus-visible {
+    outline-color: var(--color-lotus-teal);
+  }
+}
