@@ -41,13 +41,18 @@
   --color-lotus-accent: #0f766e;
   --color-lotus-accent-hover: #115e59;
   --color-lotus-text: #0f172a;
-  --color-lotus-muted: #64748b;
+  /* Secondary text: slate 600, 7.58:1 on white, 7.19:1 on the tint. */
+  --color-lotus-muted: #475569;
   --color-lotus-hairline: #e5e7eb;
   /* Form field edges: 3:1 on white (WCAG 1.4.11). The hairline is too light to be a control's only edge. */
   --color-lotus-field: #868f9e;
   /* Light grey surface: the WhatsApp chat preview, notes, code chips. Text on it is lotus-text only. */
   --color-lotus-wash: #f1f5f9;
   --color-lotus-error: #b42318;
+  /* 4% accent over white: the hero backdrop and the "Why women choose Lotus" band. Cards on it stay white. */
+  --color-lotus-tint: #f5faf9;
+  /* 10% accent over white: avatar circles and service icon tiles. Text on it is lotus-accent-hover. */
+  --color-lotus-avatar: #e7f1f1;
 
   /* Mock UI: WhatsApp */
   --color-wa-header: #075e54;
@@ -80,6 +85,8 @@
 
   /* Lotus cards: a soft lift under the hairline. */
   --shadow-lotus: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  /* Lotus cards on hover: a touch deeper than shadow-lotus, with the lift. */
+  --shadow-lotus-lift: 0 2px 4px rgba(15, 23, 42, 0.05), 0 14px 32px rgba(15, 23, 42, 0.1);
 }
 
 @theme inline {

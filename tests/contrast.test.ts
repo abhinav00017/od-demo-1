@@ -30,6 +30,10 @@ const NORMAL: [string, string][] = [
   ["lotus-text", "white"], ["lotus-muted", "white"], ["lotus-accent", "white"], ["lotus-accent-hover", "white"],
   ["white", "lotus-accent"], ["white", "lotus-accent-hover"], ["white", "lotus-text"],
   ["lotus-text", "lotus-wash"], ["lotus-error", "white"],
+  // Lotus hero backdrop and the why band (4% teal tint): headings, body, links, buttons' outline text
+  ["lotus-text", "lotus-tint"], ["lotus-muted", "lotus-tint"], ["lotus-accent", "lotus-tint"], ["lotus-accent-hover", "lotus-tint"],
+  // Testimonial initials on the soft teal avatar circle
+  ["lotus-accent-hover", "lotus-avatar"],
   // Hub mocks of Lotus services (teal + sand)
   ["lotus-ink", "lotus-cream"], ["lotus-ink", "lotus-sand"], ["lotus-ink", "lotus-mint"], ["lotus-ink", "white"],
   ["lotus-body", "lotus-cream"], ["lotus-body", "lotus-sand"], ["lotus-body", "lotus-mint"], ["lotus-body", "white"],
@@ -60,7 +64,18 @@ const NON_TEXT: [string, string][] = [
   // Lotus focus ring, selected radio card and invalid field ring, on white
   ["lotus-accent", "white"],
   ["lotus-error", "white"],
+  // Service icons and the why ticks: teal line icons on the soft teal tile
+  ["lotus-accent", "lotus-avatar"],
+  // Sticky bar WhatsApp button edge, on the white bar
+  ["lotus-field", "white"],
 ];
+
+describe("Lotus grey text", () => {
+  it("uses the darker slate 600 for secondary text", () => {
+    expect(tokens["lotus-muted"]).toBe("#475569");
+    expect(ratio(tokens["lotus-muted"], tokens.white)).toBeGreaterThanOrEqual(7);
+  });
+});
 
 describe("WCAG AA contrast", () => {
   it.each(NORMAL)("%s on %s is at least 4.5:1", (fg, bg) => {
