@@ -7,6 +7,7 @@ import { Bubble } from "@/components/mocks/ChatMock";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
+import { ui } from "./ui";
 
 const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
 
@@ -22,8 +23,9 @@ const LABELS: Record<FieldName, string> = {
   consent: "WhatsApp consent",
 };
 
-const inputClass =
-  "mt-2 block min-h-12 w-full rounded-xl border-0 bg-white px-4 py-3 text-base text-lotus-ink ring-1 ring-lotus-edge placeholder:text-lotus-body/80 focus:ring-2 focus:ring-lotus-teal focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-lotus-rose";
+const inputClass = ui.input;
+
+const labelClass = "font-medium text-lotus-text";
 
 function Field({ name, errors, children, hint }: { name: FieldName; errors: FieldErrors; children: ReactNode; hint?: string }) {
   return (
@@ -35,7 +37,7 @@ function Field({ name, errors, children, hint }: { name: FieldName; errors: Fiel
         </p>
       ) : null}
       {errors[name] ? (
-        <p id={`${name}-error`} className="mt-1.5 text-sm font-semibold text-lotus-rose">
+        <p id={`${name}-error`} className="mt-1.5 text-sm font-semibold text-lotus-error">
           {errors[name]}
         </p>
       ) : null}
@@ -50,16 +52,11 @@ function describedBy(name: FieldName, errors: FieldErrors, hint = false) {
 /** The join step for Twilio's quickstart sender: one tap opens WhatsApp with "join <keyword>" typed in. */
 export function WhatsAppJoin({ optIn }: { optIn: WhatsAppOptIn }) {
   return (
-    <div className="mt-6 rounded-2xl bg-lotus-mint p-5 sm:p-6">
-      <h3 className="font-lotus text-2xl font-semibold text-lotus-ink">Get updates on WhatsApp</h3>
-      <p className="mt-2 text-lotus-ink">Tap once to allow confirmations and reminders on WhatsApp.</p>
-      <a
-        href={optIn.href}
-        target="_blank"
-        rel="noopener"
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-lotus-teal px-6 py-3 font-semibold text-white transition hover:bg-lotus-teal-deep sm:w-auto"
-      >
-        <MessageCircle aria-hidden className="size-5" />
+    <div className="mt-6 rounded-2xl bg-white p-5 ring-1 ring-lotus-hairline sm:p-6">
+      <h3 className="text-lg font-semibold tracking-tight text-lotus-text">Get updates on WhatsApp</h3>
+      <p className="mt-1 text-lotus-text">Tap once to allow confirmations and reminders on WhatsApp.</p>
+      <a href={optIn.href} target="_blank" rel="noopener" className={`mt-4 w-full sm:w-auto ${ui.primary}`}>
+        <MessageCircle aria-hidden strokeWidth={1.75} className="size-5" />
         Open WhatsApp
       </a>
       <p className="mt-3 text-sm">
@@ -155,29 +152,29 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
 
   if (sent) {
     return (
-      <div ref={doneRef} tabIndex={-1} className="mx-auto max-w-2xl rounded-3xl bg-white p-6 ring-1 ring-lotus-line focus:outline-none sm:p-10">
-        <CheckCircle2 aria-hidden className="size-10 text-lotus-teal" />
-        <h2 className="mt-4 font-lotus text-3xl font-semibold text-lotus-ink">Request received</h2>
-        <p className="mt-2 text-lg">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
-        <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-lotus-line">
-          <div className="flex items-center gap-3 bg-wa-header px-4 py-3 text-white">
+      <div ref={doneRef} tabIndex={-1} className={`mx-auto max-w-2xl p-6 focus:outline-none sm:p-8 ${ui.card}`}>
+        <CheckCircle2 aria-hidden strokeWidth={1.5} className="size-9 text-lotus-accent" />
+        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-lotus-text sm:text-3xl">Request received</h2>
+        <p className="mt-1.5">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
+        <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-lotus-hairline">
+          <div className="flex items-center gap-3 bg-lotus-accent px-4 py-3 text-white">
             <span aria-hidden className="flex size-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
               L
             </span>
             <span>
               <span className="block text-sm font-semibold">{clinic.name}</span>
-              <span className="block text-[11px] text-white/85">Business account</span>
+              <span className="block text-[11px] text-white">Business account</span>
             </span>
           </div>
-          <div className="bg-wa-bg p-4">
+          <div className="bg-lotus-wash p-4">
             <Bubble from="business" time="now" buttons={["Confirm", "Change time"]}>
               {confirmationMessage(sent)}
             </Bubble>
           </div>
         </div>
-        <p className="mt-6 font-semibold text-lotus-ink">Booking saved. The clinic will confirm on WhatsApp.</p>
+        <p className="mt-5 font-semibold text-lotus-text">Booking saved. The clinic will confirm on WhatsApp.</p>
         <p className="mt-1 text-sm">
-          Booking id: <span className="font-mono font-semibold text-lotus-ink">{shortBookingId(sent.id)}</span>
+          Booking id: <span className="font-mono font-semibold text-lotus-text">{shortBookingId(sent.id)}</span>
         </p>
         {optIn ? <WhatsAppJoin optIn={optIn} /> : null}
         <p className="mt-4 text-sm">
@@ -192,7 +189,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
             setErrors({});
             setTrap("");
           }}
-          className="mt-6 rounded-full px-6 py-3 font-semibold text-lotus-teal ring-2 ring-lotus-teal hover:bg-lotus-mint"
+          className={`mt-5 ${ui.secondary}`}
         >
           Book another visit
         </button>
@@ -203,15 +200,15 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
   const errorList = ORDER.filter((f) => errors[f]);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-      <form noValidate onSubmit={onSubmit} className="relative rounded-3xl bg-white p-6 ring-1 ring-lotus-line sm:p-9" aria-label="Book a visit">
+    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.6fr_1fr]">
+      <form noValidate onSubmit={onSubmit} className={`relative p-6 sm:p-8 ${ui.card}`} aria-label="Book a visit">
         {errorList.length ? (
-          <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-8 rounded-2xl bg-lotus-sand p-5 focus:outline-none">
-            <p className="font-semibold text-lotus-ink">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+          <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-6 rounded-2xl bg-white p-5 ring-1 ring-lotus-error focus:outline-none">
+            <p className="font-semibold text-lotus-text">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-lotus-text">
               {errorList.map((f) => (
                 <li key={f}>
-                  <a href={`#${id}-${f}`} className="font-semibold text-lotus-ink underline underline-offset-2">
+                  <a href={`#${id}-${f}`} className="font-semibold text-lotus-error underline underline-offset-2">
                     {LABELS[f]}
                   </a>
                   : {errors[f]}
@@ -222,15 +219,15 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
         ) : null}
 
         <fieldset>
-          <legend className="font-semibold text-lotus-ink">{LABELS.visitType}</legend>
+          <legend className={labelClass}>{LABELS.visitType}</legend>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {clinic.booking.visitTypes.map((t, i) => {
               const on = values.visitType === t.id;
               return (
                 <label
                   key={t.id}
-                  className={`flex cursor-pointer gap-3 rounded-2xl p-4 ring-1 transition ${
-                    on ? "bg-lotus-mint ring-2 ring-lotus-teal" : "bg-white ring-lotus-line hover:ring-lotus-teal"
+                  className={`flex cursor-pointer gap-3 rounded-2xl bg-white p-4 transition ${
+                    on ? "ring-2 ring-lotus-accent" : "ring-1 ring-lotus-field hover:ring-lotus-accent"
                   }`}
                 >
                   <input
@@ -240,10 +237,10 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
                     value={t.id}
                     checked={on}
                     onChange={() => update("visitType", t.id)}
-                    className="mt-1 size-4 accent-lotus-teal"
+                    className="mt-1 size-4 accent-lotus-accent"
                   />
                   <span>
-                    <span className="block font-semibold text-lotus-ink">{t.label}</span>
+                    <span className="block font-semibold text-lotus-text">{t.label}</span>
                     <span className="block text-sm">{t.description}</span>
                   </span>
                 </label>
@@ -252,9 +249,9 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           </div>
         </fieldset>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <Field name="name" errors={errors}>
-            <label htmlFor={`${id}-name`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-name`} className={labelClass}>
               {LABELS.name}
             </label>
             <input
@@ -269,7 +266,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
             />
           </Field>
           <Field name="phone" errors={errors} hint="We confirm on WhatsApp.">
-            <label htmlFor={`${id}-phone`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-phone`} className={labelClass}>
               {LABELS.phone}
             </label>
             <input
@@ -287,7 +284,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
             />
           </Field>
           <Field name="date" errors={errors}>
-            <label htmlFor={`${id}-date`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-date`} className={labelClass}>
               {LABELS.date}
             </label>
             <input
@@ -303,7 +300,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
             />
           </Field>
           <Field name="slot" errors={errors}>
-            <label htmlFor={`${id}-slot`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-slot`} className={labelClass}>
               {LABELS.slot}
             </label>
             <select
@@ -325,7 +322,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           </Field>
           <div className="sm:col-span-2">
             <Field name="reason" errors={errors}>
-              <label htmlFor={`${id}-reason`} className="font-semibold text-lotus-ink">
+              <label htmlFor={`${id}-reason`} className={labelClass}>
                 {LABELS.reason}
               </label>
               <select
@@ -359,9 +356,9 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
                 onChange={(e) => update("consent", e.target.checked)}
                 aria-invalid={errors.consent ? true : undefined}
                 aria-describedby={describedBy("consent", errors)}
-                className="mt-1 size-4 accent-lotus-teal"
+                className="mt-1 size-4 accent-lotus-accent"
               />
-              <span>The clinic may message me on WhatsApp about this visit.</span>
+              <span className="text-lotus-text">The clinic may message me on WhatsApp about this visit.</span>
             </label>
           </Field>
         </div>
@@ -373,7 +370,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
         </div>
 
         {submitError ? (
-          <p ref={errorRef} tabIndex={-1} role="alert" className="mt-8 rounded-2xl bg-white p-4 font-semibold text-lotus-rose ring-2 ring-lotus-rose focus:outline-none">
+          <p ref={errorRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-white p-4 font-semibold text-lotus-error ring-1 ring-lotus-error focus:outline-none">
             {submitError}
           </p>
         ) : null}
@@ -382,27 +379,27 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           type="submit"
           disabled={saving}
           aria-busy={saving || undefined}
-          className="mt-8 w-full rounded-full bg-lotus-teal px-6 py-4 text-lg font-semibold text-white hover:bg-lotus-teal-deep disabled:cursor-wait disabled:bg-lotus-teal-deep sm:w-auto"
+          className={`mt-6 w-full disabled:cursor-wait disabled:bg-lotus-accent-hover sm:w-auto sm:px-8 ${ui.primary}`}
         >
           {saving ? "Saving your booking…" : "Request appointment"}
         </button>
       </form>
 
-      <aside className="h-fit rounded-3xl bg-lotus-mint p-7">
-        <h2 className="font-lotus text-2xl font-semibold text-lotus-ink">What happens next</h2>
-        <ol className="mt-5 space-y-4">
+      <aside className={`h-fit p-6 sm:p-7 ${ui.card}`}>
+        <h2 className="text-lg font-semibold tracking-tight text-lotus-text">What happens next</h2>
+        <ol className="mt-4 space-y-3.5">
           {[
             "We get your request at once.",
             "We confirm the exact time on WhatsApp within 2 hours.",
             "You get a reminder the day before, with directions or the call link.",
           ].map((s, i) => (
             <li key={s} className="flex gap-3">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-lotus-teal text-sm font-bold text-white">{i + 1}</span>
-              <span className="text-lotus-ink">{s}</span>
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-lotus-accent ring-1 ring-lotus-hairline">{i + 1}</span>
+              <span className="text-lotus-text">{s}</span>
             </li>
           ))}
         </ol>
-        <p className="mt-6 text-sm text-lotus-ink">
+        <p className="mt-5 border-t border-lotus-hairline pt-4 text-sm">
           Clinic: {clinic.hours[0].days}, {clinic.hours[0].time}. Sundays: online only.
         </p>
       </aside>
