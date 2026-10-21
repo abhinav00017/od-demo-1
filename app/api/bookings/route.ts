@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 import { HONEYPOT_FIELD, normalisePhone, parseBookingBody, parseDay, validateBooking } from "@/demos/lotus-clinic/booking";
 import { ADMIN_COOKIE, isAdminRequest } from "@/lib/admin/auth";
-import { CLINIC_SLUG, clinicToday, getStore, type Booking } from "@/lib/bookings";
+import { CLINIC_SLUG, clinicToday, getStore, latestByBooking, type Booking, type MessageLog, type WhatsAppSummary } from "@/lib/bookings";
 import { json, NOT_LOGGED_IN } from "@/lib/bookings/http";
 import { notifyClinic, runAfterResponse } from "@/lib/bookings/notify";
+import { sendBookingMessage } from "@/lib/whatsapp/notify";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 /** Saves a booking from the Lotus booking form. Runs the same checks as the form. */
@@ -64,17 +65,33 @@ export async function POST(req: NextRequest) {
 
   const dashboardUrl = new URL("/clinic/website/admin", req.nextUrl.origin).toString();
   runAfterResponse(() => notifyClinic(booking, { dashboardUrl }));
+  // WhatsApp alert to the clinic's own number. Skipped with one log line when CLINIC_WHATSAPP is unset.
+  runAfterResponse(() => sendBookingMessage(booking, "clinic_alert"));
 
   return json({ ok: true, id: booking.id, booking }, 201);
 }
 
-/** Bookings from today (clinic time) onward. Admin only. */
+function summary(m: MessageLog | undefined): WhatsAppSummary | null {
+  return m ? { kind: m.kind, status: m.status, error: m.error, at: m.updatedAt } : null;
+}
+
+/** Bookings from today (clinic time) onward, each with its latest WhatsApp message. Admin only. */
 export async function GET(req: NextRequest) {
   if (!isAdminRequest(req.cookies.get(ADMIN_COOKIE)?.value)) return json(NOT_LOGGED_IN, 401);
   const store = getStore();
   const today = clinicToday();
   try {
-    const bookings = await store.list({ from: today, clinicSlug: CLINIC_SLUG });
+    const list = await store.list({ from: today, clinicSlug: CLINIC_SLUG });
+    // The message log is extra. If it fails (say the table is not migrated yet), bookings still load.
+    // The row shows what the patient got, so the clinic's own alert is left out.
+    let latest = new Map<string, MessageLog>();
+    try {
+      const sent = await store.listMessagesForBookings(list.map((b) => b.id));
+      latest = latestByBooking(sent.filter((m) => m.kind !== "clinic_alert"));
+    } catch (err) {
+      console.error(`message list failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+    const bookings = list.map((b) => ({ ...b, whatsapp: summary(latest.get(b.id)) }));
     return json({ ok: true, today, storage: store.kind, bookings });
   } catch (err) {
     console.error(`booking list failed: ${err instanceof Error ? err.message : "unknown error"}`);

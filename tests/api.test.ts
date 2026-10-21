@@ -51,6 +51,8 @@ beforeEach(() => {
   vi.stubEnv("ADMIN_SECRET", "test-secret");
   vi.stubEnv("RESEND_API_KEY", "");
   vi.stubEnv("CLINIC_NOTIFY_EMAIL", "");
+  vi.stubEnv("CLINIC_WHATSAPP", "");
+  vi.stubEnv("WHATSAPP_TOKEN", "");
   for (const level of ["log", "error", "warn", "info"] as const) {
     vi.spyOn(console, level).mockImplementation((...args: unknown[]) => void logs.push(args.map(String).join(" ")));
   }
