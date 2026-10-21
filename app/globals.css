@@ -23,7 +23,7 @@
   --color-line: #dbe5e7;
   --color-chip: #e6eef0;
 
-  /* Lotus Women's Clinic site (fictional client): one deep forest accent on warm off-white. */
+  /* Lotus Women's Clinic site (fictional client): one deep forest accent on warm off-white, a little terracotta and sage. */
   --color-lotus-paper: #faf8f4;
   --color-lotus-stone: #efebe4;
   --color-lotus-text: #1b1c1a;
@@ -35,6 +35,12 @@
   /* Form field borders: 3:1 on white and paper (WCAG 1.4.11). */
   --color-lotus-edge: #8f897f;
   --color-lotus-error: #a3392b;
+  /* Colour pass: one warm secondary accent, used sparingly (hero italic, eyebrows, numbers, live dot). Never on buttons. */
+  --color-lotus-terracotta: #a84f33;
+  /* The one tinted band (testimonials, final CTA) and the portrait panel. */
+  --color-lotus-sage: #e6ede8;
+  /* Hairline rules on the sage band. Decoration only. */
+  --color-lotus-sage-rule: #cfdad3;
 
   /* Lotus service mocks on the hub preview pages (components/mocks): deep teal + soft sand */
   --color-lotus-teal: #0e5e5a;

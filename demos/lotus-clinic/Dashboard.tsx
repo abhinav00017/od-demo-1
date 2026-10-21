@@ -87,7 +87,7 @@ function Row({ b, busy, onStatus }: { b: Booking; busy: boolean; onStatus: Dashb
 export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }) {
   return (
     <p className="flex items-center gap-2 text-sm" aria-live="polite">
-      <span aria-hidden className={`size-2 rounded-full ${live ? "bg-lotus-forest" : "bg-lotus-edge"}`} />
+      <span aria-hidden className={`size-2 rounded-full ${live ? "bg-lotus-terracotta" : "bg-lotus-edge"}`} />
       <span className="font-medium text-lotus-text">{live ? "Live" : "Reconnecting"}</span>
       {updatedAt ? (
         <span suppressHydrationWarning>

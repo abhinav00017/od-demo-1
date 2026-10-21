@@ -58,7 +58,7 @@ function ServiceList({ nav }: { nav: Nav }) {
 
 function CtaBand({ nav }: { nav: Nav }) {
   return (
-    <LotusSection>
+    <LotusSection band bandEnd>
       <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-16">
         <div>
           <h2 className={h2}>Book your visit today</h2>
@@ -81,9 +81,9 @@ export function LotusHome({ nav }: { nav: Nav }) {
     <>
       <section>
         <LotusContainer className="pt-16 pb-20 sm:pt-24 sm:pb-28 lg:pt-32">
-          <Eyebrow>Women&apos;s clinic in {clinic.city}</Eyebrow>
+          <Eyebrow mark>Women&apos;s clinic in {clinic.city}</Eyebrow>
           <h1 className="mt-6 max-w-[15ch] font-lotus-serif text-[2.9rem] leading-[1.02] tracking-[-0.03em] text-lotus-text sm:text-7xl lg:max-w-none lg:text-[5.75rem]">
-            Expert care for women, at <em className="italic">every stage of life.</em>
+            Expert care for women, at <em className="text-lotus-terracotta italic">every stage of life.</em>
           </h1>
           <div className="mt-14 grid gap-12 border-t border-lotus-rule pt-10 lg:mt-20 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-20">
             <div>
@@ -99,7 +99,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
               {clinic.stats.map((s) => (
                 <div key={s.label}>
                   <dt className="sr-only">{s.label}</dt>
-                  <dd className="font-lotus-serif text-[2rem] leading-none tracking-[-0.02em] text-lotus-text sm:text-5xl">{s.value}</dd>
+                  <dd className="font-lotus-serif text-[2rem] leading-none tracking-[-0.02em] text-lotus-forest sm:text-5xl">{s.value}</dd>
                   <dd className="mt-2 max-w-[16ch] text-sm leading-snug">{s.label}</dd>
                 </div>
               ))}
@@ -134,7 +134,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         <ol className="mt-16 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-4">
           {clinic.why.map((w, i) => (
             <li key={w.title} className="border-t border-lotus-rule pt-6 pb-10">
-              <span className="text-sm text-lotus-grey tabular-nums">0{i + 1}</span>
+              <span className="text-sm text-lotus-terracotta tabular-nums">0{i + 1}</span>
               <h3 className="mt-6 text-lg font-medium text-lotus-text">{w.title}</h3>
               <p className="mt-2">{w.text}</p>
             </li>
@@ -142,7 +142,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </ol>
       </LotusSection>
 
-      <LotusSection>
+      <LotusSection band>
         <SectionTitle eyebrow="Patient stories" title="What women say about us" />
         <ul className="mt-16 grid gap-12 lg:grid-cols-3 lg:gap-10">
           {clinic.testimonials.map((t) => (
@@ -158,7 +158,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </ul>
       </LotusSection>
 
-      <LotusSection aria-labelledby="visit-heading">
+      <LotusSection aria-labelledby="visit-heading" rule={false}>
         <SectionTitle eyebrow="Visit us" title="Find the clinic" id="visit-heading">
           Near the Siripuram junction, opposite the city park. Parking in the building.
         </SectionTitle>

@@ -40,16 +40,35 @@ export function LotusContainer({ children, className = "" }: { children: ReactNo
   return <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>;
 }
 
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-lotus-grey">{children}</p>;
+/** Small label above a title, in the warm secondary accent. `mark` adds a short rule before it (hero only). */
+export function Eyebrow({ children, mark }: { children: ReactNode; mark?: boolean }) {
+  return (
+    <p className="flex items-center gap-3 text-sm text-lotus-terracotta">
+      {mark ? <span aria-hidden className="h-px w-8 shrink-0 bg-lotus-terracotta" /> : null}
+      {children}
+    </p>
+  );
 }
 
-/** A page section: a hairline rule across the content width, then generous space. */
-export function LotusSection({ children, className = "", ...rest }: { children: ReactNode; className?: string; "aria-labelledby"?: string }) {
+type SectionProps = {
+  children: ReactNode;
+  className?: string;
+  "aria-labelledby"?: string;
+  /** Full-bleed sage band instead of a hairline rule. Used for at most two sections a page. */
+  band?: boolean;
+  /** Set on a band that ends the page, so the footer drops its top rule. */
+  bandEnd?: boolean;
+  /** Draw the top hairline. Turn off for a section that follows a band. */
+  rule?: boolean;
+};
+
+/** A page section: a hairline rule across the content width (or a sage band), then generous space. */
+export function LotusSection({ children, className = "", band, bandEnd, rule = true, ...rest }: SectionProps) {
+  const edge = band || !rule ? "" : "border-t border-lotus-rule";
   return (
-    <section {...rest}>
+    <section {...rest} data-band={band ? "" : undefined} data-band-end={bandEnd ? "" : undefined} className={band ? "bg-lotus-sage" : undefined}>
       <LotusContainer>
-        <div className={`border-t border-lotus-rule py-20 sm:py-28 lg:py-32 ${className}`}>{children}</div>
+        <div className={`${edge} py-20 sm:py-28 lg:py-32 ${className}`}>{children}</div>
       </LotusContainer>
     </section>
   );
@@ -79,7 +98,7 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
   const items = NAV.map((n) => ({ href: nav.href(n.page), label: n.label, current: n.page === nav.page }));
   const book = { href: nav.href("book"), label: "Book a visit" };
   return (
-    <div data-site="lotus" className={`${newsreader.variable} ${interTight.variable} flex min-h-dvh flex-col bg-lotus-paper`}>
+    <div data-site="lotus" className={`${newsreader.variable} ${interTight.variable} group/site flex min-h-dvh flex-col bg-lotus-paper`}>
       {/* The demo bar keeps the hub's font. Only the clinic site below uses the Lotus fonts. */}
       <DemoBar hubHref={nav.hubHref} />
       <div className="flex flex-1 flex-col font-lotus-sans text-[17px] leading-[1.6] text-lotus-grey">
@@ -119,7 +138,7 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
 
         <footer>
           <LotusContainer>
-            <div className="grid gap-10 border-t border-lotus-rule py-16 text-[15px] sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+            <div className="grid gap-10 border-t border-lotus-rule py-16 text-[15px] group-has-[[data-band-end]]/site:border-transparent sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
               <div className="sm:col-span-2 lg:col-span-1">
                 <p className="font-lotus-serif text-2xl tracking-[-0.01em] text-lotus-text">{clinic.name}</p>
                 <p className="mt-2 max-w-[32ch]">{clinic.tagline}.</p>

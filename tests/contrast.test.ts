@@ -32,6 +32,10 @@ const NORMAL: [string, string][] = [
   ["lotus-forest", "lotus-paper"], ["lotus-forest", "white"], ["lotus-forest", "lotus-stone"],
   ["white", "lotus-forest"], ["white", "lotus-forest-deep"],
   ["lotus-error", "white"], ["lotus-error", "lotus-paper"],
+  // Lotus colour pass: terracotta labels (eyebrows, hero italic, 01-04 numbers) on paper, white panels and the sage band
+  ["lotus-terracotta", "lotus-paper"], ["lotus-terracotta", "white"], ["lotus-terracotta", "lotus-sage"],
+  // Text, secondary text and links on the sage band (testimonials, final CTA); forest initials on the sage portrait panel
+  ["lotus-text", "lotus-sage"], ["lotus-grey", "lotus-sage"], ["lotus-forest", "lotus-sage"],
   // Hub mocks of Lotus services
   ["lotus-ink", "lotus-cream"], ["lotus-ink", "lotus-sand"], ["lotus-ink", "lotus-mint"], ["lotus-ink", "white"],
   ["lotus-body", "lotus-cream"], ["lotus-body", "lotus-sand"], ["lotus-body", "lotus-mint"], ["lotus-body", "white"],
@@ -61,6 +65,11 @@ const NON_TEXT: [string, string][] = [
   ["lotus-edge", "lotus-paper"],
   ["lotus-forest", "lotus-paper"],
   ["lotus-forest", "white"],
+  // Focus ring and the forest button's edge on the sage band
+  ["lotus-forest", "lotus-sage"],
+  // Dashboard live dot (terracotta) on paper and on white
+  ["lotus-terracotta", "lotus-paper"],
+  ["lotus-terracotta", "white"],
 ];
 
 describe("WCAG AA contrast", () => {

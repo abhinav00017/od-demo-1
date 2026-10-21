@@ -1,6 +1,6 @@
 /**
  * Shared class strings for the Lotus site, so links, buttons and fields look the same on every page.
- * One accent (forest) for actions. Small radii, hairline rules, no shadows.
+ * One accent (forest) for actions. Terracotta is for labels and marks only, never buttons. Small radii, hairline rules, no shadows.
  */
 
 /** Primary action: solid forest. Size and disabled look are separate, so callers never pass clashing utilities. */
@@ -13,9 +13,9 @@ export const buttonSmallClass = `${buttonCore} ${buttonSizes.sm} ${buttonDisable
 /** For a submit button that stays dark while it saves. */
 export const buttonBusyClass = `${buttonCore} ${buttonSizes.lg} disabled:cursor-wait disabled:bg-lotus-forest-deep`;
 
-/** Secondary action: a text link with an underline that darkens on hover. */
+/** Secondary action: a text link with an underline that darkens on hover. On the sage band the resting underline uses the sage rule. */
 export const textLinkClass =
-  "inline-flex items-center gap-1.5 font-medium text-lotus-forest underline decoration-lotus-rule decoration-1 underline-offset-[6px] transition-colors hover:decoration-lotus-forest";
+  "inline-flex items-center gap-1.5 font-medium text-lotus-forest underline decoration-lotus-rule decoration-1 underline-offset-[6px] transition-colors in-[[data-band]]:decoration-lotus-sage-rule hover:decoration-lotus-forest";
 
 /** Text inputs and selects. The edge colour keeps the field boundary at 3:1. */
 export const fieldClass =

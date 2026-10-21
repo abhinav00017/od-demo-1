@@ -14,7 +14,7 @@ export function LotusMark({ className = "size-7" }: { className?: string }) {
 /** Stands in for a portrait photo until the clinic sends one. */
 export function DoctorCard({ initials, className = "" }: { initials: string; className?: string }) {
   return (
-    <div aria-hidden className={`flex aspect-[5/4] flex-col sm:aspect-[4/5] justify-between rounded-lg bg-lotus-stone p-6 sm:p-8 ${className}`}>
+    <div aria-hidden className={`flex aspect-[5/4] flex-col sm:aspect-[4/5] justify-between rounded-lg bg-lotus-sage p-6 sm:p-8 ${className}`}>
       <LotusMark className="size-6" />
       <span className="font-lotus-serif text-[7rem] leading-none tracking-[-0.04em] text-lotus-forest sm:text-[9rem]">{initials}</span>
     </div>
