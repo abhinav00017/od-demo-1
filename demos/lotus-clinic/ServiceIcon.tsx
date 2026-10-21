@@ -10,12 +10,12 @@ const ICONS: Record<ServiceIconName, LucideIcon> = {
   video: Video,
 };
 
-/** A thin teal line icon in a soft teal tile. Decorative: the service name sits beside it. */
+/** A thin teal line icon in a soft teal circle. Decorative: the service name sits beside it. */
 export function ServiceIcon({ name }: { name: ServiceIconName }) {
   const Icon = ICONS[name];
   return (
-    <span aria-hidden data-service-icon={name} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-lotus-avatar text-lotus-accent">
-      <Icon strokeWidth={1.5} className="size-5" />
+    <span aria-hidden data-service-icon={name} className="flex size-14 shrink-0 items-center justify-center rounded-full bg-lotus-avatar text-lotus-accent">
+      <Icon strokeWidth={1.5} className="size-6" />
     </span>
   );
 }

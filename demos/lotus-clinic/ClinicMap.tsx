@@ -1,5 +1,6 @@
 import { Clock, Mail, MapPin, Navigation, Phone } from "lucide-react";
 import type { ReactNode } from "react";
+import { ArrowCircle } from "./Art";
 import { clinic } from "./data";
 import { ui } from "./ui";
 
@@ -29,10 +30,13 @@ export function ClinicMap({ className = "" }: { className?: string }) {
 
 export function DirectionsLink({ className = "" }: { className?: string }) {
   return (
-    <a href={directionsUrl()} target="_blank" rel="noopener noreferrer" className={`${ui.secondary} ${className}`}>
-      <Navigation aria-hidden strokeWidth={1.75} className="size-4" />
-      Get directions
-      <span className="sr-only">(opens Google Maps in a new tab)</span>
+    <a href={directionsUrl()} target="_blank" rel="noopener noreferrer" className={`${ui.secondaryArrow} ${className}`}>
+      <span className="inline-flex items-center gap-2">
+        <Navigation aria-hidden strokeWidth={1.75} className="size-4" />
+        Get Directions
+        <span className="sr-only">(opens Google Maps in a new tab)</span>
+      </span>
+      <ArrowCircle />
     </a>
   );
 }
@@ -46,8 +50,8 @@ export function VisitBlock({ withEmail = false, children }: { withEmail?: boolea
     ...(withEmail ? [{ Icon: Mail, title: "Email", lines: [clinic.email] }] : []),
   ];
   return (
-    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[2fr_3fr]">
-      <div className={`p-6 sm:p-7 ${ui.card}`}>
+    <div className="grid gap-6 lg:grid-cols-[2fr_3fr] lg:gap-8">
+      <div className={`p-6 sm:p-8 ${ui.card}`}>
         <dl className="space-y-5">
           {rows.map(({ Icon, title, lines }) => (
             <div key={title} className="flex gap-3.5">

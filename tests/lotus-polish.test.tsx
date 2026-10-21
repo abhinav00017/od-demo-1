@@ -24,22 +24,24 @@ function renderPage(page: DemoPage) {
 const bar = () => document.querySelector("[data-lotus-bar]") as HTMLElement | null;
 
 describe("Lotus hero portrait", () => {
-  it("shows an illustrated portrait and avatar, labelled as an illustration, with no initials", () => {
+  it("shows the AR initials in a large 4:5 rounded card, with a round avatar on phones, and no illustration", () => {
     const { container } = renderPage("");
     const hero = container.querySelector("main section")!;
     const portrait = hero.querySelector('[data-portrait="portrait"]')!;
     const avatar = hero.querySelector('[data-portrait="avatar"]')!;
-    expect(portrait.getAttribute("role")).toBe("img");
-    expect(portrait.getAttribute("aria-label")).toMatch(/^Illustration of Dr\. Ananya Rao/);
-    expect(avatar.getAttribute("aria-label")).toMatch(/^Illustration/);
-    // 4:5 portrait viewBox in a rounded-3xl 4:5 mask; the avatar is round and phone-only.
-    expect(portrait.getAttribute("viewBox")).toBe("0 0 400 500");
-    expect(portrait.parentElement!.className).toContain("aspect-[4/5]");
-    expect(portrait.parentElement!.className).toContain("rounded-3xl");
-    expect(avatar.getAttribute("class")).toContain("rounded-full");
-    expect(avatar.getAttribute("class")).toContain("sm:hidden");
-    expect(hero.textContent).not.toContain(clinic.doctor.initials);
+    expect(portrait.textContent).toBe(clinic.doctor.initials);
+    expect(portrait.className).toContain("aspect-[4/5]");
+    expect(portrait.className).toContain("rounded-3xl");
+    expect(portrait.className).toContain("hidden sm:flex");
+    expect(portrait.querySelector(".bg-lotus-avatar.rounded-full")).toBeTruthy();
+    expect(avatar.textContent).toBe(clinic.doctor.initials);
+    expect(avatar.className).toContain("rounded-full");
+    expect(avatar.className).toContain("sm:hidden");
+    // Decorative: the name is the h1 beside it.
+    expect(portrait.getAttribute("aria-hidden")).toBe("true");
+    expect(hero.querySelector("svg[role=img]")).toBeNull();
     expect(within(hero as HTMLElement).getAllByRole("heading", { name: clinic.doctor.name })).toHaveLength(1);
+    expect(within(hero as HTMLElement).getByRole("heading", { level: 1 }).textContent).toBe(clinic.doctor.name);
   });
 
   it("uses the round avatar on About", () => {
@@ -59,13 +61,15 @@ describe("Lotus signature and trust visuals", () => {
     }
   });
 
-  it("puts the hero on the tint and the why section on a full-bleed tinted band", () => {
+  it("alternates white and tinted bands down the home page, with white cards on the tint", () => {
     const { container } = renderPage("");
     const hero = container.querySelector("main section") as HTMLElement;
     expect(hero.style.backgroundColor).toBe("var(--color-lotus-tint)");
-    const why = container.querySelector('[aria-labelledby="why-heading"]')!;
-    expect(why.className).toContain("bg-lotus-tint");
-    for (const card of why.querySelectorAll("ul > li")) expect(card.className).toContain("bg-white");
+    const tinted = (id: string) => container.querySelector(`[aria-labelledby="${id}"]`)!.className.includes("bg-lotus-tint");
+    expect(["numbers-heading", "stories-heading", "why-heading", "services-heading", "visit-heading"].map(tinted)).toEqual([false, true, false, true, false]);
+    for (const id of ["stories-heading", "services-heading"]) {
+      for (const card of container.querySelectorAll(`[aria-labelledby="${id}"] ul > li`)) expect(card.className).toContain("bg-white");
+    }
   });
 
   it("shows the Google G, five decorative stars and the review count by the rating", () => {
@@ -77,7 +81,7 @@ describe("Lotus signature and trust visuals", () => {
     expect(stars.getAttribute("aria-hidden")).toBe("true");
     expect(stars.querySelectorAll("svg")).toHaveLength(5);
     expect(numbers.textContent).toContain("312 reviews");
-    expect(numbers.textContent).toContain("Google rating");
+    expect(numbers.textContent).toContain("Google Rating");
   });
 
   it("gives each testimonial an initials avatar beside the name and area", () => {
@@ -124,14 +128,14 @@ describe("Lotus service icons", () => {
 });
 
 describe("Lotus sticky mobile bar", () => {
-  it.each(["", "services", "about", "contact"] as DemoPage[])("shows on '%s' with Book a visit and WhatsApp, below lg only", (page) => {
+  it.each(["", "services", "about", "contact"] as DemoPage[])("shows on '%s' with Book an Appointment and WhatsApp, below lg only", (page) => {
     const { container } = renderPage(page);
     const el = bar();
     expect(el).toBeTruthy();
     expect(el!.className).toContain("lg:hidden");
     expect(el!.className).toContain("fixed");
     expect(el!.className).toContain("env(safe-area-inset-bottom)");
-    expect(within(el!).getByRole("link", { name: /Book a visit/ }).getAttribute("href")).toBe("/clinic/website/book");
+    expect(within(el!).getByRole("link", { name: /Book an Appointment/ }).getAttribute("href")).toBe("/clinic/website/book");
     const wa = within(el!).getByRole("link", { name: `WhatsApp ${clinic.phone}` });
     expect(wa.getAttribute("href")).toBe(clinicWhatsAppHref);
     expect(wa.getAttribute("target")).toBe("_blank");
@@ -162,24 +166,20 @@ describe("Lotus sticky mobile bar", () => {
 });
 
 describe("Lotus micro-detail", () => {
-  it("sets the headline at 800 with -0.03em tracking and keeps the hero line within 36ch", () => {
+  it("sets the headline at 800 with -0.03em tracking", () => {
     const { container } = renderPage("");
     const h1 = container.querySelector("h1")!;
     expect(h1.className).toContain("font-extrabold");
     expect(h1.className).toContain("tracking-[-0.03em]");
-    expect(h1.nextElementSibling!.className).toContain("max-w-[36ch]");
   });
 
   it("lifts content cards on hover", () => {
     const { container } = renderPage("");
-    for (const id of ["stories-heading", "why-heading"]) {
+    for (const id of ["stories-heading", "why-heading", "services-heading"]) {
       for (const li of container.querySelectorAll(`[aria-labelledby="${id}"] ul > li`)) {
         expect(li.className).toContain("hover:-translate-y-0.5");
         expect(li.className).toContain("hover:shadow-lotus-lift");
       }
-    }
-    for (const a of container.querySelectorAll('[aria-labelledby="services-heading"] ul > li > a')) {
-      expect(a.className).toContain("hover:-translate-y-0.5");
     }
   });
 });

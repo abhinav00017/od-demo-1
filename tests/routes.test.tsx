@@ -48,7 +48,7 @@ describe("every service route resolves", () => {
     if (!found || found.service.status !== "live") return;
     render(<LiveDemo industry={found.industry} service={found.service} page={found.page} />);
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
-    expect(screen.getAllByRole("link", { name: /Book a visit/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /Book an Appointment/ }).length).toBeGreaterThan(0);
   });
 
   it("unknown slugs do not resolve", () => {

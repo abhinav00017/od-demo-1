@@ -1,4 +1,4 @@
-/** Placeholder art for the Lotus demo. The doctor is a flat illustration of a made-up person, never a photo of anyone real. */
+/** Small art for the Lotus demo: the logo, the rating marks and the pill arrow. No photos or drawings of people. */
 
 export function LotusMark({ className = "size-8" }: { className?: string }) {
   return (
@@ -31,72 +31,14 @@ export function LotusLineMark({ className = "size-5" }: { className?: string }) 
   );
 }
 
-const SKIN = "#c68a62";
-const SKIN_SHADE = "#b97a55";
-const SKIN_DEEP = "#a4684a";
-const HAIR = "#2a1b16";
-const COAT_LINE = "#d3e4e1";
-const SLATE = "#334155";
-
-/** The figure, drawn in a 400 x 500 box and scaled up from the bottom centre so she fills the frame. */
-function DoctorFigure() {
+/** A small teal circle with an arrow, at the right end of an outline pill. */
+export function ArrowCircle({ className = "size-9" }: { className?: string }) {
   return (
-    <g transform="translate(200 500) scale(1.15) translate(-200 -500)">
-      <path
-        transform="translate(0 24)"
-        d="M134 246C128 180 164 158 200 158C240 158 274 180 266 246C262 290 268 328 286 356C264 370 240 372 222 366L178 366C160 372 136 370 114 356C132 328 138 290 134 246Z"
-        fill={HAIR}
-      />
-      <path d="M179 320L179 382L200 418L221 382L221 320Z" fill={SKIN_SHADE} />
-      <path d="M179 326Q200 354 221 326L221 346Q200 366 179 346Z" fill={SKIN_DEEP} />
-      {/* Teal scrubs under a white coat */}
-      <path d="M142 388Q166 378 182 378L200 416L218 378Q234 378 258 388L270 500L130 500Z" className="fill-lotus-accent" />
-      <path d="M54 500C56 438 92 398 152 384L182 378L160 452L166 500Z" fill="#ffffff" />
-      <path d="M346 500C344 438 308 398 248 384L218 378L240 452L234 500Z" fill="#ffffff" />
-      <path d="M182 378L150 414L160 452M218 378L250 414L240 452" fill="none" stroke={COAT_LINE} strokeWidth="2" strokeLinejoin="round" />
-      <rect x="88" y="452" width="40" height="34" rx="4" fill="none" stroke={COAT_LINE} strokeWidth="2" />
-      <rect x="262" y="438" width="44" height="13" rx="3" className="fill-lotus-accent" opacity=".85" />
-      {/* Stethoscope */}
-      <path
-        d="M168 386C156 428 170 460 200 464C230 460 244 428 232 386M214 461C226 470 232 478 234 488"
-        fill="none"
-        stroke={SLATE}
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <circle cx="235" cy="493" r="9" fill="#cbd5e1" stroke={SLATE} strokeWidth="3" />
-      <g transform="translate(0 24)">
-        <ellipse cx="146" cy="258" rx="10" ry="13" fill={SKIN_SHADE} />
-        <ellipse cx="254" cy="258" rx="10" ry="13" fill={SKIN_SHADE} />
-        <circle cx="146" cy="273" r="3.5" fill="#d4a24c" />
-        <circle cx="254" cy="273" r="3.5" fill="#d4a24c" />
-        <ellipse cx="200" cy="252" rx="55" ry="67" fill={SKIN} />
-        <path d="M144 256C136 196 168 174 204 174C240 174 266 200 257 256C250 226 234 206 214 198C196 222 172 236 144 256Z" fill={HAIR} />
-        <path d="M167 238Q178 231 189 236M211 236Q222 231 233 238" fill="none" stroke={HAIR} strokeWidth="3.5" strokeLinecap="round" />
-        <ellipse cx="178" cy="254" rx="4.5" ry="5.5" fill="#1f1512" />
-        <ellipse cx="222" cy="254" rx="4.5" ry="5.5" fill="#1f1512" />
-        <path d="M200 260Q195 276 203 279" fill="none" stroke={SKIN_DEEP} strokeWidth="3" strokeLinecap="round" />
-        <path d="M185 293Q200 304 215 293" fill="none" stroke="#8f3f35" strokeWidth="3.5" strokeLinecap="round" />
-        <circle cx="165" cy="280" r="9" fill="#e08e74" opacity=".35" />
-        <circle cx="235" cy="280" r="9" fill="#e08e74" opacity=".35" />
-      </g>
-    </g>
-  );
-}
-
-/**
- * The doctor's portrait slot: a flat illustration on a soft teal backdrop, until the clinic sends a real photo.
- * `portrait` fills a 4:5 box; `avatar` crops to the head and shoulders for a round frame.
- */
-export function DoctorIllustration({ label, variant = "portrait", className = "" }: { label: string; variant?: "portrait" | "avatar"; className?: string }) {
-  const viewBox = variant === "portrait" ? "0 0 400 500" : "60 120 280 280";
-  return (
-    <svg viewBox={viewBox} preserveAspectRatio="xMidYMid slice" role="img" aria-label={label} data-portrait={variant} className={className}>
-      <rect x="0" y="0" width="400" height="500" fill="#eef6f5" />
-      <circle cx="200" cy="245" r="165" fill="#dcedea" />
-      {variant === "portrait" ? <circle cx="318" cy="96" r="70" fill="#e4f1ef" /> : null}
-      <DoctorFigure />
-    </svg>
+    <span aria-hidden data-arrow-circle="" className={`flex shrink-0 items-center justify-center rounded-full bg-lotus-accent text-white ${className}`}>
+      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </span>
   );
 }
 

@@ -22,7 +22,7 @@ describe("Lotus map", () => {
     expect(screen.getByText(clinic.address[0])).toBeTruthy();
     expect(screen.getByText(clinic.phone)).toBeTruthy();
     expect(screen.getByText(/Monday to Saturday/)).toBeTruthy();
-    const link = screen.getByRole("link", { name: /Get directions/ });
+    const link = screen.getByRole("link", { name: /Get Directions/ });
     expect(link.getAttribute("href")).toBe(directionsUrl());
     expect(link.getAttribute("target")).toBe("_blank");
   });

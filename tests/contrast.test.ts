@@ -32,8 +32,8 @@ const NORMAL: [string, string][] = [
   ["lotus-text", "lotus-wash"], ["lotus-error", "white"],
   // Lotus hero backdrop and the why band (4% teal tint): headings, body, links, buttons' outline text
   ["lotus-text", "lotus-tint"], ["lotus-muted", "lotus-tint"], ["lotus-accent", "lotus-tint"], ["lotus-accent-hover", "lotus-tint"],
-  // Testimonial initials on the soft teal avatar circle
-  ["lotus-accent-hover", "lotus-avatar"],
+  // The soft teal avatar: initials, the years chip, and the stat cards (figure and label)
+  ["lotus-accent-hover", "lotus-avatar"], ["lotus-text", "lotus-avatar"], ["lotus-muted", "lotus-avatar"],
   // Hub mocks of Lotus services (teal + sand)
   ["lotus-ink", "lotus-cream"], ["lotus-ink", "lotus-sand"], ["lotus-ink", "lotus-mint"], ["lotus-ink", "white"],
   ["lotus-body", "lotus-cream"], ["lotus-body", "lotus-sand"], ["lotus-body", "lotus-mint"], ["lotus-body", "white"],

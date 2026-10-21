@@ -2,7 +2,7 @@ import { Phone } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DemoPage } from "@/lib/demos";
-import { LotusMark } from "./Art";
+import { ArrowCircle, LotusMark } from "./Art";
 import { clinic, clinicWhatsAppHref } from "./data";
 import { MenuStateProvider } from "./MenuState";
 import { MobileBar } from "./MobileBar";
@@ -26,9 +26,18 @@ export function LotusButton({
 }: {
   href: string;
   children: ReactNode;
-  variant?: "primary" | "secondary";
+  /** `arrow` is the outline pill with a small arrow circle at the right end. */
+  variant?: "primary" | "secondary" | "arrow";
   className?: string;
 }) {
+  if (variant === "arrow") {
+    return (
+      <Link href={href} className={`${ui.secondaryArrow} ${className}`}>
+        <span className="inline-flex items-center gap-2">{children}</span>
+        <ArrowCircle />
+      </Link>
+    );
+  }
   return (
     <Link href={href} className={`${ui[variant]} ${className}`}>
       {children}
@@ -51,6 +60,25 @@ export function WhatsAppNumber({ className = "" }: { className?: string }) {
     >
       <Phone aria-hidden strokeWidth={1.75} className="size-4 text-lotus-accent" />
       <span className="sr-only">WhatsApp</span> {clinic.phone}
+    </a>
+  );
+}
+
+/**
+ * Desktop only: a round teal button fixed bottom-right that opens a WhatsApp chat with the clinic.
+ * Below lg the sticky bottom bar does the same job, so this one hides there.
+ */
+function FloatingCall() {
+  return (
+    <a
+      href={clinicWhatsAppHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-lotus-float=""
+      className="fixed right-6 bottom-6 z-30 hidden size-14 items-center justify-center rounded-full bg-lotus-accent text-white shadow-lotus-lift transition hover:bg-lotus-accent-hover motion-safe:hover:-translate-y-0.5 lg:flex"
+    >
+      <Phone aria-hidden strokeWidth={1.75} className="size-6" />
+      <span className="sr-only">WhatsApp the clinic on {clinic.phone}</span>
     </a>
   );
 }
@@ -82,7 +110,7 @@ export function showsMobileBar(page: DemoPage) {
 
 export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) {
   const items = NAV.map((n) => ({ href: nav.href(n.page), label: n.label, current: n.page === nav.page }));
-  const book = { href: nav.href("book"), label: "Book a visit" };
+  const book = { href: nav.href("book"), label: "Book an Appointment" };
   const bar = showsMobileBar(nav.page);
   return (
     <MenuStateProvider>
@@ -131,26 +159,43 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
         <main className="flex-1">{children}</main>
 
         <footer className="border-t border-lotus-hairline bg-white">
-          <LotusContainer className="flex flex-col gap-4 py-8 text-sm sm:flex-row sm:items-start sm:justify-between">
+          <LotusContainer className="grid gap-8 py-12 text-sm sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12 lg:py-16">
             <div>
               <p className="flex items-center gap-2 font-semibold text-lotus-text">
                 <LotusMark className="size-6" />
                 {clinic.name}
               </p>
-              <p className="mt-1">{clinic.address.join(", ")}</p>
+              <p className="mt-3 max-w-xs">{clinic.tagline}.</p>
+              <p className="mt-3">{clinic.address.join(", ")}</p>
             </div>
-            <div className="sm:text-right">
-              <p className="text-lotus-text tabular-nums">{clinic.phone}</p>
-              <p>{clinic.email}</p>
+            <div>
+              <p className="font-semibold text-lotus-text">Clinic Hours</p>
+              <ul className="mt-3 space-y-1.5">
+                {clinic.hours.map((h) => (
+                  <li key={h.days}>
+                    <span className="text-lotus-text">{h.days}</span>
+                    <span className="block">{h.time}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold text-lotus-text">Contact</p>
+              <p className="mt-3 text-lotus-text tabular-nums">{clinic.phone}</p>
+              <p className="mt-1.5">{clinic.email}</p>
             </div>
           </LotusContainer>
-          <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-lotus-hairline py-4 text-xs">
-            <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
-            <Link href={nav.href("admin")} className="font-semibold text-lotus-text underline-offset-4 hover:underline">
-              Clinic login
-            </Link>
+          <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-lotus-hairline py-5 text-xs">
+            <span>© 2026 {clinic.name}. All rights reserved.</span>
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
+              <Link href={nav.href("admin")} className="font-semibold text-lotus-text underline-offset-4 hover:underline">
+                Clinic Login
+              </Link>
+            </span>
           </LotusContainer>
         </footer>
+        {bar ? <FloatingCall /> : null}
         {bar ? <MobileBar bookHref={book.href} whatsapp={{ href: clinicWhatsAppHref, label: clinic.phone }} /> : null}
       </div>
     </MenuStateProvider>

@@ -51,7 +51,7 @@
   --color-lotus-error: #b42318;
   /* 4% accent over white: the hero backdrop and the "Why women choose Lotus" band. Cards on it stay white. */
   --color-lotus-tint: #f5faf9;
-  /* 10% accent over white: avatar circles and service icon tiles. Text on it is lotus-accent-hover. */
+  /* 10% accent over white: initials, service icon circles, the years chip and the stat cards. Text on it: lotus-text, lotus-muted, lotus-accent-hover. */
   --color-lotus-avatar: #e7f1f1;
 
   /* Mock UI: WhatsApp */

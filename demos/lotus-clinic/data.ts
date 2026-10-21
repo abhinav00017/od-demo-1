@@ -5,9 +5,9 @@
 export const clinic = {
   name: "Lotus Women's Clinic",
   shortName: "Lotus",
-  tagline: "Women's health, obstetrics and gynecology",
+  tagline: "Expert care for women at every stage of life",
   city: "Visakhapatnam",
-  phone: "+91 98765 43210",
+  phone: "+91 73821 30063",
   email: "care@lotusclinic.in",
   address: ["Door 9-12-4, 2nd floor", "Beach Road, Siripuram", "Visakhapatnam 530003"],
   /** What Google Maps searches for. A real junction, so the pin lands in the right part of the city. */
@@ -19,87 +19,109 @@ export const clinic = {
   doctor: {
     name: "Dr. Ananya Rao",
     initials: "AR",
-    degree: "MBBS, MS (Obstetrics and Gynecology)",
-    role: "Consultant obstetrician and gynecologist",
+    degree: "MBBS, MS (Obstetrics & Gynecology)",
+    role: "Consultant Obstetrician & Gynecologist",
     years: 12,
-    intro: "Dr. Ananya Rao has cared for women in Visakhapatnam for over 12 years.",
+    /** The hero line under the tagline. */
+    positioning:
+      "A trusted gynecologist and obstetrician in Visakhapatnam, with more than 12 years of experience in pregnancy care, fertility and women's health.",
+    intro: "Consultant obstetrician and gynecologist in Visakhapatnam, with more than 12 years of clinical experience.",
     bio: [
-      "Dr. Rao trained in Andhra Pradesh and spent eight years at a large maternity hospital before opening Lotus.",
-      "Every patient gets time to ask questions and a clear plan to take home.",
-      "She sees patients at the clinic six days a week, and online on Sundays.",
+      "Dr. Ananya Rao is a consultant obstetrician and gynecologist who has cared for women in Visakhapatnam for more than 12 years.",
+      "She trained in Andhra Pradesh and served as a consultant at a large city maternity hospital for eight years before founding Lotus Women's Clinic in 2022.",
+      "Her practice is built on evidence-based treatment, clear explanations and a written care plan for every patient.",
+      "Dr. Rao sees patients at the clinic six days a week and offers online consultations on Sundays.",
     ],
     milestones: [
       { year: "2010", text: "MBBS" },
-      { year: "2014", text: "MS, Obstetrics and Gynecology" },
+      { year: "2014", text: "MS, Obstetrics & Gynecology" },
       { year: "2014 – 2022", text: "Consultant at a city maternity hospital" },
-      { year: "2022", text: "Opened Lotus Women's Clinic" },
+      { year: "2022", text: "Founded Lotus Women's Clinic" },
+    ],
+    /** About's qualifications list. The hospital is made up. */
+    qualifications: [
+      { label: "MBBS", text: "Bachelor of Medicine and Bachelor of Surgery, 2010" },
+      { label: "MS", text: "Master of Surgery in Obstetrics & Gynecology, 2014" },
+      { label: "FOGSI", text: "Member, Federation of Obstetric and Gynaecological Societies of India" },
+      { label: "Affiliation", text: "Visiting consultant, Harbourside Maternity Hospital, Visakhapatnam" },
+      { label: "Languages", text: "English, Telugu and Hindi" },
     ],
     languages: "English, Telugu and Hindi",
   },
   stats: [
-    { value: "12+", label: "years of experience" },
-    { value: "8,000+", label: "women cared for" },
-    { value: "4.9", label: "Google rating", reviews: "312 reviews" },
+    { value: "12+", label: "Years of Experience" },
+    { value: "8,000+", label: "Patients Treated" },
+    { value: "3,000+", label: "Successful Deliveries" },
+    { value: "4.9", label: "Google Rating", reviews: "312 reviews" },
   ],
   services: [
     {
       slug: "pregnancy-care",
       icon: "baby",
-      name: "Pregnancy care",
-      short: "Care from the first test to delivery, with every visit and scan planned.",
-      details: ["Visit and scan plan for each month", "Diet and exercise advice", "Normal and caesarean delivery", "Care after delivery"],
+      name: "Obstetrics & Pregnancy Care",
+      short:
+        "Dr. Rao provides complete care from the first positive test through delivery and recovery. Each trimester follows a planned schedule of visits, scans and tests.",
+      details: ["Visit and scan plan for each trimester", "Nutrition and exercise guidance", "Normal and caesarean delivery", "Postnatal care and follow-up"],
     },
     {
       slug: "gynecology",
       icon: "stethoscope",
-      name: "Gynecology check-ups",
-      short: "Period problems, infections, pain and routine check-ups.",
-      details: ["Irregular or painful periods", "White discharge and infections", "Pelvic pain", "Pap smear and breast check"],
+      name: "Gynecology Consultations",
+      short:
+        "The clinic treats irregular or painful periods, infections, pelvic pain and other common concerns. Routine screening, including Pap smears and breast examinations, is also available.",
+      details: ["Irregular or painful periods", "Vaginal discharge and infections", "Pelvic pain", "Pap smear and breast examination"],
     },
     {
       slug: "fertility",
       icon: "heart-pulse",
-      name: "Fertility advice",
-      short: "Clear tests and a step-by-step plan for couples trying to conceive.",
-      details: ["Tests for both partners", "Ovulation tracking", "Lifestyle advice", "Referral for IVF when needed"],
+      name: "Fertility & IVF Guidance",
+      short:
+        "Couples trying to conceive receive a structured evaluation of both partners. Dr. Rao explains every option and refers to trusted IVF centres when treatment is needed.",
+      details: ["Evaluation of both partners", "Ovulation tracking", "Lifestyle guidance", "IVF referral when needed"],
     },
     {
       slug: "pcos",
       icon: "activity",
-      name: "PCOS care",
-      short: "Long-term care for PCOS: periods, weight, skin and fertility.",
-      details: ["Diagnosis and blood tests", "Diet and activity plan", "Medicine when needed", "Regular follow-ups"],
+      name: "PCOS & Hormonal Health",
+      short:
+        "PCOS and hormonal conditions are managed with long-term plans for cycles, weight, skin and fertility. Regular follow-ups track progress and adjust treatment.",
+      details: ["Diagnosis and blood tests", "Diet and activity plan", "Medication when needed", "Regular follow-ups"],
     },
     {
       slug: "menopause",
       icon: "sun",
-      name: "Menopause care",
-      short: "Relief for hot flushes, sleep and mood changes, and bone health.",
-      details: ["Symptom review", "Bone and heart health checks", "Treatment options explained", "Follow-up plan"],
+      name: "Menopause Care",
+      short:
+        "Women going through menopause receive relief for hot flushes, sleep problems and mood changes. Care also includes screening for bone and heart health.",
+      details: ["Symptom review", "Bone and heart health screening", "Treatment options explained", "Ongoing follow-up plan"],
     },
     {
       slug: "online",
       icon: "video",
-      name: "Online consultation",
-      short: "See Dr. Rao by video or phone from home, ideal for follow-ups.",
-      details: ["Video or phone call", "Pay by UPI before the call", "Prescription on WhatsApp", "Sundays and evenings"],
+      name: "Online Consultations",
+      short:
+        "Patients can consult Dr. Rao by video or phone from home. Online visits suit follow-ups, report reviews and second opinions.",
+      details: ["Video or phone consultation", "Payment by UPI before the call", "Prescription on WhatsApp", "Sundays and evenings"],
     },
   ],
   why: [
-    { title: "Time to listen", text: "Visits are never rushed, so you can ask every question." },
-    { title: "Clear plans", text: "You leave with a written plan and know the next step." },
-    { title: "Reminders on WhatsApp", text: "Visit, scan and medicine reminders come to your phone." },
+    { title: "Evidence-Based Treatment", text: "Every recommendation follows current clinical guidelines for obstetrics and gynecology." },
+    { title: "Personalised Care Plans", text: "Each patient receives a written plan built around her health, history and goals." },
+    { title: "Advanced Diagnostics on Site", text: "Ultrasound and routine tests are done at the clinic, so results arrive sooner." },
+    { title: "Timely Follow-Ups on WhatsApp", text: "Reminders for visits, scans and medicines arrive on WhatsApp, with replies within two hours." },
   ],
   testimonials: [
     {
-      quote: "Dr. Rao explained every step of my pregnancy. I never felt scared or rushed.",
+      quote:
+        "I was anxious throughout my first pregnancy. Dr. Rao explained every scan and every step in detail. My delivery went smoothly, and the care after it was just as thorough.",
       name: "Sravani K.",
-      area: "MVP Colony",
+      area: "Visakhapatnam",
     },
     {
-      quote: "After years of irregular periods, I finally have a plan that works.",
+      quote:
+        "I had irregular periods for several years and had seen three doctors before. Dr. Rao diagnosed PCOS and gave me a clear plan. Within six months my cycles were regular again.",
       name: "Divya R.",
-      area: "Gajuwaka",
+      area: "Visakhapatnam",
     },
   ],
   booking: {

@@ -17,7 +17,7 @@ const LOTUS_PAGES: Record<DemoPage, (props: { nav: Nav }) => React.ReactNode> = 
 /** Page title for a live demo page, as the client's own site would set it. */
 export function liveDemoTitle(demo: DemoId, page: string): string {
   const label = LIVE_DEMOS[demo].pages.find((p) => p.slug === page)?.label ?? "Home";
-  return page ? `${label} | ${clinic.name}` : `${clinic.name} | ${clinic.doctor.name}, ${clinic.city}`;
+  return page ? `${label} | ${clinic.name}` : `${clinic.name} | Gynecologist & Obstetrician in ${clinic.city}`;
 }
 
 export function LiveDemo({ industry, service, page }: { industry: Industry; service: Extract<Service, { status: "live" }>; page: DemoPage }) {

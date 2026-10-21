@@ -191,7 +191,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           }}
           className={`mt-5 ${ui.secondary}`}
         >
-          Book another visit
+          Book Another Appointment
         </button>
       </div>
     );
@@ -201,7 +201,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
 
   return (
     <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.6fr_1fr]">
-      <form noValidate onSubmit={onSubmit} className={`relative p-6 sm:p-8 ${ui.card}`} aria-label="Book a visit">
+      <form noValidate onSubmit={onSubmit} className={`relative p-6 sm:p-8 ${ui.card}`} aria-label="Book an Appointment">
         {errorList.length ? (
           <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-6 rounded-2xl bg-white p-5 ring-1 ring-lotus-error focus:outline-none">
             <p className="font-semibold text-lotus-text">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
