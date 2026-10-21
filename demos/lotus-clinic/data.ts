@@ -22,11 +22,10 @@ export const clinic = {
     degree: "MBBS, MS (Obstetrics and Gynecology)",
     role: "Consultant obstetrician and gynecologist",
     years: 12,
-    intro:
-      "Dr. Ananya Rao has cared for women in Visakhapatnam for over 12 years. She looks after pregnancy, periods, fertility and menopause, and she takes time to explain every choice.",
+    intro: "Dr. Ananya Rao has cared for women in Visakhapatnam for over 12 years.",
     bio: [
-      "Dr. Rao completed her MBBS and her MS in Obstetrics and Gynecology in Andhra Pradesh. She then worked for eight years in a large maternity hospital before she opened Lotus Women's Clinic.",
-      "She believes a good visit starts with listening. Each patient gets enough time to ask questions, and a clear plan to take home.",
+      "Dr. Rao trained in Andhra Pradesh and spent eight years at a large maternity hospital before opening Lotus.",
+      "Every patient gets time to ask questions and a clear plan to take home.",
       "She sees patients at the clinic six days a week, and online on Sundays.",
     ],
     milestones: [
@@ -76,15 +75,14 @@ export const clinic = {
     {
       slug: "online",
       name: "Online consultation",
-      short: "See Dr. Rao by video or phone, from home. Good for follow-ups.",
+      short: "See Dr. Rao by video or phone from home, ideal for follow-ups.",
       details: ["Video or phone call", "Pay by UPI before the call", "Prescription on WhatsApp", "Sundays and evenings"],
     },
   ],
   why: [
-    { title: "Time to listen", text: "Visits are not rushed. You can ask every question." },
+    { title: "Time to listen", text: "Visits are never rushed, so you can ask every question." },
     { title: "Clear plans", text: "You leave with a written plan and know the next step." },
     { title: "Reminders on WhatsApp", text: "Visit, scan and medicine reminders come to your phone." },
-    { title: "Private and respectful", text: "A women-only clinic with a female doctor and staff." },
   ],
   testimonials: [
     {
@@ -93,14 +91,9 @@ export const clinic = {
       area: "MVP Colony",
     },
     {
-      quote: "After years of irregular periods, I finally have a plan that works. The reminders help me stay on track.",
+      quote: "After years of irregular periods, I finally have a plan that works.",
       name: "Divya R.",
       area: "Gajuwaka",
-    },
-    {
-      quote: "The online consultation saved me a long trip. The prescription came on WhatsApp right after the call.",
-      name: "Haritha M.",
-      area: "Anakapalle",
     },
   ],
   booking: {
@@ -120,6 +113,9 @@ export const clinic = {
     ],
   },
 } as const;
+
+/** The four services the home page shows. The services page lists them all. */
+export const homeServiceSlugs = ["pregnancy-care", "gynecology", "fertility", "pcos"] as const;
 
 /** The clinic number as a direct WhatsApp chat link: wa.me wants the digits only, country code first. */
 export const clinicWhatsAppHref = `https://wa.me/${clinic.phone.replace(/\D/g, "")}`;
