@@ -4,6 +4,7 @@ import { Lock } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import type { Booking, BookingStatus } from "@/lib/bookings/types";
 import { Dashboard } from "./Dashboard";
+import { buttonClass, fieldClass, labelClass, panelClass } from "./ui";
 
 /** How often the dashboard asks for new bookings. */
 export const POLL_MS = 5000;
@@ -16,7 +17,7 @@ async function fetchSession(): Promise<Session> {
   return (await res.json()) as Session;
 }
 
-const card = "mx-auto max-w-md rounded-3xl bg-white p-7 ring-1 ring-lotus-line sm:p-9";
+const card = `mx-auto max-w-md p-6 sm:p-10 ${panelClass}`;
 
 function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => void }) {
   const [password, setPassword] = useState("");
@@ -42,17 +43,15 @@ function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => vo
 
   return (
     <form onSubmit={submit} className={card} aria-label="Clinic login">
-      <span aria-hidden className="flex size-12 items-center justify-center rounded-2xl bg-lotus-mint text-lotus-teal">
-        <Lock className="size-6" />
-      </span>
-      <h2 className="mt-5 font-lotus text-2xl font-semibold text-lotus-ink">Clinic staff only</h2>
+      <Lock aria-hidden className="size-5 text-lotus-forest" strokeWidth={1.75} />
+      <h2 className="mt-5 font-lotus-serif text-3xl tracking-[-0.02em] text-lotus-text">Clinic staff only</h2>
       <p className="mt-2">Enter the clinic password to see bookings.</p>
       {devPassword ? (
-        <p className="mt-4 rounded-2xl bg-lotus-sand p-4 text-sm text-lotus-ink">
+        <p className="mt-6 border-l-2 border-lotus-forest py-0.5 pl-4 text-sm text-lotus-text">
           Development mode: ADMIN_PASSWORD is not set, so the password is <strong>demo</strong>.
         </p>
       ) : null}
-      <label htmlFor={`${id}-pw`} className="mt-6 block font-semibold text-lotus-ink">
+      <label htmlFor={`${id}-pw`} className={`mt-8 block ${labelClass}`}>
         Password
       </label>
       <input
@@ -63,14 +62,14 @@ function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => vo
         onChange={(e) => setPassword(e.target.value)}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-err` : undefined}
-        className="mt-2 block min-h-12 w-full rounded-xl border-0 bg-white px-4 py-3 text-base text-lotus-ink ring-1 ring-lotus-line focus:ring-2 focus:ring-lotus-teal focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-lotus-rose"
+        className={fieldClass}
       />
       {error ? (
-        <p id={`${id}-err`} role="alert" className="mt-2 text-sm font-semibold text-lotus-rose">
+        <p id={`${id}-err`} role="alert" className="mt-2 text-sm font-medium text-lotus-error">
           {error}
         </p>
       ) : null}
-      <button type="submit" disabled={busy || !password} className="mt-6 w-full rounded-full bg-lotus-teal px-6 py-3 font-semibold text-white hover:bg-lotus-teal-deep disabled:cursor-not-allowed disabled:bg-lotus-mint disabled:text-lotus-teal-deep">
+      <button type="submit" disabled={busy || !password} className={`mt-6 w-full ${buttonClass}`}>
         {busy ? "Checking…" : "Log in"}
       </button>
     </form>
@@ -186,7 +185,7 @@ export function AdminApp({ bookHref }: { bookHref: string }) {
     case "off":
       return (
         <div className={card}>
-          <h2 className="font-lotus text-2xl font-semibold text-lotus-ink">Dashboard not configured</h2>
+          <h2 className="font-lotus-serif text-3xl tracking-[-0.02em] text-lotus-text">Dashboard not configured</h2>
           <p className="mt-2">The clinic dashboard needs a password on the server. Set ADMIN_PASSWORD, then reload this page.</p>
         </div>
       );
@@ -197,7 +196,7 @@ export function AdminApp({ bookHref }: { bookHref: string }) {
       return (
         <>
           {actionError ? (
-            <p role="alert" className="mb-4 rounded-2xl bg-white p-4 text-sm font-semibold text-lotus-rose ring-1 ring-lotus-rose">
+            <p role="alert" className="mb-6 border-l-2 border-lotus-error py-0.5 pl-4 text-sm font-medium text-lotus-error">
               {actionError}
             </p>
           ) : null}

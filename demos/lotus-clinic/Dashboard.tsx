@@ -1,15 +1,18 @@
 "use client";
 
-import { CalendarX2, Check, Eye, EyeOff, LogOut, X } from "lucide-react";
+import { Eye, EyeOff, LogOut } from "lucide-react";
 import { useState } from "react";
 import type { Booking, BookingStatus } from "@/lib/bookings/types";
 import { dashboardCounts, dayLabel, formatPhone, groupByDay, maskPhone } from "./dashboardData";
+import { buttonClass, buttonSmallClass, panelClass } from "./ui";
 
 const STATUS_STYLE: Record<BookingStatus, { label: string; className: string }> = {
-  new: { label: "New", className: "bg-lotus-sand text-lotus-ink" },
-  confirmed: { label: "Confirmed", className: "bg-lotus-mint text-lotus-teal-deep" },
-  cancelled: { label: "Cancelled", className: "bg-white text-lotus-body ring-1 ring-lotus-line" },
+  new: { label: "New", className: "border-lotus-forest bg-lotus-forest text-white" },
+  confirmed: { label: "Confirmed", className: "border-lotus-forest text-lotus-forest" },
+  cancelled: { label: "Cancelled", className: "border-lotus-rule text-lotus-grey" },
 };
+
+const pill = "rounded-md border px-2 py-0.5 text-xs font-medium";
 
 export type DashboardProps = {
   bookings: Booking[];
@@ -31,7 +34,7 @@ function Phone({ phone, name }: { phone: string; name: string }) {
       type="button"
       onClick={() => setShown((s) => !s)}
       aria-label={shown ? `Hide ${name}'s number` : `Show ${name}'s full number`}
-      className="inline-flex items-center gap-1.5 rounded-lg py-1 font-mono text-sm text-lotus-ink tabular-nums hover:text-lotus-teal"
+      className="mt-1 inline-flex items-center gap-1.5 rounded py-1 font-mono text-sm text-lotus-text tabular-nums hover:text-lotus-forest"
     >
       {shown ? formatPhone(phone) : maskPhone(phone)}
       {shown ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
@@ -43,31 +46,28 @@ function Row({ b, busy, onStatus }: { b: Booking; busy: boolean; onStatus: Dashb
   const [part, time] = b.slot.split(", ");
   const status = STATUS_STYLE[b.status];
   return (
-    <li className="grid gap-3 rounded-2xl bg-white p-5 ring-1 ring-lotus-line sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6">
+    <li className="grid gap-3 p-5 sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6 sm:px-6">
       <div>
-        <p className="font-semibold text-lotus-ink">{part}</p>
-        {time ? <p className="text-sm">{time}</p> : null}
+        <p className="font-medium text-lotus-text">{part}</p>
+        {time ? <p className="text-sm tabular-nums">{time}</p> : null}
       </div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className={`font-semibold text-lotus-ink ${b.status === "cancelled" ? "line-through" : ""}`}>{b.name}</p>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.visitType === "online" ? "bg-white text-lotus-rose ring-1 ring-lotus-rose" : "bg-white text-lotus-teal ring-1 ring-lotus-teal"}`}>
-            {b.visitType === "online" ? "Online" : "Clinic"}
-          </span>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
+          <p className={`font-medium text-lotus-text ${b.status === "cancelled" ? "line-through" : ""}`}>{b.name}</p>
+          <span className={`${pill} border-lotus-edge text-lotus-text`}>{b.visitType === "online" ? "Online" : "Clinic"}</span>
+          <span className={`${pill} ${status.className}`}>{status.label}</span>
         </div>
-        <p className="mt-1 text-sm">{b.reason}</p>
+        <p className="mt-1 text-[15px]">{b.reason}</p>
         <Phone phone={b.phone} name={b.name} />
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           disabled={busy || b.status === "confirmed"}
           onClick={() => onStatus(b.id, "confirmed")}
           aria-label={`Confirm ${b.name}`}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-lotus-teal px-4 text-sm font-semibold text-white hover:bg-lotus-teal-deep disabled:cursor-not-allowed disabled:bg-lotus-mint disabled:text-lotus-teal-deep"
+          className={buttonSmallClass}
         >
-          <Check aria-hidden className="size-4" />
           Confirm
         </button>
         <button
@@ -75,9 +75,8 @@ function Row({ b, busy, onStatus }: { b: Booking; busy: boolean; onStatus: Dashb
           disabled={busy || b.status === "cancelled"}
           onClick={() => onStatus(b.id, "cancelled")}
           aria-label={`Cancel ${b.name}`}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-lotus-rose ring-1 ring-lotus-line hover:ring-lotus-rose disabled:cursor-not-allowed disabled:text-lotus-body"
+          className="inline-flex min-h-10 items-center rounded-lg px-3 text-[15px] font-medium text-lotus-error underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-lotus-grey disabled:no-underline"
         >
-          <X aria-hidden className="size-4" />
           Cancel
         </button>
       </div>
@@ -88,11 +87,8 @@ function Row({ b, busy, onStatus }: { b: Booking; busy: boolean; onStatus: Dashb
 export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }) {
   return (
     <p className="flex items-center gap-2 text-sm" aria-live="polite">
-      <span aria-hidden className="relative flex size-2.5">
-        {live ? <span className="absolute inline-flex size-full animate-ping rounded-full bg-wa-green opacity-60" /> : null}
-        <span className={`relative inline-flex size-2.5 rounded-full ${live ? "bg-wa-green" : "bg-lotus-line"}`} />
-      </span>
-      <span className="font-semibold text-lotus-ink">{live ? "Live" : "Reconnecting"}</span>
+      <span aria-hidden className={`size-2 rounded-full ${live ? "bg-lotus-forest" : "bg-lotus-edge"}`} />
+      <span className="font-medium text-lotus-text">{live ? "Live" : "Reconnecting"}</span>
       {updatedAt ? (
         <span suppressHydrationWarning>
           · updated {updatedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
@@ -115,49 +111,46 @@ export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, b
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <LiveDot live={live} updatedAt={updatedAt} />
-        <button type="button" onClick={onLogout} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-lotus-teal ring-1 ring-lotus-line hover:ring-lotus-teal">
+        <button type="button" onClick={onLogout} className="inline-flex min-h-10 items-center gap-2 text-[15px] font-medium text-lotus-forest underline-offset-4 hover:underline">
           <LogOut aria-hidden className="size-4" />
           Log out
         </button>
       </div>
 
-      <dl className="mt-6 grid grid-cols-3 gap-3 sm:gap-5">
+      <dl className="mt-8 grid grid-cols-3 divide-x divide-lotus-rule border-y border-lotus-rule">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-2xl bg-white p-4 ring-1 ring-lotus-line sm:p-6">
+          <div key={t.label} className="py-5 pl-4 first:pl-0 sm:py-7 sm:pl-8">
             <dt className="text-sm">{t.label}</dt>
-            <dd className="mt-1 font-lotus text-3xl font-semibold text-lotus-ink sm:text-4xl">{t.value}</dd>
+            <dd className="mt-2 font-lotus-serif text-4xl leading-none tracking-[-0.02em] text-lotus-text tabular-nums sm:text-5xl">{t.value}</dd>
           </div>
         ))}
       </dl>
 
       {storage === "memory" ? (
-        <p className="mt-4 rounded-2xl bg-lotus-sand p-4 text-sm text-lotus-ink">
+        <p className="mt-6 border-l-2 border-lotus-forest py-0.5 pl-4 text-sm text-lotus-text">
           Test storage: no database is connected, so bookings live in server memory and vanish when it restarts.
         </p>
       ) : null}
 
       {groups.length === 0 ? (
-        <div className="mt-8 rounded-3xl bg-white px-6 py-14 text-center ring-1 ring-lotus-line">
-          <span aria-hidden className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-lotus-mint text-lotus-teal">
-            <CalendarX2 className="size-7" />
-          </span>
-          <h2 className="mt-5 font-lotus text-2xl font-semibold text-lotus-ink">No bookings yet</h2>
+        <div className={`mt-10 px-6 py-16 text-center ${panelClass}`}>
+          <h2 className="font-lotus-serif text-3xl tracking-[-0.02em] text-lotus-text">No bookings yet</h2>
           <p className="mx-auto mt-2 max-w-md">New requests from the booking page show up here within 5 seconds. Try one from your phone.</p>
-          <a href={bookHref} target="_blank" rel="noopener" className="mt-6 inline-flex rounded-full bg-lotus-teal px-6 py-3 font-semibold text-white hover:bg-lotus-teal-deep">
+          <a href={bookHref} target="_blank" rel="noopener" className={`mt-8 ${buttonClass}`}>
             Open the booking page
           </a>
         </div>
       ) : (
-        <div className="mt-8 space-y-10">
+        <div className="mt-12 space-y-12">
           {groups.map((g) => (
             <section key={g.day} aria-labelledby={`day-${g.day}`}>
-              <h2 id={`day-${g.day}`} className="flex items-baseline gap-3 font-lotus text-2xl font-semibold text-lotus-ink">
+              <h2 id={`day-${g.day}`} className="flex items-baseline gap-3 font-lotus-serif text-[1.75rem] tracking-[-0.01em] text-lotus-text">
                 {dayLabel(g.day, today)}
-                <span className="font-sans text-sm font-normal text-lotus-body">
+                <span className="font-lotus-sans text-sm text-lotus-grey">
                   {g.items.length} {g.items.length === 1 ? "booking" : "bookings"}
                 </span>
               </h2>
-              <ul className="mt-4 space-y-3">
+              <ul className={`mt-4 divide-y divide-lotus-rule ${panelClass}`}>
                 {g.items.map((b) => (
                   <Row key={b.id} b={b} busy={busyId === b.id} onStatus={onStatus} />
                 ))}
