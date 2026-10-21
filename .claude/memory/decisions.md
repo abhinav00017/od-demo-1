@@ -82,3 +82,4 @@ Append only. Newest at the bottom.
 - Pills kept only on dashboard rows: visit type (outline) and status (New solid forest, Confirmed forest outline, Cancelled grey outline). 6px radius.
 - Doctor portrait placeholder: stone panel with the initials in Newsreader. Replace with a real photo when the clinic sends one.
 - Tests stub next/font/google in tests/setup.ts, because LotusSite now imports the fonts.
+- 21 Oct 2026: Lotus restyle verified by Abhinav's session (lint, typecheck, 145 tests, build; home, services, why, book at 1440 and home at 375 in the browser) and deployed. Hub unchanged. Open: hub service mocks still use the old teal/Fraunces look; doctor portrait is an initials panel; forest #1F3D38 depth to confirm with Abhinav.
