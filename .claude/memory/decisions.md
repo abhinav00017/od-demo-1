@@ -193,3 +193,10 @@ Append only. Newest at the bottom.
 - Tests: 239 (256 before; the restyle's 26 contrast pairs went, 6 non-text pairs and 3 home/header tests came). "via Twilio" class check now expects text-lotus-body.
 - 21 Oct 2026: verified locally (lint, typecheck, 239 tests, build; dev server with .env.local moved aside, WHATSAPP_PROVIDER=twilio, fake Twilio values, TWILIO_JOIN_KEYWORD=demo-word, TWILIO_API_BASE=http://127.0.0.1:9; home sections, services, book, success screen with opt-in, admin login, dashboard with a booking and the QR at 1440 and 375; scrollWidth 375 at 375, no overflow at 768 and 1024; header and menu links go to wa.me/919876543210; confirm failed against 127.0.0.1:9 as intended; hub / and /clinic render as before). Not tested: tapping the header link on a real phone, a real Twilio send, a deploy.
 - 21 Oct 2026: first Lotus look restored and new order deployed, verified live by Abhinav's session (lint, typecheck, 239 tests, build; home sections at 1440). Agent choices to confirm with Abhinav: hero folded into "Meet your doctor"; desktop nav now from 1024px; footer phone is not a wa.me link. Scratchpad .env.local backup deleted.
+
+## 2026-10-21 (Lotus: white, minimal, onlydevs font)
+
+- Abhinav rejected the restored teal/sand look ("looks shit"). New direction, agreed: Plus Jakarta Sans everywhere (same as onlydevs), pure white background, near-black text, one deep teal accent for buttons and small marks, no sand/mint/cream fills. Cards white with hairline border and soft shadow, large radius. A faint soft gradient glow behind the hero, pill buttons. Futuristic but restrained: no blobs, no glass, no animation noise.
+- Spacing: compact, NOT airy. Normal section spacing, tight and clean. Abhinav said "not too many spaces".
+- Less data: home = hero with doctor + one line, 3 numbers, 4 services (not 6), 3 reasons (not 4), 2 testimonials, map and contact. Every copy block one sentence. Section order from the previous decision stays (doctor first).
+- Everything built keeps working: booking, WhatsApp, opt-in, dashboard.
