@@ -2,7 +2,7 @@
 
 import { Phone } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMenuState } from "./MenuState";
 
 type Item = { href: string; label: string; current: boolean };
 
@@ -16,7 +16,7 @@ export function MobileMenu({
   /** The clinic number as a WhatsApp link, so phones get it in the menu. */
   phone: { href: string; label: string };
 }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useMenuState();
   return (
     <div className="lg:hidden">
       <button

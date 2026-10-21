@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import type { DemoPage } from "@/lib/demos";
 import { LotusMark } from "./Art";
 import { clinic, clinicWhatsAppHref } from "./data";
+import { MenuStateProvider } from "./MenuState";
+import { MobileBar } from "./MobileBar";
 import { MobileMenu } from "./MobileMenu";
 import { ui } from "./ui";
 
@@ -73,72 +75,84 @@ function DemoBar({ hubHref }: { hubHref: string }) {
   );
 }
 
+/** The pages with the sticky bottom bar on phones. Book and admin have their own actions. */
+export function showsMobileBar(page: DemoPage) {
+  return page !== "book" && page !== "admin";
+}
+
 export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) {
   const items = NAV.map((n) => ({ href: nav.href(n.page), label: n.label, current: n.page === nav.page }));
   const book = { href: nav.href("book"), label: "Book a visit" };
+  const bar = showsMobileBar(nav.page);
   return (
-    <div data-site="lotus" className="flex min-h-dvh flex-col bg-white font-sans text-lotus-muted">
-      <DemoBar hubHref={nav.hubHref} />
-      <header className="relative border-b border-lotus-hairline bg-white">
-        <LotusContainer className="flex items-center justify-between gap-6 py-3.5">
-          <Link href={nav.base} className="flex items-center gap-2.5 rounded-lg">
-            <LotusMark />
-            <span className="leading-tight">
-              <span className="block text-base font-semibold tracking-tight text-lotus-text sm:text-lg">{clinic.name}</span>
-              <span className="hidden text-xs text-lotus-muted sm:block">
-                {clinic.doctor.name} · {clinic.city}
+    <MenuStateProvider>
+      <div
+        data-site="lotus"
+        className={`flex min-h-dvh flex-col bg-white font-sans text-lotus-muted ${bar ? "pb-[calc(4.75rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+      >
+        <DemoBar hubHref={nav.hubHref} />
+        <header className="relative border-b border-lotus-hairline bg-white">
+          <LotusContainer className="flex items-center justify-between gap-6 py-3.5">
+            <Link href={nav.base} className="flex items-center gap-2.5 rounded-lg">
+              <LotusMark />
+              <span className="leading-tight">
+                <span className="block text-base font-semibold tracking-tight text-lotus-text sm:text-lg">{clinic.name}</span>
+                <span className="hidden text-xs text-lotus-muted sm:block">
+                  {clinic.doctor.name} · {clinic.city}
+                </span>
               </span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-3 lg:gap-7">
-            <nav aria-label="Clinic" className="hidden items-center gap-7 lg:flex">
-              {items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={item.current ? "page" : undefined}
-                  className={`text-[15px] font-medium transition ${
-                    item.current ? "text-lotus-text underline decoration-lotus-accent decoration-2 underline-offset-8" : "text-lotus-muted hover:text-lotus-text"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <WhatsAppNumber className="hidden sm:inline-flex" />
-            <div className="hidden lg:block">
-              <LotusButton href={book.href} className="px-5 py-2.5 text-[15px]">
-                {book.label}
-              </LotusButton>
+            </Link>
+            <div className="flex items-center gap-3 lg:gap-7">
+              <nav aria-label="Clinic" className="hidden items-center gap-7 lg:flex">
+                {items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={item.current ? "page" : undefined}
+                    className={`text-[15px] font-medium transition ${
+                      item.current ? "text-lotus-text underline decoration-lotus-accent decoration-2 underline-offset-8" : "text-lotus-muted hover:text-lotus-text"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+              <WhatsAppNumber className="hidden sm:inline-flex" />
+              <div className="hidden lg:block">
+                <LotusButton href={book.href} className="px-5 py-2.5 text-[15px]">
+                  {book.label}
+                </LotusButton>
+              </div>
+              <MobileMenu items={items} book={book} phone={{ href: clinicWhatsAppHref, label: clinic.phone }} />
             </div>
-            <MobileMenu items={items} book={book} phone={{ href: clinicWhatsAppHref, label: clinic.phone }} />
-          </div>
-        </LotusContainer>
-      </header>
+          </LotusContainer>
+        </header>
 
-      <main className="flex-1">{children}</main>
+        <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-lotus-hairline bg-white">
-        <LotusContainer className="flex flex-col gap-4 py-8 text-sm sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="flex items-center gap-2 font-semibold text-lotus-text">
-              <LotusMark className="size-6" />
-              {clinic.name}
-            </p>
-            <p className="mt-1">{clinic.address.join(", ")}</p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-lotus-text tabular-nums">{clinic.phone}</p>
-            <p>{clinic.email}</p>
-          </div>
-        </LotusContainer>
-        <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-lotus-hairline py-4 text-xs">
-          <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
-          <Link href={nav.href("admin")} className="font-semibold text-lotus-text underline-offset-4 hover:underline">
-            Clinic login
-          </Link>
-        </LotusContainer>
-      </footer>
-    </div>
+        <footer className="border-t border-lotus-hairline bg-white">
+          <LotusContainer className="flex flex-col gap-4 py-8 text-sm sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="flex items-center gap-2 font-semibold text-lotus-text">
+                <LotusMark className="size-6" />
+                {clinic.name}
+              </p>
+              <p className="mt-1">{clinic.address.join(", ")}</p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-lotus-text tabular-nums">{clinic.phone}</p>
+              <p>{clinic.email}</p>
+            </div>
+          </LotusContainer>
+          <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-lotus-hairline py-4 text-xs">
+            <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
+            <Link href={nav.href("admin")} className="font-semibold text-lotus-text underline-offset-4 hover:underline">
+              Clinic login
+            </Link>
+          </LotusContainer>
+        </footer>
+        {bar ? <MobileBar bookHref={book.href} whatsapp={{ href: clinicWhatsAppHref, label: clinic.phone }} /> : null}
+      </div>
+    </MenuStateProvider>
   );
 }
