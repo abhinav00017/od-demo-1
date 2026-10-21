@@ -85,3 +85,14 @@ Append only. Newest at the bottom.
 - 21 Oct 2026: Lotus restyle verified by Abhinav's session (lint, typecheck, 145 tests, build; home, services, why, book at 1440 and home at 375 in the browser) and deployed. Hub unchanged. Open: hub service mocks still use the old teal/Fraunces look; doctor portrait is an initials panel; forest #1F3D38 depth to confirm with Abhinav.
 - 21 Oct 2026: Abhinav approved the Lotus restyle. Newsreader + Inter Tight, forest #1F3D38 on paper #FAF8F4, hairline rules, is now the Lotus look. Use it as the reference for future client-site demos.
 - 21 Oct 2026: Abhinav asked for "a bit of colour" on Lotus after approving the restyle. Plan: add one warm secondary accent used sparingly (italic hero word, eyebrow labels, a few marks) and one tinted section band (soft sage or warm sand) so the page is not monochrome. Keep minimal: no return to pastel cards.
+
+## 2026-10-21 (Lotus colour pass)
+
+- New tokens in app/globals.css: `--color-lotus-terracotta` #A84F33, `--color-lotus-sage` #E6EDE8, `--color-lotus-sage-rule` #CFDAD3. Hub tokens untouched.
+- Terracotta, not the brief's #C2603F: that measures 3.93:1 on paper, under AA for the 14px eyebrows. #A84F33 measures 5.17 on paper, 5.48 on white, 4.61 on sage.
+- Terracotta is used for: the hero italic "every stage of life.", every Eyebrow label (all pages, including "Clinic staff"), a 32px terracotta rule before the hero eyebrow only, the 01 to 04 numbers in the "Why Lotus" rows, and the dashboard Live dot. Never on buttons. There is no "Free" tag on the Lotus site, so none was coloured.
+- Sage chosen over sand: sand #F1E9DC sat too close to paper. Sage pairs with forest and lets terracotta read warm.
+- Sage is a full-bleed band behind two sections: the home "Patient stories" section and the final "Book your visit today" CTA (home and services pages). No card inside. The band replaces the section's top hairline. The section after the testimonials band ("Visit us") drops its top rule. The footer drops its top rule when the page ends on a band (`data-band-end`).
+- Text links on the band use the sage rule for their resting underline (`in-[[data-band]]` variant in ui.ts).
+- Doctor portrait panel is sage instead of stone, initials stay forest. Home stat numbers (12+, 8,000+, 4.9) are forest instead of text black. Stone stays for the map backdrop and disabled buttons.
+- tests/contrast.test.ts: 9 new pairs (terracotta on paper, white, sage; text, grey, forest on sage; non-text forest on sage, terracotta dot on paper and white). 154 tests pass.
