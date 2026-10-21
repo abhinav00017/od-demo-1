@@ -60,3 +60,4 @@ Append only. Newest at the bottom.
 - The footer has a small "Clinic login" link to the dashboard. The dashboard is not in the main nav.
 - Postgres store is tested only with a mocked driver. It has not run against a real database. No DATABASE_URL yet: Neon marketplace terms are pending with Abhinav.
 - Without DATABASE_URL on Vercel, bookings live in one function instance's memory. They vanish on cold starts and may not show across instances. Fine for a quick look, not for a real demo.
+- 21 Oct 2026: level 2 verified by Abhinav's session (lint, typecheck, 128 tests, build; test booking posted and seen live on the dashboard; map iframe present on contact) and deployed. Live dashboard shows "Dashboard not configured" until ADMIN_PASSWORD is set on Vercel. Bookings live in memory until DATABASE_URL is set; Neon terms still pending Abhinav.
