@@ -1,8 +1,9 @@
+import { Phone } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DemoPage } from "@/lib/demos";
 import { LotusMark } from "./Art";
-import { clinic } from "./data";
+import { clinic, clinicWhatsAppHref } from "./data";
 import { MobileMenu } from "./MobileMenu";
 
 export type Nav = { base: string; href: (page: DemoPage) => string; page: DemoPage; hubHref: string };
@@ -45,6 +46,23 @@ export function Eyebrow({ children }: { children: ReactNode }) {
   return <p className="text-sm font-semibold tracking-wide text-lotus-teal uppercase">{children}</p>;
 }
 
+/** The clinic number in the header. A direct WhatsApp chat, since that is how patients reach the clinic. */
+export function WhatsAppNumber({ className = "" }: { className?: string }) {
+  return (
+    <a
+      href={clinicWhatsAppHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`items-center gap-2 rounded-full px-1 py-2 text-[15px] font-semibold whitespace-nowrap text-lotus-ink tabular-nums transition hover:text-lotus-teal ${className}`}
+    >
+      <span aria-hidden className="flex size-8 items-center justify-center rounded-full bg-lotus-mint text-lotus-teal">
+        <Phone className="size-4" />
+      </span>
+      <span className="sr-only">WhatsApp</span> {clinic.phone}
+    </a>
+  );
+}
+
 /** The demo bar: tells the viewer this is an onlydevs demo and takes them back to the hub. */
 function DemoBar({ hubHref }: { hubHref: string }) {
   return (
@@ -80,24 +98,29 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
               <span className="hidden text-xs text-lotus-body sm:block">{clinic.doctor.name} · {clinic.city}</span>
             </span>
           </Link>
-          <nav aria-label="Clinic" className="hidden items-center gap-8 md:flex">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.current ? "page" : undefined}
-                className={`text-[15px] font-semibold transition ${
-                  item.current ? "text-lotus-teal underline decoration-2 underline-offset-8" : "text-lotus-ink hover:text-lotus-teal"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <LotusButton href={book.href} className="px-5 py-2.5 text-[15px]">
-              {book.label}
-            </LotusButton>
-          </nav>
-          <MobileMenu items={items} book={book} />
+          <div className="flex items-center gap-3 lg:gap-7">
+            <nav aria-label="Clinic" className="hidden items-center gap-7 lg:flex">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={item.current ? "page" : undefined}
+                  className={`text-[15px] font-semibold transition ${
+                    item.current ? "text-lotus-teal underline decoration-2 underline-offset-8" : "text-lotus-ink hover:text-lotus-teal"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <WhatsAppNumber className="hidden sm:inline-flex" />
+            <div className="hidden lg:block">
+              <LotusButton href={book.href} className="px-5 py-2.5 text-[15px]">
+                {book.label}
+              </LotusButton>
+            </div>
+            <MobileMenu items={items} book={book} phone={{ href: clinicWhatsAppHref, label: clinic.phone }} />
+          </div>
         </LotusContainer>
       </header>
 

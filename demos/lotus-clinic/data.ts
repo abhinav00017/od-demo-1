@@ -121,4 +121,7 @@ export const clinic = {
   },
 } as const;
 
+/** The clinic number as a direct WhatsApp chat link: wa.me wants the digits only, country code first. */
+export const clinicWhatsAppHref = `https://wa.me/${clinic.phone.replace(/\D/g, "")}`;
+
 export type VisitTypeId = (typeof clinic.booking.visitTypes)[number]["id"];

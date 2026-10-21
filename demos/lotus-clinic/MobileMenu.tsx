@@ -1,14 +1,24 @@
 "use client";
 
+import { Phone } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 type Item = { href: string; label: string; current: boolean };
 
-export function MobileMenu({ items, book }: { items: Item[]; book: { href: string; label: string } }) {
+export function MobileMenu({
+  items,
+  book,
+  phone,
+}: {
+  items: Item[];
+  book: { href: string; label: string };
+  /** The clinic number as a WhatsApp link, so phones get it in the menu. */
+  phone: { href: string; label: string };
+}) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
         aria-expanded={open}
@@ -41,6 +51,16 @@ export function MobileMenu({ items, book }: { items: Item[]; book: { href: strin
           >
             {book.label}
           </Link>
+          <a
+            href={phone.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="mt-3 flex items-center justify-center gap-2 rounded-full py-3 font-semibold text-lotus-teal tabular-nums ring-2 ring-lotus-teal"
+          >
+            <Phone aria-hidden className="size-5" />
+            <span className="sr-only">WhatsApp</span> {phone.label}
+          </a>
         </nav>
       ) : null}
     </div>
