@@ -16,6 +16,9 @@ export type FieldErrors = Partial<Record<FieldName, string>>;
 /** Booking opens this many days ahead. */
 export const MAX_DAYS_AHEAD = 60;
 
+/** Longest name the form and the API accept. */
+export const MAX_NAME = 80;
+
 /** Parses "YYYY-MM-DD" as a local calendar date, not UTC, so the day never shifts. */
 export function parseDay(value: string): Date | undefined {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -38,6 +41,7 @@ export function formatDay(d: Date) {
 export function validateBooking(input: BookingInput, today: Date): FieldErrors {
   const errors: FieldErrors = {};
   if (input.name.trim().length < 2) errors.name = "Enter your name.";
+  else if (input.name.trim().length > MAX_NAME) errors.name = `Enter a name of ${MAX_NAME} characters or fewer.`;
   if (!input.phone.trim()) errors.phone = "Enter your mobile number.";
   else if (!normalisePhone(input.phone)) errors.phone = "Enter a 10-digit mobile number, like 98765 43210.";
 
@@ -58,6 +62,32 @@ export function validateBooking(input: BookingInput, today: Date): FieldErrors {
   if (!(clinic.booking.reasons as readonly string[]).includes(input.reason)) errors.reason = "Choose a reason for the visit.";
   if (!input.consent) errors.consent = "Tick this box so we can confirm on WhatsApp.";
   return errors;
+}
+
+/**
+ * Turns an untrusted JSON body into a BookingInput. Wrong types become empty values,
+ * so validateBooking reports them as missing. The server runs the same checks as the form.
+ */
+export function parseBookingBody(body: unknown): BookingInput {
+  const b = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const text = (key: string) => (typeof b[key] === "string" ? (b[key] as string) : "");
+  return {
+    name: text("name"),
+    phone: text("phone"),
+    visitType: text("visitType"),
+    date: text("date"),
+    slot: text("slot"),
+    reason: text("reason"),
+    consent: b.consent === true,
+  };
+}
+
+/** The hidden field bots fill in and people never see. A request with it set is dropped. */
+export const HONEYPOT_FIELD = "lotus_hp";
+
+/** Short booking reference shown to the patient, from the first 8 characters of the id. */
+export function shortBookingId(id: string) {
+  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
 /** The WhatsApp message the clinic would send. The demo only shows it; nothing is sent. */
