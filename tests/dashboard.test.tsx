@@ -114,7 +114,7 @@ describe("WhatsApp status line", () => {
     expect(screen.getByText("WhatsApp: delivered 8:51 pm")).toBeTruthy();
     const notes = screen.getAllByText("via Twilio");
     expect(notes).toHaveLength(1);
-    expect(notes[0].className).toContain("text-lotus-grey");
+    expect(notes[0].className).toContain("text-lotus-body");
     expect(notes[0].closest("li")?.textContent).toContain("Twilio Tanvi");
   });
 });

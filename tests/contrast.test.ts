@@ -26,17 +26,7 @@ const NORMAL: [string, string][] = [
   ["muted", "surface"], ["muted", "canvas"], ["muted", "canvas-deep"], ["muted", "chip"],
   ["brand", "surface"], ["brand", "canvas"], ["brand", "brand-soft"],
   ["white", "brand"], ["white", "brand-strong"], ["white", "ink"],
-  // Lotus site
-  ["lotus-text", "lotus-paper"], ["lotus-text", "white"], ["lotus-text", "lotus-stone"],
-  ["lotus-grey", "lotus-paper"], ["lotus-grey", "white"], ["lotus-grey", "lotus-stone"],
-  ["lotus-forest", "lotus-paper"], ["lotus-forest", "white"], ["lotus-forest", "lotus-stone"],
-  ["white", "lotus-forest"], ["white", "lotus-forest-deep"],
-  ["lotus-error", "white"], ["lotus-error", "lotus-paper"],
-  // Lotus colour pass: terracotta labels (eyebrows, hero italic, 01-04 numbers) on paper, white panels and the sage band
-  ["lotus-terracotta", "lotus-paper"], ["lotus-terracotta", "white"], ["lotus-terracotta", "lotus-sage"],
-  // Text, secondary text and links on the sage band (testimonials, final CTA); forest initials on the sage portrait panel
-  ["lotus-text", "lotus-sage"], ["lotus-grey", "lotus-sage"], ["lotus-forest", "lotus-sage"],
-  // Hub mocks of Lotus services
+  // Lotus demo (site, booking form, dashboard) and the hub mocks of Lotus services
   ["lotus-ink", "lotus-cream"], ["lotus-ink", "lotus-sand"], ["lotus-ink", "lotus-mint"], ["lotus-ink", "white"],
   ["lotus-body", "lotus-cream"], ["lotus-body", "lotus-sand"], ["lotus-body", "lotus-mint"], ["lotus-body", "white"],
   ["lotus-teal", "white"], ["lotus-teal", "lotus-cream"], ["lotus-teal", "lotus-sand"], ["lotus-teal", "lotus-mint"],
@@ -59,17 +49,16 @@ const LARGE: [string, string][] = [
   ["tagline", "canvas-deep"],
 ];
 
-// Non-text (WCAG 1.4.11): field borders and focus rings must reach 3:1 against what is next to them.
+// Non-text (WCAG 1.4.11): field edges and focus rings must reach 3:1 against what is next to them.
 const NON_TEXT: [string, string][] = [
+  // Lotus form fields sit on white cards; the page is cream
   ["lotus-edge", "white"],
-  ["lotus-edge", "lotus-paper"],
-  ["lotus-forest", "lotus-paper"],
-  ["lotus-forest", "white"],
-  // Focus ring and the forest button's edge on the sage band
-  ["lotus-forest", "lotus-sage"],
-  // Dashboard live dot (terracotta) on paper and on white
-  ["lotus-terracotta", "lotus-paper"],
-  ["lotus-terracotta", "white"],
+  ["lotus-edge", "lotus-cream"],
+  // Lotus focus ring (teal) on every Lotus surface
+  ["lotus-teal", "white"],
+  ["lotus-teal", "lotus-cream"],
+  ["lotus-teal", "lotus-sand"],
+  ["lotus-teal", "lotus-mint"],
 ];
 
 describe("WCAG AA contrast", () => {

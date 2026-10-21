@@ -23,26 +23,7 @@
   --color-line: #dbe5e7;
   --color-chip: #e6eef0;
 
-  /* Lotus Women's Clinic site (fictional client): one deep forest accent on warm off-white, a little terracotta and sage. */
-  --color-lotus-paper: #faf8f4;
-  --color-lotus-stone: #efebe4;
-  --color-lotus-text: #1b1c1a;
-  --color-lotus-grey: #5f5b54;
-  --color-lotus-forest: #1f3d38;
-  --color-lotus-forest-deep: #152b27;
-  /* Hairline rules. Decoration only, never the only edge of a control. */
-  --color-lotus-rule: #e4dfd6;
-  /* Form field borders: 3:1 on white and paper (WCAG 1.4.11). */
-  --color-lotus-edge: #8f897f;
-  --color-lotus-error: #a3392b;
-  /* Colour pass: one warm secondary accent, used sparingly (hero italic, eyebrows, numbers, live dot). Never on buttons. */
-  --color-lotus-terracotta: #a84f33;
-  /* The one tinted band (testimonials, final CTA) and the portrait panel. */
-  --color-lotus-sage: #e6ede8;
-  /* Hairline rules on the sage band. Decoration only. */
-  --color-lotus-sage-rule: #cfdad3;
-
-  /* Lotus service mocks on the hub preview pages (components/mocks): deep teal + soft sand */
+  /* Lotus Women's Clinic (fictional client site): deep teal + soft sand */
   --color-lotus-teal: #0e5e5a;
   --color-lotus-teal-deep: #0a4542;
   --color-lotus-mint: #dcefeb;
@@ -51,6 +32,8 @@
   --color-lotus-ink: #1d2b2a;
   --color-lotus-body: #485553;
   --color-lotus-line: #e5d9c6;
+  /* Form field edges: 3:1 on white and cream (WCAG 1.4.11). The line colour is too light to be a control's only edge. */
+  --color-lotus-edge: #948670;
   --color-lotus-rose: #b5485d;
 
   /* Mock UI: WhatsApp */
@@ -85,11 +68,7 @@
 
 @theme inline {
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-  /* Hub mocks of Lotus services only. */
   --font-lotus: var(--font-fraunces), ui-serif, Georgia, serif;
-  /* Lotus site. The variables are set on the site wrapper, not on <html>, so hub pages never use them. */
-  --font-lotus-serif: var(--font-newsreader), ui-serif, Georgia, serif;
-  --font-lotus-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -127,8 +106,6 @@
   }
 
   [data-site="lotus"] :focus-visible {
-    outline: 2px solid var(--color-lotus-forest);
-    outline-offset: 3px;
-    border-radius: 4px;
+    outline-color: var(--color-lotus-teal);
   }
 }

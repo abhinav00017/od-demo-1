@@ -1,20 +1,17 @@
 "use client";
 
-import { Eye, EyeOff, LogOut } from "lucide-react";
+import { CalendarX2, Check, Eye, EyeOff, LogOut, X } from "lucide-react";
 import { useState } from "react";
 import type { BookingStatus, DashboardBooking, WhatsAppSummary } from "@/lib/bookings/types";
 import type { QrPath } from "@/lib/qr";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { dashboardCounts, dayLabel, formatPhone, groupByDay, maskPhone } from "./dashboardData";
-import { buttonClass, buttonSmallClass, panelClass } from "./ui";
 
 const STATUS_STYLE: Record<BookingStatus, { label: string; className: string }> = {
-  new: { label: "New", className: "border-lotus-forest bg-lotus-forest text-white" },
-  confirmed: { label: "Confirmed", className: "border-lotus-forest text-lotus-forest" },
-  cancelled: { label: "Cancelled", className: "border-lotus-rule text-lotus-grey" },
+  new: { label: "New", className: "bg-lotus-sand text-lotus-ink" },
+  confirmed: { label: "Confirmed", className: "bg-lotus-mint text-lotus-teal-deep" },
+  cancelled: { label: "Cancelled", className: "bg-white text-lotus-body ring-1 ring-lotus-line" },
 };
-
-const pill = "rounded-md border px-2 py-0.5 text-xs font-medium";
 
 export type DashboardProps = {
   bookings: DashboardBooking[];
@@ -40,7 +37,7 @@ function Phone({ phone, name }: { phone: string; name: string }) {
       type="button"
       onClick={() => setShown((s) => !s)}
       aria-label={shown ? `Hide ${name}'s number` : `Show ${name}'s full number`}
-      className="mt-1 inline-flex items-center gap-1.5 rounded py-1 font-mono text-sm text-lotus-text tabular-nums hover:text-lotus-forest"
+      className="inline-flex items-center gap-1.5 rounded-lg py-1 font-mono text-sm text-lotus-ink tabular-nums hover:text-lotus-teal"
     >
       {shown ? formatPhone(phone) : maskPhone(phone)}
       {shown ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
@@ -83,11 +80,11 @@ function WhatsAppStatus({ w }: { w: WhatsAppSummary }) {
   const hint = w.status === "failed" ? splitHint(w.error).hint : null;
   return (
     <>
-      <p suppressHydrationWarning className={`mt-1 text-sm ${w.status === "failed" ? "text-lotus-error" : "text-lotus-grey"}`} title={w.error ?? undefined}>
+      <p suppressHydrationWarning className={`mt-1 text-sm ${w.status === "failed" ? "font-semibold text-lotus-rose" : "text-lotus-body"}`} title={w.error ?? undefined}>
         {whatsappLine(w)}
-        {note ? <span className="ml-2 text-xs text-lotus-grey">{note}</span> : null}
+        {note ? <span className="ml-2 text-xs font-normal text-lotus-body">{note}</span> : null}
       </p>
-      {hint ? <p className="mt-0.5 text-xs text-lotus-grey">Hint: {hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-xs text-lotus-body">Hint: {hint}</p> : null}
     </>
   );
 }
@@ -96,29 +93,31 @@ function WhatsAppStatus({ w }: { w: WhatsAppSummary }) {
 export function DeskQr({ optIn }: { optIn: DeskOptIn }) {
   const { qr } = optIn;
   return (
-    <section aria-labelledby="whatsapp-optin" className={`mt-8 grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-8 sm:p-6 ${panelClass}`}>
-      <svg
-        role="img"
-        aria-label="QR code that opens WhatsApp with the join message"
-        viewBox={`0 0 ${qr.size} ${qr.size}`}
-        shapeRendering="crispEdges"
-        className="size-40 bg-white text-lotus-text sm:size-36"
-      >
-        <rect width={qr.size} height={qr.size} fill="#fff" />
-        <path d={qr.d} fill="currentColor" />
-      </svg>
+    <section aria-labelledby="whatsapp-optin" className="mt-6 grid gap-6 rounded-3xl bg-white p-6 ring-1 ring-lotus-line sm:grid-cols-[auto_1fr] sm:items-center sm:gap-8 sm:p-7">
+      <div className="justify-self-start rounded-2xl bg-white p-2 ring-1 ring-lotus-line">
+        <svg
+          role="img"
+          aria-label="QR code that opens WhatsApp with the join message"
+          viewBox={`0 0 ${qr.size} ${qr.size}`}
+          shapeRendering="crispEdges"
+          className="size-40 bg-white text-lotus-ink sm:size-36"
+        >
+          <rect width={qr.size} height={qr.size} fill="#fff" />
+          <path d={qr.d} fill="currentColor" />
+        </svg>
+      </div>
       <div className="min-w-0">
-        <h2 id="whatsapp-optin" className="font-lotus-serif text-[1.65rem] leading-tight tracking-[-0.01em] text-lotus-text">
+        <h2 id="whatsapp-optin" className="font-lotus text-2xl font-semibold text-lotus-ink">
           WhatsApp opt-in
         </h2>
         <p className="mt-2">Patients scan this at the desk to get updates on WhatsApp.</p>
         <p className="mt-4 text-sm">
-          They send <code className="rounded bg-lotus-stone px-1.5 py-0.5 font-mono text-[13px] text-lotus-text">join {optIn.keyword}</code> to{" "}
-          <span className="whitespace-nowrap tabular-nums text-lotus-text">{optIn.displayNumber}</span>.
+          They send <code className="rounded-lg bg-lotus-sand px-2 py-0.5 font-mono text-[13px] font-semibold text-lotus-ink">join {optIn.keyword}</code> to{" "}
+          <span className="font-semibold whitespace-nowrap text-lotus-ink tabular-nums">{optIn.displayNumber}</span>.
         </p>
         <p className="mt-2 text-sm">
           Link:{" "}
-          <a href={optIn.href} target="_blank" rel="noopener" className="font-mono text-[13px] break-all text-lotus-forest underline decoration-lotus-rule underline-offset-4 hover:decoration-lotus-forest">
+          <a href={optIn.href} target="_blank" rel="noopener" className="font-mono text-[13px] font-semibold break-all text-lotus-teal underline-offset-4 hover:underline">
             {optIn.href}
           </a>
         </p>
@@ -131,29 +130,32 @@ function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStat
   const [part, time] = b.slot.split(", ");
   const status = STATUS_STYLE[b.status];
   return (
-    <li className="grid gap-3 p-5 sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6 sm:px-6">
+    <li className="grid gap-3 rounded-2xl bg-white p-5 ring-1 ring-lotus-line sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6">
       <div>
-        <p className="font-medium text-lotus-text">{part}</p>
-        {time ? <p className="text-sm tabular-nums">{time}</p> : null}
+        <p className="font-semibold text-lotus-ink">{part}</p>
+        {time ? <p className="text-sm">{time}</p> : null}
       </div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className={`font-medium text-lotus-text ${b.status === "cancelled" ? "line-through" : ""}`}>{b.name}</p>
-          <span className={`${pill} border-lotus-edge text-lotus-text`}>{b.visitType === "online" ? "Online" : "Clinic"}</span>
-          <span className={`${pill} ${status.className}`}>{status.label}</span>
+          <p className={`font-semibold text-lotus-ink ${b.status === "cancelled" ? "line-through" : ""}`}>{b.name}</p>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.visitType === "online" ? "bg-white text-lotus-rose ring-1 ring-lotus-rose" : "bg-white text-lotus-teal ring-1 ring-lotus-teal"}`}>
+            {b.visitType === "online" ? "Online" : "Clinic"}
+          </span>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
         </div>
-        <p className="mt-1 text-[15px]">{b.reason}</p>
+        <p className="mt-1 text-sm">{b.reason}</p>
         <Phone phone={b.phone} name={b.name} />
         {b.whatsapp ? <WhatsAppStatus w={b.whatsapp} /> : null}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex gap-2">
         <button
           type="button"
           disabled={busy || b.status === "confirmed"}
           onClick={() => onStatus(b.id, "confirmed")}
           aria-label={`Confirm ${b.name}`}
-          className={buttonSmallClass}
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-lotus-teal px-4 text-sm font-semibold text-white hover:bg-lotus-teal-deep disabled:cursor-not-allowed disabled:bg-lotus-mint disabled:text-lotus-teal-deep"
         >
+          <Check aria-hidden className="size-4" />
           Confirm
         </button>
         <button
@@ -161,8 +163,9 @@ function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStat
           disabled={busy || b.status === "cancelled"}
           onClick={() => onStatus(b.id, "cancelled")}
           aria-label={`Cancel ${b.name}`}
-          className="inline-flex min-h-10 items-center rounded-lg px-3 text-[15px] font-medium text-lotus-error underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-lotus-grey disabled:no-underline"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-lotus-rose ring-1 ring-lotus-line hover:ring-lotus-rose disabled:cursor-not-allowed disabled:text-lotus-body"
         >
+          <X aria-hidden className="size-4" />
           Cancel
         </button>
       </div>
@@ -173,8 +176,11 @@ function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStat
 export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }) {
   return (
     <p className="flex items-center gap-2 text-sm" aria-live="polite">
-      <span aria-hidden className={`size-2 rounded-full ${live ? "bg-lotus-terracotta" : "bg-lotus-edge"}`} />
-      <span className="font-medium text-lotus-text">{live ? "Live" : "Reconnecting"}</span>
+      <span aria-hidden className="relative flex size-2.5">
+        {live ? <span className="absolute inline-flex size-full animate-ping rounded-full bg-wa-green opacity-60" /> : null}
+        <span className={`relative inline-flex size-2.5 rounded-full ${live ? "bg-wa-green" : "bg-lotus-line"}`} />
+      </span>
+      <span className="font-semibold text-lotus-ink">{live ? "Live" : "Reconnecting"}</span>
       {updatedAt ? (
         <span suppressHydrationWarning>
           · updated {updatedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
@@ -197,17 +203,17 @@ export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, b
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <LiveDot live={live} updatedAt={updatedAt} />
-        <button type="button" onClick={onLogout} className="inline-flex min-h-10 items-center gap-2 text-[15px] font-medium text-lotus-forest underline-offset-4 hover:underline">
+        <button type="button" onClick={onLogout} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-lotus-teal ring-1 ring-lotus-line hover:ring-lotus-teal">
           <LogOut aria-hidden className="size-4" />
           Log out
         </button>
       </div>
 
-      <dl className="mt-8 grid grid-cols-3 divide-x divide-lotus-rule border-y border-lotus-rule">
+      <dl className="mt-6 grid grid-cols-3 gap-3 sm:gap-5">
         {tiles.map((t) => (
-          <div key={t.label} className="py-5 pl-4 first:pl-0 sm:py-7 sm:pl-8">
+          <div key={t.label} className="rounded-2xl bg-white p-4 ring-1 ring-lotus-line sm:p-6">
             <dt className="text-sm">{t.label}</dt>
-            <dd className="mt-2 font-lotus-serif text-4xl leading-none tracking-[-0.02em] text-lotus-text tabular-nums sm:text-5xl">{t.value}</dd>
+            <dd className="mt-1 font-lotus text-3xl font-semibold text-lotus-ink sm:text-4xl">{t.value}</dd>
           </div>
         ))}
       </dl>
@@ -215,30 +221,33 @@ export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, b
       {optIn ? <DeskQr optIn={optIn} /> : null}
 
       {storage === "memory" ? (
-        <p className="mt-6 border-l-2 border-lotus-forest py-0.5 pl-4 text-sm text-lotus-text">
+        <p className="mt-4 rounded-2xl bg-lotus-sand p-4 text-sm text-lotus-ink">
           Test storage: no database is connected, so bookings live in server memory and vanish when it restarts.
         </p>
       ) : null}
 
       {groups.length === 0 ? (
-        <div className={`mt-10 px-6 py-16 text-center ${panelClass}`}>
-          <h2 className="font-lotus-serif text-3xl tracking-[-0.02em] text-lotus-text">No bookings yet</h2>
+        <div className="mt-8 rounded-3xl bg-white px-6 py-14 text-center ring-1 ring-lotus-line">
+          <span aria-hidden className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-lotus-mint text-lotus-teal">
+            <CalendarX2 className="size-7" />
+          </span>
+          <h2 className="mt-5 font-lotus text-2xl font-semibold text-lotus-ink">No bookings yet</h2>
           <p className="mx-auto mt-2 max-w-md">New requests from the booking page show up here within 5 seconds. Try one from your phone.</p>
-          <a href={bookHref} target="_blank" rel="noopener" className={`mt-8 ${buttonClass}`}>
+          <a href={bookHref} target="_blank" rel="noopener" className="mt-6 inline-flex rounded-full bg-lotus-teal px-6 py-3 font-semibold text-white hover:bg-lotus-teal-deep">
             Open the booking page
           </a>
         </div>
       ) : (
-        <div className="mt-12 space-y-12">
+        <div className="mt-8 space-y-10">
           {groups.map((g) => (
             <section key={g.day} aria-labelledby={`day-${g.day}`}>
-              <h2 id={`day-${g.day}`} className="flex items-baseline gap-3 font-lotus-serif text-[1.75rem] tracking-[-0.01em] text-lotus-text">
+              <h2 id={`day-${g.day}`} className="flex items-baseline gap-3 font-lotus text-2xl font-semibold text-lotus-ink">
                 {dayLabel(g.day, today)}
-                <span className="font-lotus-sans text-sm text-lotus-grey">
+                <span className="font-sans text-sm font-normal text-lotus-body">
                   {g.items.length} {g.items.length === 1 ? "booking" : "bookings"}
                 </span>
               </h2>
-              <ul className={`mt-4 divide-y divide-lotus-rule ${panelClass}`}>
+              <ul className="mt-4 space-y-3">
                 {g.items.map((b) => (
                   <Row key={b.id} b={b} busy={busyId === b.id} onStatus={onStatus} />
                 ))}
