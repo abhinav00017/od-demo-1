@@ -39,41 +39,47 @@ export const clinic = {
   stats: [
     { value: "12+", label: "years of experience" },
     { value: "8,000+", label: "women cared for" },
-    { value: "4.9", label: "Google rating, 312 reviews" },
+    { value: "4.9", label: "Google rating", reviews: "312 reviews" },
   ],
   services: [
     {
       slug: "pregnancy-care",
+      icon: "baby",
       name: "Pregnancy care",
       short: "Care from the first test to delivery, with every visit and scan planned.",
       details: ["Visit and scan plan for each month", "Diet and exercise advice", "Normal and caesarean delivery", "Care after delivery"],
     },
     {
       slug: "gynecology",
+      icon: "stethoscope",
       name: "Gynecology check-ups",
       short: "Period problems, infections, pain and routine check-ups.",
       details: ["Irregular or painful periods", "White discharge and infections", "Pelvic pain", "Pap smear and breast check"],
     },
     {
       slug: "fertility",
+      icon: "heart-pulse",
       name: "Fertility advice",
       short: "Clear tests and a step-by-step plan for couples trying to conceive.",
       details: ["Tests for both partners", "Ovulation tracking", "Lifestyle advice", "Referral for IVF when needed"],
     },
     {
       slug: "pcos",
+      icon: "activity",
       name: "PCOS care",
       short: "Long-term care for PCOS: periods, weight, skin and fertility.",
       details: ["Diagnosis and blood tests", "Diet and activity plan", "Medicine when needed", "Regular follow-ups"],
     },
     {
       slug: "menopause",
+      icon: "sun",
       name: "Menopause care",
       short: "Relief for hot flushes, sleep and mood changes, and bone health.",
       details: ["Symptom review", "Bone and heart health checks", "Treatment options explained", "Follow-up plan"],
     },
     {
       slug: "online",
+      icon: "video",
       name: "Online consultation",
       short: "See Dr. Rao by video or phone from home, ideal for follow-ups.",
       details: ["Video or phone call", "Pay by UPI before the call", "Prescription on WhatsApp", "Sundays and evenings"],
@@ -119,5 +125,8 @@ export const homeServiceSlugs = ["pregnancy-care", "gynecology", "fertility", "p
 
 /** The clinic number as a direct WhatsApp chat link: wa.me wants the digits only, country code first. */
 export const clinicWhatsAppHref = `https://wa.me/${clinic.phone.replace(/\D/g, "")}`;
+
+/** The line icon each service card shows. Names match lucide-react icons, mapped in ServiceIcon.tsx. */
+export type ServiceIconName = (typeof clinic.services)[number]["icon"];
 
 export type VisitTypeId = (typeof clinic.booking.visitTypes)[number]["id"];

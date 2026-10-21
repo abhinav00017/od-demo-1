@@ -4,18 +4,31 @@ import { Suspense, type ReactNode } from "react";
 import { qrPath } from "@/lib/qr";
 import { whatsappOptIn } from "@/lib/whatsapp/optin";
 import { AdminApp } from "./AdminApp";
-import { DoctorPortrait } from "./Art";
+import { DoctorIllustration, GoogleG, LotusLineMark, Stars } from "./Art";
 import { BookingForm, BookingFormFromUrl } from "./BookingForm";
 import { VisitBlock } from "./ClinicMap";
 import { clinic, homeServiceSlugs } from "./data";
 import { LotusButton, LotusContainer, type Nav } from "./LotusSite";
+import { ServiceIcon } from "./ServiceIcon";
 import { ui } from "./ui";
 
-/** The faint teal glow behind the hero. One per page at most. */
-const GLOW = {
+/** The hero backdrop: the 4% teal tint, full-bleed, with one faint teal glow on top. One per page at most. */
+const HERO_BACKDROP = {
+  backgroundColor: "var(--color-lotus-tint)",
   backgroundImage:
     "radial-gradient(60% 70% at 78% 20%, color-mix(in srgb, var(--color-lotus-accent) 10%, transparent), transparent 70%)",
 };
+
+const PORTRAIT_LABEL = `Illustration of ${clinic.doctor.name}, a placeholder until the clinic's own photo`;
+
+/** "Sravani K." becomes "SK". */
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((w) => w.charAt(0))
+    .join("")
+    .toUpperCase();
+}
 
 /** "Pregnancy care" becomes "pregnancy care"; "PCOS care" stays as it is. */
 function lowerFirst(name: string) {
@@ -26,7 +39,7 @@ function PageHead({ title, intro, children }: { title: string; intro: string; ch
   return (
     <section className="border-b border-lotus-hairline">
       <LotusContainer className="py-10 sm:py-12">
-        <h1 className="max-w-3xl text-[2rem] leading-tight font-bold tracking-tight text-lotus-text sm:text-5xl">{title}</h1>
+        <h1 className={`max-w-3xl text-[2rem] leading-tight sm:text-5xl ${ui.h1}`}>{title}</h1>
         <p className="mt-3 max-w-2xl text-lg">{intro}</p>
         {children}
       </LotusContainer>
@@ -34,11 +47,13 @@ function PageHead({ title, intro, children }: { title: string; intro: string; ch
   );
 }
 
+/** A home section title, led by the thin lotus line-mark. */
 function SectionTitle({ id, title, line, link }: { id?: string; title: string; line?: string; link?: { href: string; label: string } }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
       <div className="max-w-2xl">
-        <h2 id={id} className={ui.h2}>
+        <h2 id={id} className={`flex items-center gap-2.5 ${ui.h2}`}>
+          <LotusLineMark className="size-5 shrink-0" />
           {title}
         </h2>
         {line ? <p className="mt-2">{line}</p> : null}
@@ -53,29 +68,55 @@ function SectionTitle({ id, title, line, link }: { id?: string; title: string; l
   );
 }
 
-/** The portrait with name and credentials. The hero's right side, and the About page's left. */
-function DoctorCard({ nav, more = false }: { nav: Nav; more?: boolean }) {
+/** Name, credentials and the link to About. Shared by the hero and About, so the name renders once. */
+function DoctorText({ nav, more }: { nav: Nav; more: boolean }) {
   const { doctor } = clinic;
   return (
-    <div className={`flex items-center gap-4 p-4 sm:block sm:p-5 ${ui.card}`}>
-      {/* Phones get a small round portrait beside the name, so the hero stays short. */}
-      <span aria-hidden className="flex size-20 shrink-0 items-center justify-center rounded-full bg-lotus-accent/10 text-2xl font-semibold tracking-tight text-lotus-accent ring-1 ring-lotus-accent/15 sm:hidden">
-        {doctor.initials}
-      </span>
-      <DoctorPortrait initials={doctor.initials} className="hidden sm:flex" />
-      <div className="min-w-0 sm:px-1 sm:pt-4 sm:pb-1">
-        <h2 id="doctor-heading" className="text-xl font-semibold tracking-tight text-lotus-text">
-          {doctor.name}
-        </h2>
-        <p className="mt-1 text-sm">{doctor.degree}</p>
-        <p className="mt-0.5 text-sm">{doctor.role}</p>
-        {more ? (
-          <Link href={nav.href("about")} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-lotus-accent hover:text-lotus-accent-hover">
-            More about Dr. Rao
-            <ArrowRight aria-hidden strokeWidth={1.75} className="size-4" />
-          </Link>
-        ) : null}
+    <div className="min-w-0">
+      <h2 id="doctor-heading" className="text-xl font-semibold tracking-tight text-lotus-text">
+        {doctor.name}
+      </h2>
+      <p className="mt-1 text-sm">{doctor.degree}</p>
+      <p className="mt-0.5 text-sm">{doctor.role}</p>
+      {more ? (
+        <Link href={nav.href("about")} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-lotus-accent hover:text-lotus-accent-hover">
+          More about Dr. Rao
+          <ArrowRight aria-hidden strokeWidth={1.75} className="size-4" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/** A round illustrated avatar beside the doctor's name. */
+function DoctorAvatar({ className = "" }: { className?: string }) {
+  return <DoctorIllustration variant="avatar" label={PORTRAIT_LABEL} className={`size-20 shrink-0 rounded-full ring-1 ring-lotus-hairline ${className}`} />;
+}
+
+/**
+ * The hero's doctor: from 640px a large 4:5 portrait with the name card over its foot.
+ * Phones get a small round avatar beside the name instead, so the hero stays short.
+ */
+function HeroDoctor({ nav }: { nav: Nav }) {
+  return (
+    <div className="mx-auto w-full max-w-sm lg:mr-0 lg:max-w-[22rem]">
+      <div className="hidden aspect-[4/5] overflow-hidden rounded-3xl bg-lotus-avatar shadow-lotus ring-1 ring-lotus-hairline sm:block">
+        <DoctorIllustration label={PORTRAIT_LABEL} className="block size-full" />
       </div>
+      <div className={`relative flex items-center gap-4 p-4 sm:mx-4 sm:-mt-14 sm:block sm:p-5 ${ui.card}`}>
+        <DoctorAvatar className="sm:hidden" />
+        <DoctorText nav={nav} more />
+      </div>
+    </div>
+  );
+}
+
+/** About's doctor card: the round avatar beside the name. */
+function DoctorCard({ nav }: { nav: Nav }) {
+  return (
+    <div className={`flex items-center gap-4 p-5 ${ui.card}`}>
+      <DoctorAvatar />
+      <DoctorText nav={nav} more={false} />
     </div>
   );
 }
@@ -84,13 +125,11 @@ export function LotusHome({ nav }: { nav: Nav }) {
   const services = homeServiceSlugs.map((slug) => clinic.services.find((s) => s.slug === slug)!);
   return (
     <>
-      <section className="relative" style={GLOW}>
+      <section className="relative" style={HERO_BACKDROP}>
         <LotusContainer className="grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16 lg:py-16">
           <div>
-            <h1 className="text-[2.25rem] leading-[1.08] font-bold tracking-tight text-lotus-text sm:text-5xl lg:text-[3.5rem]">
-              Expert care for women, at every stage of life.
-            </h1>
-            <p className="mt-4 max-w-xl text-lg">Pregnancy, periods, fertility and menopause, with Dr. Ananya Rao in {clinic.city}.</p>
+            <h1 className={`text-[2.25rem] leading-[1.05] sm:text-5xl lg:text-[3.5rem] ${ui.h1}`}>Expert care for women, at every stage of life.</h1>
+            <p className="mt-4 max-w-[36ch] text-lg text-pretty">Pregnancy, periods, fertility and menopause, with {clinic.doctor.name.replace(/ /g, "\u00a0")} in {clinic.city}.</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <LotusButton href={nav.href("book")}>
                 <CalendarCheck aria-hidden strokeWidth={1.75} className="size-5" />
@@ -102,22 +141,38 @@ export function LotusHome({ nav }: { nav: Nav }) {
               </LotusButton>
             </div>
           </div>
-          <div className="mx-auto w-full max-w-sm lg:max-w-none">
-            <DoctorCard nav={nav} more />
-          </div>
+          <HeroDoctor nav={nav} />
         </LotusContainer>
       </section>
 
       <section aria-labelledby="numbers-heading">
-        <LotusContainer>
+        <LotusContainer className="pt-8 sm:pt-10">
           <h2 id="numbers-heading" className="sr-only">
             Lotus in numbers
           </h2>
           <dl className={`grid grid-cols-3 divide-x divide-lotus-hairline ${ui.card}`}>
             {clinic.stats.map((s) => (
-              <div key={s.label} className="flex flex-col-reverse justify-end px-2 py-4 text-center sm:px-6 sm:py-5">
-                <dt className="mt-1 text-xs sm:text-sm">{s.label}</dt>
-                <dd className="text-2xl font-bold tracking-tight text-lotus-text sm:text-4xl">{s.value}</dd>
+              <div key={s.label} className="flex flex-col-reverse justify-center px-2 py-4 text-center sm:px-6 sm:py-5">
+                <dt className="mt-1 text-xs sm:text-sm">
+                  {s.label}
+                  {"reviews" in s ? (
+                    <span className="block sm:inline">
+                      <span className="hidden sm:inline">, </span>
+                      {s.reviews}
+                    </span>
+                  ) : null}
+                </dt>
+                {"reviews" in s ? (
+                  <dd className="flex flex-col items-center justify-center gap-1 sm:flex-row sm:gap-2.5">
+                    <span className="flex items-center gap-1.5 text-2xl font-bold tracking-tight text-lotus-text sm:text-4xl">
+                      <GoogleG className="size-5 sm:size-7" />
+                      {s.value}
+                    </span>
+                    <Stars className="size-3 sm:size-4" />
+                  </dd>
+                ) : (
+                  <dd className="text-2xl font-bold tracking-tight text-lotus-text sm:text-4xl">{s.value}</dd>
+                )}
               </div>
             ))}
           </dl>
@@ -129,25 +184,35 @@ export function LotusHome({ nav }: { nav: Nav }) {
           <SectionTitle id="stories-heading" title="What patients say" />
           <ul className="mt-6 grid gap-4 sm:gap-6 md:grid-cols-2">
             {clinic.testimonials.map((t) => (
-              <li key={t.name} className={`flex flex-col p-6 sm:p-7 ${ui.card}`}>
+              <li key={t.name} className={`flex flex-col p-6 sm:p-7 ${ui.card} ${ui.lift}`}>
                 <Quote aria-hidden strokeWidth={1.5} className="size-6 text-lotus-accent" />
                 <blockquote className="mt-3 leading-relaxed text-lotus-text sm:text-lg">{t.quote}</blockquote>
-                <p className="mt-auto pt-5 text-sm">
-                  <span className="font-semibold text-lotus-text">{t.name}</span> · {t.area}
-                </p>
+                <div className="mt-auto flex items-center gap-3 pt-5 text-sm">
+                  <span
+                    aria-hidden
+                    data-avatar=""
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-lotus-avatar text-[13px] font-semibold text-lotus-accent-hover"
+                  >
+                    {initials(t.name)}
+                  </span>
+                  <p className="leading-snug">
+                    <span className="block font-semibold text-lotus-text">{t.name}</span>
+                    {t.area}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="why-heading">
-        <LotusContainer className={ui.sectionNext}>
+      <section aria-labelledby="why-heading" data-band="" className="bg-lotus-tint">
+        <LotusContainer className={ui.section}>
           <SectionTitle id="why-heading" title="Why women choose Lotus" />
           <ul className="mt-6 grid gap-4 sm:gap-6 md:grid-cols-3">
             {clinic.why.map((w) => (
-              <li key={w.title} className={`flex gap-4 p-5 sm:p-6 ${ui.card}`}>
-                <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-lotus-hairline">
+              <li key={w.title} className={`flex gap-4 p-5 sm:p-6 ${ui.card} ${ui.lift}`}>
+                <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lotus-avatar">
                   <Check strokeWidth={2} className="size-4 text-lotus-accent" />
                 </span>
                 <div>
@@ -161,19 +226,20 @@ export function LotusHome({ nav }: { nav: Nav }) {
       </section>
 
       <section aria-labelledby="services-heading">
-        <LotusContainer className={ui.sectionNext}>
+        <LotusContainer className={ui.section}>
           <SectionTitle id="services-heading" title="Services" link={{ href: nav.href("services"), label: "All services" }} />
           <ul className="mt-6 grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
             {services.map((s) => (
               <li key={s.slug}>
                 <Link
                   href={`${nav.href("services")}#${s.slug}`}
-                  className={`group block h-full p-5 transition hover:ring-lotus-accent sm:p-6 ${ui.card}`}
+                  className={`group block h-full p-5 hover:ring-lotus-accent sm:p-6 ${ui.card} ${ui.lift}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-lg font-semibold tracking-tight text-lotus-text">{s.name}</h3>
+                    <ServiceIcon name={s.icon} />
                     <ArrowRight aria-hidden strokeWidth={1.75} className="mt-1 size-4 shrink-0 text-lotus-accent transition group-hover:translate-x-0.5" />
                   </div>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight text-lotus-text">{s.name}</h3>
                   <p className="mt-1.5">{s.short}</p>
                 </Link>
               </li>
@@ -201,8 +267,11 @@ export function LotusServices({ nav }: { nav: Nav }) {
       <LotusContainer className={ui.section}>
         <ul className="grid gap-4 sm:gap-6 md:grid-cols-2">
           {clinic.services.map((s) => (
-            <li key={s.slug} id={s.slug} className={`flex scroll-mt-6 flex-col p-6 sm:p-7 ${ui.card}`}>
-              <h2 className="text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h2>
+            <li key={s.slug} id={s.slug} className={`flex scroll-mt-6 flex-col p-6 sm:p-7 ${ui.card} ${ui.lift}`}>
+              <div className="flex items-center gap-3.5">
+                <ServiceIcon name={s.icon} />
+                <h2 className="text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h2>
+              </div>
               <p className="mt-2">{s.short}</p>
               <ul className="mt-4 space-y-2">
                 {s.details.map((d) => (
