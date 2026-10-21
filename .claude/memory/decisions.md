@@ -166,3 +166,15 @@ Append only. Newest at the bottom.
 - New home order: header → Meet your doctor → numbers (years, women cared for, Google rating) as its own section → patient stories → Why Lotus → services → map and contact.
 - Header gets the clinic phone number as a direct WhatsApp link (wa.me) next to Book a visit.
 - Keep everything built since: map, level 2 bookings, Twilio WhatsApp, the opt-in button and QR. Only the look and the section order change.
+
+## 2026-10-21 (opt-in build)
+
+- `lib/whatsapp/optin.ts`: `whatsappOptIn(env)` returns `{ href, keyword, displayNumber }` or null. Null unless `providerName()` is twilio and TWILIO_WHATSAPP_FROM and TWILIO_JOIN_KEYWORD are set. So WHATSAPP_FAKE=1, Meta, or an unset keyword all hide the join step. href is `https://wa.me/<sender digits>?text=join%20<keyword>`, keyword URL-encoded. displayNumber: "+1 737 250 8034" for +1, "+91 98765 43210" for +91, else "+digits".
+- The Lotus book and admin pages read it in the server components (`LotusBook`, `LotusAdmin` in pages.tsx) and pass it down as a prop. No NEXT_PUBLIC_ vars. The pages are prerendered, so the link is baked in at build: a change to either var shows after the next deploy.
+- Booking success screen: after "Booking saved" and the booking id, a hairline-ruled block "Get updates on WhatsApp", one line, a forest "Open WhatsApp" button (target _blank, rel noopener, full width on phones), grey "You'll send a short message to <number>. That's it."
+- Dashboard: a "WhatsApp opt-in" panel under the counts with the QR, "Patients scan this at the desk to get updates on WhatsApp.", the join message in monospace, the sender, and the plain link.
+- QR: `qrcode-generator` 2.0.4 (no dependencies), drawn server-side into one SVG path (`lib/qr.ts`, error level M, 4-module quiet zone). The encoder is not in the browser bundle. Chrome's BarcodeDetector decoded the rendered QR to the exact href.
+- Twilio 21654 and 63016 errors now carry " (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)". The dashboard row splits that hint off and shows it on its own small grey line, so the 60-char cut no longer hides it. Older rows with the short hint split the same way.
+- The brief's dev gate said WHATSAPP_FAKE=1, but that makes the provider fake and hides the opt-in. The dev run used fake Twilio values with TWILIO_API_BASE=http://127.0.0.1:9 instead, so any send fails locally and nothing reaches Twilio.
+- Process note: the opt-in work was swept into commit f69c41d ("Record decision to restore the first Lotus look...") by a parallel session's commit while this build was still running, and that commit is on origin. The follow-up commit holds only the last small fixes and this entry.
+- 21 Oct 2026: verified locally (lint, typecheck, 256 tests, build; build with fake Twilio env bakes the link into book and admin HTML and no token or SID appears in .next; dev server with fake env: booking → button href correct at 375 and 1440, dashboard QR panel at 1440 and 375, no horizontal scroll at 375; confirm failed against 127.0.0.1:9 as intended). Not tested: scanning the QR with a phone, tapping the button on a phone, a real Twilio join.

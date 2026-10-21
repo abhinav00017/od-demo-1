@@ -56,7 +56,7 @@ export function WhatsAppJoin({ optIn }: { optIn: WhatsAppOptIn }) {
       <a href={optIn.href} target="_blank" rel="noopener" className={`mt-5 w-full sm:w-auto ${buttonClass}`}>
         Open WhatsApp
       </a>
-      <p className="mt-3 text-sm text-lotus-grey">You&rsquo;ll send a short message to {optIn.displayNumber}. That&rsquo;s it.</p>
+      <p className="mt-3 text-sm text-lotus-grey">You&rsquo;ll send a short message to <span className="whitespace-nowrap">{optIn.displayNumber}</span>. That&rsquo;s it.</p>
     </div>
   );
 }

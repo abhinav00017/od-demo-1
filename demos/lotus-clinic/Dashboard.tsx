@@ -114,7 +114,7 @@ export function DeskQr({ optIn }: { optIn: DeskOptIn }) {
         <p className="mt-2">Patients scan this at the desk to get updates on WhatsApp.</p>
         <p className="mt-4 text-sm">
           They send <code className="rounded bg-lotus-stone px-1.5 py-0.5 font-mono text-[13px] text-lotus-text">join {optIn.keyword}</code> to{" "}
-          <span className="tabular-nums text-lotus-text">{optIn.displayNumber}</span>.
+          <span className="whitespace-nowrap tabular-nums text-lotus-text">{optIn.displayNumber}</span>.
         </p>
         <p className="mt-2 text-sm">
           Link:{" "}

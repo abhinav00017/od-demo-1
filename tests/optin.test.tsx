@@ -83,7 +83,7 @@ describe("booking success screen", () => {
     expect(button.getAttribute("href")).toBe(HREF);
     expect(button.getAttribute("target")).toBe("_blank");
     expect(button.getAttribute("rel")).toBe("noopener");
-    expect(screen.getByText("You’ll send a short message to +1 737 250 8034. That’s it.")).toBeTruthy();
+    expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "You’ll send a short message to +1 737 250 8034. That’s it.")).toBeTruthy();
   });
 
   it("shows no join step when opt-in is not configured", async () => {
