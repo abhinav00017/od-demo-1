@@ -12,3 +12,6 @@ metadata:
 - Dev: `npm run dev` on port 3000. Shares the port with onlydevs_prod_1; only one can run at a time.
 
 **How to apply:** After each change Abhinav wants live, push and run the deploy command. Tell him the live URL. See [[decisions]].
+
+Database: Neon `od-demo-db` via Vercel marketplace, connected to `od-demo`. DATABASE_URL and the PG* vars are set by the integration. Table created 21 Oct 2026 with `lib/bookings/schema.sql`. Dashboard login: ADMIN_PASSWORD on Vercel; a copy is in `.env.local` (git-ignored). Pull env locally with `vercel env pull .env.local --environment=production --yes`.
+If `npm run db:migrate` fails with ENOTFOUND on Abhinav's home network, the router DNS blocks neon.tech. Use another DNS or run the migration from Vercel. See decisions.md 21 Oct.
