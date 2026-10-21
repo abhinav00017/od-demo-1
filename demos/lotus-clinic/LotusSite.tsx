@@ -1,9 +1,12 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DemoPage } from "@/lib/demos";
+import { interTight, newsreader } from "@/lib/fonts";
 import { LotusMark } from "./Art";
 import { clinic } from "./data";
 import { MobileMenu } from "./MobileMenu";
+import { buttonClass, buttonSmallClass, textLinkClass } from "./ui";
 
 export type Nav = { base: string; href: (page: DemoPage) => string; page: DemoPage; hubHref: string };
 
@@ -14,25 +17,21 @@ const NAV: { page: DemoPage; label: string }[] = [
   { page: "contact", label: "Contact" },
 ];
 
-export function LotusButton({
-  href,
-  children,
-  variant = "solid",
-  className = "",
-}: {
-  href: string;
-  children: ReactNode;
-  variant?: "solid" | "outline" | "light";
-  className?: string;
-}) {
-  const styles = {
-    solid: "bg-lotus-teal text-white hover:bg-lotus-teal-deep",
-    outline: "text-lotus-teal ring-2 ring-lotus-teal hover:bg-lotus-mint",
-    light: "bg-white text-lotus-teal-deep hover:bg-lotus-sand",
-  }[variant];
+/** Primary action: solid forest button. */
+export function LotusButton({ href, children, small, className = "" }: { href: string; children: ReactNode; small?: boolean; className?: string }) {
   return (
-    <Link href={href} className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold transition ${styles} ${className}`}>
+    <Link href={href} className={`${small ? buttonSmallClass : buttonClass} ${className}`}>
       {children}
+    </Link>
+  );
+}
+
+/** Secondary action: text link with an arrow. */
+export function LotusLink({ href, children, className = "" }: { href: string; children: ReactNode; className?: string }) {
+  return (
+    <Link href={href} className={`${textLinkClass} ${className}`}>
+      {children}
+      <ArrowRight aria-hidden className="size-4" />
     </Link>
   );
 }
@@ -42,7 +41,18 @@ export function LotusContainer({ children, className = "" }: { children: ReactNo
 }
 
 export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-sm font-semibold tracking-wide text-lotus-teal uppercase">{children}</p>;
+  return <p className="text-sm text-lotus-grey">{children}</p>;
+}
+
+/** A page section: a hairline rule across the content width, then generous space. */
+export function LotusSection({ children, className = "", ...rest }: { children: ReactNode; className?: string; "aria-labelledby"?: string }) {
+  return (
+    <section {...rest}>
+      <LotusContainer>
+        <div className={`border-t border-lotus-rule py-20 sm:py-28 lg:py-32 ${className}`}>{children}</div>
+      </LotusContainer>
+    </section>
+  );
 }
 
 /** The demo bar: tells the viewer this is an onlydevs demo and takes them back to the hub. */
@@ -69,79 +79,86 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
   const items = NAV.map((n) => ({ href: nav.href(n.page), label: n.label, current: n.page === nav.page }));
   const book = { href: nav.href("book"), label: "Book a visit" };
   return (
-    <div data-site="lotus" className="flex min-h-dvh flex-col bg-lotus-cream text-lotus-body">
+    <div data-site="lotus" className={`${newsreader.variable} ${interTight.variable} flex min-h-dvh flex-col bg-lotus-paper`}>
+      {/* The demo bar keeps the hub's font. Only the clinic site below uses the Lotus fonts. */}
       <DemoBar hubHref={nav.hubHref} />
-      <header className="relative border-b border-lotus-line bg-lotus-cream">
-        <LotusContainer className="flex items-center justify-between gap-6 py-4">
-          <Link href={nav.base} className="flex items-center gap-2.5 rounded-lg">
-            <LotusMark />
-            <span className="leading-tight">
-              <span className="block font-lotus text-lg font-semibold text-lotus-ink sm:text-xl">{clinic.name}</span>
-              <span className="hidden text-xs text-lotus-body sm:block">{clinic.doctor.name} · {clinic.city}</span>
-            </span>
-          </Link>
-          <nav aria-label="Clinic" className="hidden items-center gap-8 md:flex">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={item.current ? "page" : undefined}
-                className={`text-[15px] font-semibold transition ${
-                  item.current ? "text-lotus-teal underline decoration-2 underline-offset-8" : "text-lotus-ink hover:text-lotus-teal"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <LotusButton href={book.href} className="px-5 py-2.5 text-[15px]">
-              {book.label}
-            </LotusButton>
-          </nav>
-          <MobileMenu items={items} book={book} />
-        </LotusContainer>
-      </header>
-
-      <main className="flex-1">{children}</main>
-
-      <footer className="bg-lotus-teal-deep text-white">
-        <LotusContainer className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <p className="font-lotus text-xl font-semibold">{clinic.name}</p>
-            <p className="mt-2 text-sm text-white/85">{clinic.tagline}.</p>
-          </div>
-          <div>
-            <p className="font-semibold">Visit</p>
-            <address className="mt-2 text-sm leading-relaxed text-white/85 not-italic">
-              {clinic.address.map((l) => (
-                <span key={l} className="block">
-                  {l}
+      <div className="flex flex-1 flex-col font-lotus-sans text-[17px] leading-[1.6] text-lotus-grey">
+        <header className="relative border-b border-lotus-rule">
+          <LotusContainer className="flex items-center justify-between gap-6 py-4 sm:py-5">
+            <Link href={nav.base} className="flex items-center gap-3">
+              <LotusMark />
+              <span>
+                <span className="block font-lotus-serif text-xl leading-tight tracking-[-0.01em] text-lotus-text sm:text-[1.4rem]">{clinic.name}</span>
+                <span className="hidden text-[13px] leading-tight text-lotus-grey sm:block">
+                  {clinic.doctor.name} · {clinic.city}
                 </span>
+              </span>
+            </Link>
+            <nav aria-label="Clinic" className="hidden items-center gap-9 md:flex">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={item.current ? "page" : undefined}
+                  className={`text-[15px] transition-colors ${
+                    item.current ? "text-lotus-forest underline decoration-1 underline-offset-[6px]" : "text-lotus-text hover:text-lotus-forest"
+                  }`}
+                >
+                  {item.label}
+                </Link>
               ))}
-            </address>
-          </div>
-          <div>
-            <p className="font-semibold">Hours</p>
-            <ul className="mt-2 space-y-1 text-sm text-white/85">
-              {clinic.hours.map((h) => (
-                <li key={h.days}>
-                  {h.days}: {h.time}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">Contact</p>
-            <p className="mt-2 text-sm text-white/85">{clinic.phone}</p>
-            <p className="text-sm text-white/85">{clinic.email}</p>
-          </div>
-        </LotusContainer>
-        <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 py-5 text-xs text-white/85">
-          <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
-          <Link href={nav.href("admin")} className="font-semibold underline-offset-4 hover:underline">
-            Clinic login
-          </Link>
-        </LotusContainer>
-      </footer>
+              <LotusButton href={book.href} small>
+                {book.label}
+              </LotusButton>
+            </nav>
+            <MobileMenu items={items} book={book} />
+          </LotusContainer>
+        </header>
+
+        <main className="flex-1">{children}</main>
+
+        <footer>
+          <LotusContainer>
+            <div className="grid gap-10 border-t border-lotus-rule py-16 text-[15px] sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <p className="font-lotus-serif text-2xl tracking-[-0.01em] text-lotus-text">{clinic.name}</p>
+                <p className="mt-2 max-w-[32ch]">{clinic.tagline}.</p>
+              </div>
+              <div>
+                <p className="font-medium text-lotus-text">Visit</p>
+                <address className="mt-3 leading-relaxed not-italic">
+                  {clinic.address.map((l) => (
+                    <span key={l} className="block">
+                      {l}
+                    </span>
+                  ))}
+                </address>
+              </div>
+              <div>
+                <p className="font-medium text-lotus-text">Hours</p>
+                <ul className="mt-3 space-y-1 leading-relaxed">
+                  {clinic.hours.map((h) => (
+                    <li key={h.days}>
+                      {h.days}: {h.time}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="font-medium text-lotus-text">Contact</p>
+                <p className="mt-3">{clinic.phone}</p>
+                <p className="break-words">{clinic.email}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-lotus-rule py-6 text-[13px]">
+              <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
+              <Link href={nav.href("admin")} className="font-medium text-lotus-text underline-offset-4 hover:underline">
+                Clinic login
+              </Link>
+            </div>
+          </LotusContainer>
+        </footer>
+      </div>
     </div>
   );
 }

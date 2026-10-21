@@ -1,46 +1,22 @@
-/** Placeholder art for the Lotus demo: shapes only, no people. */
+/** Placeholder art for the Lotus demo: shapes and type only, no people. */
 
-export function LotusMark({ className = "size-9" }: { className?: string }) {
+export function LotusMark({ className = "size-7" }: { className?: string }) {
   return (
     <svg viewBox="0 0 48 48" className={className} aria-hidden>
-      <path d="M24 8c5 6 6 14 0 24-6-10-5-18 0-24Z" className="fill-lotus-teal" />
-      <path d="M8 18c8 0 14 5 16 14-9 1-15-4-16-14Z" className="fill-lotus-teal" opacity=".75" />
-      <path d="M40 18c-8 0-14 5-16 14 9 1 15-4 16-14Z" className="fill-lotus-teal" opacity=".75" />
-      <path d="M10 37h28" fill="none" className="stroke-lotus-rose" strokeWidth="3" strokeLinecap="round" />
+      <path d="M24 8c5 6 6 14 0 24-6-10-5-18 0-24Z" className="fill-lotus-forest" />
+      <path d="M8 18c8 0 14 5 16 14-9 1-15-4-16-14Z" className="fill-lotus-forest" opacity=".55" />
+      <path d="M40 18c-8 0-14 5-16 14 9 1 15-4 16-14Z" className="fill-lotus-forest" opacity=".55" />
+      <path d="M11 38h26" fill="none" className="stroke-lotus-forest" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 
-export function HeroArt() {
-  return (
-    <svg viewBox="0 0 480 480" className="h-auto w-full" aria-hidden>
-      <circle cx="240" cy="240" r="220" className="fill-lotus-sand" />
-      <path d="M110 420V230a130 130 0 0 1 260 0v190Z" className="fill-lotus-teal" />
-      <path d="M150 420V240a90 90 0 0 1 180 0v180Z" className="fill-lotus-teal-deep" />
-      <g transform="translate(240 300)">
-        <path d="M0-120c26 30 32 76 0 128-32-52-26-98 0-128Z" className="fill-lotus-mint" />
-        <path d="M-92-64c44 2 78 30 92 72-46 8-84-20-92-72Z" className="fill-lotus-mint" opacity=".85" />
-        <path d="M92-64c-44 2-78 30-92 72 46 8 84-20 92-72Z" className="fill-lotus-mint" opacity=".85" />
-        <path d="M-84 44q21-12 42 0t42 0 42 0 42 0" fill="none" className="stroke-lotus-mint" strokeWidth="8" strokeLinecap="round" opacity=".7" />
-      </g>
-      <circle cx="384" cy="118" r="26" className="fill-lotus-rose" />
-      <circle cx="92" cy="150" r="12" className="fill-lotus-teal" />
-    </svg>
-  );
-}
-
+/** Stands in for a portrait photo until the clinic sends one. */
 export function DoctorCard({ initials, className = "" }: { initials: string; className?: string }) {
   return (
-    <div className={`relative overflow-hidden rounded-[2rem] bg-lotus-teal ${className}`} aria-hidden>
-      <svg viewBox="0 0 400 480" className="h-auto w-full">
-        <circle cx="330" cy="70" r="120" className="fill-lotus-teal-deep" />
-        <circle cx="40" cy="440" r="140" className="fill-lotus-teal-deep" />
-        <circle cx="200" cy="220" r="110" className="fill-lotus-sand" />
-        <text x="200" y="250" textAnchor="middle" className="fill-lotus-teal-deep font-lotus" fontSize="84" fontWeight="600">
-          {initials}
-        </text>
-        <path d="M140 392h120" fill="none" className="stroke-lotus-mint" strokeWidth="10" strokeLinecap="round" />
-      </svg>
+    <div aria-hidden className={`flex aspect-[5/4] flex-col sm:aspect-[4/5] justify-between rounded-lg bg-lotus-stone p-6 sm:p-8 ${className}`}>
+      <LotusMark className="size-6" />
+      <span className="font-lotus-serif text-[7rem] leading-none tracking-[-0.04em] text-lotus-forest sm:text-[9rem]">{initials}</span>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { Clock, MapPin, Navigation, Phone } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { clinic } from "./data";
+import { textLinkClass } from "./ui";
 
 /** Google Maps embed. No API key: the public `output=embed` URL. */
 export function mapEmbedUrl(query: string = clinic.mapQuery) {
@@ -13,7 +14,7 @@ export function directionsUrl(query: string = clinic.mapQuery) {
 
 export function ClinicMap({ className = "" }: { className?: string }) {
   return (
-    <div className={`overflow-hidden rounded-3xl bg-lotus-mint ring-1 ring-lotus-line ${className}`}>
+    <div className={`overflow-hidden rounded-lg border border-lotus-rule bg-lotus-stone ${className}`}>
       <iframe
         title={`Map showing ${clinic.name}, ${clinic.mapQuery}`}
         src={mapEmbedUrl()}
@@ -27,49 +28,41 @@ export function ClinicMap({ className = "" }: { className?: string }) {
 
 export function DirectionsLink({ className = "" }: { className?: string }) {
   return (
-    <a
-      href={directionsUrl()}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold text-lotus-teal ring-2 ring-lotus-teal transition hover:bg-lotus-mint ${className}`}
-    >
-      <Navigation aria-hidden className="size-5" />
+    <a href={directionsUrl()} target="_blank" rel="noopener noreferrer" className={`${textLinkClass} ${className}`}>
       Get directions
+      <ArrowUpRight aria-hidden className="size-4" />
       <span className="sr-only">(opens Google Maps in a new tab)</span>
     </a>
   );
 }
 
-/** Address, hours and phone beside a live map. Used on the home page and the contact page. */
+/** Address, hours and phone beside a live map. Used on the home page. */
 export function VisitBlock() {
   const rows = [
-    { Icon: MapPin, title: "Address", lines: clinic.address },
-    { Icon: Clock, title: "Hours", lines: clinic.hours.map((h) => `${h.days}: ${h.time}`) },
-    { Icon: Phone, title: "Phone and WhatsApp", lines: [clinic.phone] },
+    { title: "Address", lines: clinic.address },
+    { title: "Hours", lines: clinic.hours.map((h) => `${h.days}: ${h.time}`) },
+    { title: "Phone and WhatsApp", lines: [clinic.phone] },
   ];
   return (
-    <div className="grid gap-6 lg:grid-cols-[2fr_3fr]">
-      <div className="rounded-3xl bg-white p-7 ring-1 ring-lotus-line">
-        <dl className="space-y-6">
-          {rows.map(({ Icon, title, lines }) => (
-            <div key={title} className="flex gap-4">
-              <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-lotus-mint text-lotus-teal">
-                <Icon className="size-5" />
-              </span>
-              <div>
-                <dt className="font-semibold text-lotus-ink">{title}</dt>
+    <div className="grid gap-12 lg:grid-cols-[2fr_3fr] lg:gap-16">
+      <div>
+        <dl className="divide-y divide-lotus-rule border-y border-lotus-rule">
+          {rows.map(({ title, lines }) => (
+            <div key={title} className="py-5">
+              <dt className="text-[15px] font-medium text-lotus-text">{title}</dt>
+              <dd className="mt-1">
                 {lines.map((l) => (
-                  <dd key={l} className="mt-0.5">
+                  <span key={l} className="block">
                     {l}
-                  </dd>
+                  </span>
                 ))}
-              </div>
+              </dd>
             </div>
           ))}
         </dl>
-        <DirectionsLink className="mt-8 w-full sm:w-auto" />
+        <DirectionsLink className="mt-8" />
       </div>
-      <ClinicMap />
+      <ClinicMap className="lg:min-h-[26rem]" />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { Bubble } from "@/components/mocks/ChatMock";
 import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
+import { buttonBusyClass, fieldClass, labelClass, panelClass, textLinkClass } from "./ui";
 
 const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
 
@@ -21,20 +22,19 @@ const LABELS: Record<FieldName, string> = {
   consent: "WhatsApp consent",
 };
 
-const inputClass =
-  "mt-2 block min-h-12 w-full rounded-xl border-0 bg-white px-4 py-3 text-base text-lotus-ink ring-1 ring-lotus-line placeholder:text-lotus-body/80 focus:ring-2 focus:ring-lotus-teal focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-lotus-rose";
+const inputClass = fieldClass;
 
 function Field({ name, errors, children, hint }: { name: FieldName; errors: FieldErrors; children: ReactNode; hint?: string }) {
   return (
     <div>
       {children}
       {hint ? (
-        <p id={`${name}-hint`} className="mt-1.5 text-sm">
+        <p id={`${name}-hint`} className="mt-2 text-sm">
           {hint}
         </p>
       ) : null}
       {errors[name] ? (
-        <p id={`${name}-error`} className="mt-1.5 text-sm font-semibold text-lotus-rose">
+        <p id={`${name}-error`} className="mt-2 text-sm font-medium text-lotus-error">
           {errors[name]}
         </p>
       ) : null}
@@ -126,11 +126,11 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
 
   if (sent) {
     return (
-      <div ref={doneRef} tabIndex={-1} className="mx-auto max-w-2xl rounded-3xl bg-white p-6 ring-1 ring-lotus-line focus:outline-none sm:p-10">
-        <CheckCircle2 aria-hidden className="size-10 text-lotus-teal" />
-        <h2 className="mt-4 font-lotus text-3xl font-semibold text-lotus-ink">Request received</h2>
-        <p className="mt-2 text-lg">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
-        <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-lotus-line">
+      <div ref={doneRef} tabIndex={-1} className={`mx-auto max-w-2xl p-6 focus:outline-none sm:p-10 ${panelClass}`}>
+        <CheckCircle2 aria-hidden className="size-7 text-lotus-forest" strokeWidth={1.75} />
+        <h2 className="mt-5 font-lotus-serif text-4xl tracking-[-0.02em] text-lotus-text">Request received</h2>
+        <p className="mt-3 text-lg">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
+        <div className="mt-8 overflow-hidden rounded-lg border border-lotus-rule">
           <div className="flex items-center gap-3 bg-wa-header px-4 py-3 text-white">
             <span aria-hidden className="flex size-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
               L
@@ -146,9 +146,9 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             </Bubble>
           </div>
         </div>
-        <p className="mt-6 font-semibold text-lotus-ink">Booking saved. The clinic will confirm on WhatsApp.</p>
+        <p className="mt-8 font-medium text-lotus-text">Booking saved. The clinic will confirm on WhatsApp.</p>
         <p className="mt-1 text-sm">
-          Booking id: <span className="font-mono font-semibold text-lotus-ink">{shortBookingId(sent.id)}</span>
+          Booking id: <span className="font-mono font-medium text-lotus-text">{shortBookingId(sent.id)}</span>
         </p>
         <p className="mt-4 text-sm">Demo: the WhatsApp message above is a preview. No message was sent.</p>
         <button
@@ -160,7 +160,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             setErrors({});
             setTrap("");
           }}
-          className="mt-6 rounded-full px-6 py-3 font-semibold text-lotus-teal ring-2 ring-lotus-teal hover:bg-lotus-mint"
+          className={`mt-8 ${textLinkClass}`}
         >
           Book another visit
         </button>
@@ -171,15 +171,15 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
   const errorList = ORDER.filter((f) => errors[f]);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-      <form noValidate onSubmit={onSubmit} className="relative rounded-3xl bg-white p-6 ring-1 ring-lotus-line sm:p-9" aria-label="Book a visit">
+    <div className="grid gap-14 lg:grid-cols-[1.7fr_1fr] lg:gap-16">
+      <form noValidate onSubmit={onSubmit} className={`relative p-5 sm:p-10 ${panelClass}`} aria-label="Book a visit">
         {errorList.length ? (
-          <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-8 rounded-2xl bg-lotus-sand p-5 focus:outline-none">
-            <p className="font-semibold text-lotus-ink">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
+          <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-10 border-l-2 border-lotus-error py-1 pl-5 focus:outline-none">
+            <p className="font-medium text-lotus-text">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
               {errorList.map((f) => (
                 <li key={f}>
-                  <a href={`#${id}-${f}`} className="font-semibold text-lotus-ink underline underline-offset-2">
+                  <a href={`#${id}-${f}`} className="font-medium text-lotus-text underline underline-offset-2">
                     {LABELS[f]}
                   </a>
                   : {errors[f]}
@@ -190,15 +190,15 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
         ) : null}
 
         <fieldset>
-          <legend className="font-semibold text-lotus-ink">{LABELS.visitType}</legend>
+          <legend className={labelClass}>{LABELS.visitType}</legend>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {clinic.booking.visitTypes.map((t, i) => {
               const on = values.visitType === t.id;
               return (
                 <label
                   key={t.id}
-                  className={`flex cursor-pointer gap-3 rounded-2xl p-4 ring-1 transition ${
-                    on ? "bg-lotus-mint ring-2 ring-lotus-teal" : "bg-white ring-lotus-line hover:ring-lotus-teal"
+                  className={`flex cursor-pointer gap-3 rounded-lg border bg-white p-4 transition-colors ${
+                    on ? "border-lotus-forest ring-1 ring-lotus-forest" : "border-lotus-rule hover:border-lotus-edge"
                   }`}
                 >
                   <input
@@ -208,11 +208,11 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
                     value={t.id}
                     checked={on}
                     onChange={() => update("visitType", t.id)}
-                    className="mt-1 size-4 accent-lotus-teal"
+                    className="mt-1 size-4 accent-lotus-forest"
                   />
                   <span>
-                    <span className="block font-semibold text-lotus-ink">{t.label}</span>
-                    <span className="block text-sm">{t.description}</span>
+                    <span className="block font-medium text-lotus-text">{t.label}</span>
+                    <span className="mt-0.5 block text-sm">{t.description}</span>
                   </span>
                 </label>
               );
@@ -220,9 +220,9 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
           </div>
         </fieldset>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <div className="mt-10 grid gap-7 sm:grid-cols-2">
           <Field name="name" errors={errors}>
-            <label htmlFor={`${id}-name`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-name`} className={labelClass}>
               {LABELS.name}
             </label>
             <input
@@ -237,7 +237,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             />
           </Field>
           <Field name="phone" errors={errors} hint="We confirm on WhatsApp.">
-            <label htmlFor={`${id}-phone`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-phone`} className={labelClass}>
               {LABELS.phone}
             </label>
             <input
@@ -255,7 +255,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             />
           </Field>
           <Field name="date" errors={errors}>
-            <label htmlFor={`${id}-date`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-date`} className={labelClass}>
               {LABELS.date}
             </label>
             <input
@@ -271,7 +271,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             />
           </Field>
           <Field name="slot" errors={errors}>
-            <label htmlFor={`${id}-slot`} className="font-semibold text-lotus-ink">
+            <label htmlFor={`${id}-slot`} className={labelClass}>
               {LABELS.slot}
             </label>
             <select
@@ -293,7 +293,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
           </Field>
           <div className="sm:col-span-2">
             <Field name="reason" errors={errors}>
-              <label htmlFor={`${id}-reason`} className="font-semibold text-lotus-ink">
+              <label htmlFor={`${id}-reason`} className={labelClass}>
                 {LABELS.reason}
               </label>
               <select
@@ -316,7 +316,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-8">
           <Field name="consent" errors={errors}>
             <label className="flex cursor-pointer items-start gap-3">
               <input
@@ -327,9 +327,9 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
                 onChange={(e) => update("consent", e.target.checked)}
                 aria-invalid={errors.consent ? true : undefined}
                 aria-describedby={describedBy("consent", errors)}
-                className="mt-1 size-4 accent-lotus-teal"
+                className="mt-1 size-4 accent-lotus-forest"
               />
-              <span>The clinic may message me on WhatsApp about this visit.</span>
+              <span className="text-[15px] text-lotus-text">The clinic may message me on WhatsApp about this visit.</span>
             </label>
           </Field>
         </div>
@@ -341,7 +341,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
         </div>
 
         {submitError ? (
-          <p ref={errorRef} tabIndex={-1} role="alert" className="mt-8 rounded-2xl bg-white p-4 font-semibold text-lotus-rose ring-2 ring-lotus-rose focus:outline-none">
+          <p ref={errorRef} tabIndex={-1} role="alert" className="mt-8 border-l-2 border-lotus-error py-1 pl-5 font-medium text-lotus-error focus:outline-none">
             {submitError}
           </p>
         ) : null}
@@ -350,27 +350,27 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
           type="submit"
           disabled={saving}
           aria-busy={saving || undefined}
-          className="mt-8 w-full rounded-full bg-lotus-teal px-6 py-4 text-lg font-semibold text-white hover:bg-lotus-teal-deep disabled:cursor-wait disabled:bg-lotus-teal-deep sm:w-auto"
+          className={`mt-10 w-full sm:w-auto ${buttonBusyClass}`}
         >
           {saving ? "Saving your booking…" : "Request appointment"}
         </button>
       </form>
 
-      <aside className="h-fit rounded-3xl bg-lotus-mint p-7">
-        <h2 className="font-lotus text-2xl font-semibold text-lotus-ink">What happens next</h2>
-        <ol className="mt-5 space-y-4">
+      <aside className="h-fit lg:pt-10">
+        <h2 className="font-lotus-serif text-[1.75rem] tracking-[-0.01em] text-lotus-text">What happens next</h2>
+        <ol className="mt-6 divide-y divide-lotus-rule border-y border-lotus-rule">
           {[
             "We get your request at once.",
             "We confirm the exact time on WhatsApp within 2 hours.",
             "You get a reminder the day before, with directions or the call link.",
           ].map((s, i) => (
-            <li key={s} className="flex gap-3">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-lotus-teal text-sm font-bold text-white">{i + 1}</span>
-              <span className="text-lotus-ink">{s}</span>
+            <li key={s} className="flex gap-4 py-4">
+              <span className="w-4 shrink-0 font-lotus-serif text-lg leading-snug text-lotus-forest tabular-nums">{i + 1}</span>
+              <span className="text-[15px] text-lotus-text">{s}</span>
             </li>
           ))}
         </ol>
-        <p className="mt-6 text-sm text-lotus-ink">
+        <p className="mt-6 text-sm">
           Clinic: {clinic.hours[0].days}, {clinic.hours[0].time}. Sundays: online only.
         </p>
       </aside>
