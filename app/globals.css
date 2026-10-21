@@ -23,7 +23,10 @@
   --color-line: #dbe5e7;
   --color-chip: #e6eef0;
 
-  /* Lotus Women's Clinic (fictional client site): deep teal + soft sand */
+  /*
+   * Lotus mock tokens: teal + sand. Used only by the hub mocks of Lotus services (components/mocks).
+   * The Lotus demo site itself uses the white tokens below.
+   */
   --color-lotus-teal: #0e5e5a;
   --color-lotus-teal-deep: #0a4542;
   --color-lotus-mint: #dcefeb;
@@ -32,9 +35,19 @@
   --color-lotus-ink: #1d2b2a;
   --color-lotus-body: #485553;
   --color-lotus-line: #e5d9c6;
-  /* Form field edges: 3:1 on white and cream (WCAG 1.4.11). The line colour is too light to be a control's only edge. */
-  --color-lotus-edge: #948670;
   --color-lotus-rose: #b5485d;
+
+  /* Lotus Women's Clinic demo site (fictional client): white, one deep teal accent. */
+  --color-lotus-accent: #0f766e;
+  --color-lotus-accent-hover: #115e59;
+  --color-lotus-text: #0f172a;
+  --color-lotus-muted: #64748b;
+  --color-lotus-hairline: #e5e7eb;
+  /* Form field edges: 3:1 on white (WCAG 1.4.11). The hairline is too light to be a control's only edge. */
+  --color-lotus-field: #868f9e;
+  /* Light grey surface: the WhatsApp chat preview, notes, code chips. Text on it is lotus-text only. */
+  --color-lotus-wash: #f1f5f9;
+  --color-lotus-error: #b42318;
 
   /* Mock UI: WhatsApp */
   --color-wa-header: #075e54;
@@ -64,10 +77,14 @@
   --color-cafe-body: #5a4335;
 
   --radius-card: 1.5rem;
+
+  /* Lotus cards: a soft lift under the hairline. */
+  --shadow-lotus: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 @theme inline {
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* Fraunces for the hub's Offers mock only. The Lotus site uses font-sans (Plus Jakarta Sans), like onlydevs. */
   --font-lotus: var(--font-fraunces), ui-serif, Georgia, serif;
 }
 
@@ -106,6 +123,6 @@
   }
 
   [data-site="lotus"] :focus-visible {
-    outline-color: var(--color-lotus-teal);
+    outline-color: var(--color-lotus-accent);
   }
 }

@@ -5,6 +5,7 @@ import type { DemoPage } from "@/lib/demos";
 import { LotusMark } from "./Art";
 import { clinic, clinicWhatsAppHref } from "./data";
 import { MobileMenu } from "./MobileMenu";
+import { ui } from "./ui";
 
 export type Nav = { base: string; href: (page: DemoPage) => string; page: DemoPage; hubHref: string };
 
@@ -18,21 +19,16 @@ const NAV: { page: DemoPage; label: string }[] = [
 export function LotusButton({
   href,
   children,
-  variant = "solid",
+  variant = "primary",
   className = "",
 }: {
   href: string;
   children: ReactNode;
-  variant?: "solid" | "outline" | "light";
+  variant?: "primary" | "secondary";
   className?: string;
 }) {
-  const styles = {
-    solid: "bg-lotus-teal text-white hover:bg-lotus-teal-deep",
-    outline: "text-lotus-teal ring-2 ring-lotus-teal hover:bg-lotus-mint",
-    light: "bg-white text-lotus-teal-deep hover:bg-lotus-sand",
-  }[variant];
   return (
-    <Link href={href} className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold transition ${styles} ${className}`}>
+    <Link href={href} className={`${ui[variant]} ${className}`}>
       {children}
     </Link>
   );
@@ -42,10 +38,6 @@ export function LotusContainer({ children, className = "" }: { children: ReactNo
   return <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>;
 }
 
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-sm font-semibold tracking-wide text-lotus-teal uppercase">{children}</p>;
-}
-
 /** The clinic number in the header. A direct WhatsApp chat, since that is how patients reach the clinic. */
 export function WhatsAppNumber({ className = "" }: { className?: string }) {
   return (
@@ -53,11 +45,9 @@ export function WhatsAppNumber({ className = "" }: { className?: string }) {
       href={clinicWhatsAppHref}
       target="_blank"
       rel="noopener noreferrer"
-      className={`items-center gap-2 rounded-full px-1 py-2 text-[15px] font-semibold whitespace-nowrap text-lotus-ink tabular-nums transition hover:text-lotus-teal ${className}`}
+      className={`items-center gap-2 rounded-full px-1 py-2 text-[15px] font-medium whitespace-nowrap text-lotus-text tabular-nums transition hover:text-lotus-accent ${className}`}
     >
-      <span aria-hidden className="flex size-8 items-center justify-center rounded-full bg-lotus-mint text-lotus-teal">
-        <Phone className="size-4" />
-      </span>
+      <Phone aria-hidden strokeWidth={1.75} className="size-4 text-lotus-accent" />
       <span className="sr-only">WhatsApp</span> {clinic.phone}
     </a>
   );
@@ -87,15 +77,17 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
   const items = NAV.map((n) => ({ href: nav.href(n.page), label: n.label, current: n.page === nav.page }));
   const book = { href: nav.href("book"), label: "Book a visit" };
   return (
-    <div data-site="lotus" className="flex min-h-dvh flex-col bg-lotus-cream text-lotus-body">
+    <div data-site="lotus" className="flex min-h-dvh flex-col bg-white font-sans text-lotus-muted">
       <DemoBar hubHref={nav.hubHref} />
-      <header className="relative border-b border-lotus-line bg-lotus-cream">
-        <LotusContainer className="flex items-center justify-between gap-6 py-4">
+      <header className="relative border-b border-lotus-hairline bg-white">
+        <LotusContainer className="flex items-center justify-between gap-6 py-3.5">
           <Link href={nav.base} className="flex items-center gap-2.5 rounded-lg">
             <LotusMark />
             <span className="leading-tight">
-              <span className="block font-lotus text-lg font-semibold text-lotus-ink sm:text-xl">{clinic.name}</span>
-              <span className="hidden text-xs text-lotus-body sm:block">{clinic.doctor.name} · {clinic.city}</span>
+              <span className="block text-base font-semibold tracking-tight text-lotus-text sm:text-lg">{clinic.name}</span>
+              <span className="hidden text-xs text-lotus-muted sm:block">
+                {clinic.doctor.name} · {clinic.city}
+              </span>
             </span>
           </Link>
           <div className="flex items-center gap-3 lg:gap-7">
@@ -105,8 +97,8 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
                   key={item.href}
                   href={item.href}
                   aria-current={item.current ? "page" : undefined}
-                  className={`text-[15px] font-semibold transition ${
-                    item.current ? "text-lotus-teal underline decoration-2 underline-offset-8" : "text-lotus-ink hover:text-lotus-teal"
+                  className={`text-[15px] font-medium transition ${
+                    item.current ? "text-lotus-text underline decoration-lotus-accent decoration-2 underline-offset-8" : "text-lotus-muted hover:text-lotus-text"
                   }`}
                 >
                   {item.label}
@@ -126,41 +118,23 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
 
       <main className="flex-1">{children}</main>
 
-      <footer className="bg-lotus-teal-deep text-white">
-        <LotusContainer className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <p className="font-lotus text-xl font-semibold">{clinic.name}</p>
-            <p className="mt-2 text-sm text-white/85">{clinic.tagline}.</p>
-          </div>
+      <footer className="border-t border-lotus-hairline bg-white">
+        <LotusContainer className="flex flex-col gap-4 py-8 text-sm sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="font-semibold">Visit</p>
-            <address className="mt-2 text-sm leading-relaxed text-white/85 not-italic">
-              {clinic.address.map((l) => (
-                <span key={l} className="block">
-                  {l}
-                </span>
-              ))}
-            </address>
+            <p className="flex items-center gap-2 font-semibold text-lotus-text">
+              <LotusMark className="size-6" />
+              {clinic.name}
+            </p>
+            <p className="mt-1">{clinic.address.join(", ")}</p>
           </div>
-          <div>
-            <p className="font-semibold">Hours</p>
-            <ul className="mt-2 space-y-1 text-sm text-white/85">
-              {clinic.hours.map((h) => (
-                <li key={h.days}>
-                  {h.days}: {h.time}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">Contact</p>
-            <p className="mt-2 text-sm text-white/85">{clinic.phone}</p>
-            <p className="text-sm text-white/85">{clinic.email}</p>
+          <div className="sm:text-right">
+            <p className="text-lotus-text tabular-nums">{clinic.phone}</p>
+            <p>{clinic.email}</p>
           </div>
         </LotusContainer>
-        <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 py-5 text-xs text-white/85">
+        <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-lotus-hairline py-4 text-xs">
           <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
-          <Link href={nav.href("admin")} className="font-semibold underline-offset-4 hover:underline">
+          <Link href={nav.href("admin")} className="font-semibold text-lotus-text underline-offset-4 hover:underline">
             Clinic login
           </Link>
         </LotusContainer>

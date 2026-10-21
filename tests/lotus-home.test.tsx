@@ -31,16 +31,27 @@ describe("Lotus header", () => {
 });
 
 describe("Lotus home order", () => {
-  it("runs doctor, numbers, stories, why, services, then the map", () => {
+  it("runs doctor, numbers, stories, why, services, then the map, with no CTA band", () => {
     const { container } = renderHome();
     const main = container.querySelector("main")!;
     const text = main.textContent ?? "";
-    const order = ["Meet your doctor", "years of experience", "What women say about us", "A clinic that makes things easy", "Care for every stage", "Find the clinic", "Book your visit today"];
+    const order = ["Expert care for women", clinic.doctor.name, "years of experience", "What patients say", "Why women choose Lotus", "Services", "Visit the clinic"];
     const at = order.map((t) => text.indexOf(t));
     expect(at.every((i) => i >= 0), JSON.stringify(at)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(text).not.toContain("Book your visit today");
     expect(within(main).getByRole("link", { name: /More about Dr. Rao/ })).toBeTruthy();
     for (const s of clinic.stats) expect(within(main).getByText(s.value)).toBeTruthy();
     expect(main.querySelector("iframe")).toBeTruthy();
+  });
+
+  it("keeps the home short: 2 stories, 3 reasons, 4 services, no extras", () => {
+    const { container } = renderHome();
+    const main = container.querySelector("main")!;
+    const list = (id: string) => main.querySelector(`[aria-labelledby="${id}"] ul`)!.children.length;
+    expect(list("stories-heading")).toBe(2);
+    expect(list("why-heading")).toBe(3);
+    expect(list("services-heading")).toBe(4);
+    expect(main.textContent).not.toContain("Speaks");
   });
 });

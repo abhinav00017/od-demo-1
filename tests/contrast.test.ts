@@ -26,7 +26,11 @@ const NORMAL: [string, string][] = [
   ["muted", "surface"], ["muted", "canvas"], ["muted", "canvas-deep"], ["muted", "chip"],
   ["brand", "surface"], ["brand", "canvas"], ["brand", "brand-soft"],
   ["white", "brand"], ["white", "brand-strong"], ["white", "ink"],
-  // Lotus demo (site, booking form, dashboard) and the hub mocks of Lotus services
+  // Lotus demo site (pages, booking form, success screen, dashboard): white, one teal accent
+  ["lotus-text", "white"], ["lotus-muted", "white"], ["lotus-accent", "white"], ["lotus-accent-hover", "white"],
+  ["white", "lotus-accent"], ["white", "lotus-accent-hover"], ["white", "lotus-text"],
+  ["lotus-text", "lotus-wash"], ["lotus-error", "white"],
+  // Hub mocks of Lotus services (teal + sand)
   ["lotus-ink", "lotus-cream"], ["lotus-ink", "lotus-sand"], ["lotus-ink", "lotus-mint"], ["lotus-ink", "white"],
   ["lotus-body", "lotus-cream"], ["lotus-body", "lotus-sand"], ["lotus-body", "lotus-mint"], ["lotus-body", "white"],
   ["lotus-teal", "white"], ["lotus-teal", "lotus-cream"], ["lotus-teal", "lotus-sand"], ["lotus-teal", "lotus-mint"],
@@ -51,14 +55,11 @@ const LARGE: [string, string][] = [
 
 // Non-text (WCAG 1.4.11): field edges and focus rings must reach 3:1 against what is next to them.
 const NON_TEXT: [string, string][] = [
-  // Lotus form fields sit on white cards; the page is cream
-  ["lotus-edge", "white"],
-  ["lotus-edge", "lotus-cream"],
-  // Lotus focus ring (teal) on every Lotus surface
-  ["lotus-teal", "white"],
-  ["lotus-teal", "lotus-cream"],
-  ["lotus-teal", "lotus-sand"],
-  ["lotus-teal", "lotus-mint"],
+  // Lotus form fields, radio cards and the password box sit on white cards
+  ["lotus-field", "white"],
+  // Lotus focus ring, selected radio card and invalid field ring, on white
+  ["lotus-accent", "white"],
+  ["lotus-error", "white"],
 ];
 
 describe("WCAG AA contrast", () => {

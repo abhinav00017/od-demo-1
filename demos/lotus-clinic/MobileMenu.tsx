@@ -24,20 +24,20 @@ export function MobileMenu({
         aria-expanded={open}
         aria-controls="lotus-menu"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-full px-4 py-2 text-sm font-semibold text-lotus-ink ring-1 ring-lotus-line"
+        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-lotus-text ring-1 ring-lotus-hairline"
       >
         {open ? "Close" : "Menu"}
       </button>
       {open ? (
-        <nav id="lotus-menu" aria-label="Clinic" className="absolute inset-x-0 top-full z-20 border-b border-lotus-line bg-lotus-cream px-4 pb-6 shadow-lg">
-          <ul className="divide-y divide-lotus-line">
+        <nav id="lotus-menu" aria-label="Clinic" className="absolute inset-x-0 top-full z-20 border-b border-lotus-hairline bg-white px-4 pb-5 shadow-lotus">
+          <ul className="divide-y divide-lotus-hairline">
             {items.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   aria-current={item.current ? "page" : undefined}
                   onClick={() => setOpen(false)}
-                  className={`block py-4 text-lg font-semibold ${item.current ? "text-lotus-teal" : "text-lotus-ink"}`}
+                  className={`block py-3.5 text-lg font-semibold tracking-tight ${item.current ? "text-lotus-accent" : "text-lotus-text"}`}
                 >
                   {item.label}
                 </Link>
@@ -47,7 +47,7 @@ export function MobileMenu({
           <Link
             href={book.href}
             onClick={() => setOpen(false)}
-            className="mt-4 block rounded-full bg-lotus-teal py-3 text-center font-semibold text-white"
+            className="mt-3 block rounded-full bg-lotus-accent py-3 text-center font-semibold text-white hover:bg-lotus-accent-hover"
           >
             {book.label}
           </Link>
@@ -56,9 +56,9 @@ export function MobileMenu({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}
-            className="mt-3 flex items-center justify-center gap-2 rounded-full py-3 font-semibold text-lotus-teal tabular-nums ring-2 ring-lotus-teal"
+            className="mt-2.5 flex items-center justify-center gap-2 rounded-full bg-white py-3 font-semibold text-lotus-text tabular-nums ring-1 ring-lotus-hairline"
           >
-            <Phone aria-hidden className="size-5" />
+            <Phone aria-hidden strokeWidth={1.75} className="size-4 text-lotus-accent" />
             <span className="sr-only">WhatsApp</span> {phone.label}
           </a>
         </nav>
