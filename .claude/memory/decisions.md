@@ -68,3 +68,17 @@ Append only. Newest at the bottom.
 
 - Abhinav's feedback on the Lotus clinic demo: fonts, colours and UI look generic, "AI generated". Hub (onlydevs pages) stays as is for now.
 - Restyle the Lotus demo only. Keep it clean, minimal, straight and simple. Make it feel designed: a distinctive font pair (editorial serif headings, quiet sans body), one deep accent on warm off-white, no pastel panels, fewer uniform rounded cards, fewer pills and badges, smaller radii, thin rules, more space between sections. Same content, same routes, same booking flow and dashboard.
+
+## 2026-10-21 (Lotus restyle build)
+
+- Fonts for the Lotus site: Newsreader (headings, variable with optical size, italic used once, in the home headline) and Inter Tight (body and UI). Both via next/font, set on the Lotus site wrapper only, not preloaded on hub pages. Fraunces stays only for the hub's mocks of Lotus services.
+- Body text 17px, line height 1.6, measures held to about 40 to 60ch.
+- Palette, new tokens: paper #FAF8F4 (page), stone #EFEBE4 (portrait placeholder and map backdrop only), text #1B1C1A, grey #5F5B54 (secondary), forest #1F3D38 (the one accent: buttons, links, focus, live dot), forest-deep #152B27 (hover), rule #E4DFD6 (hairlines), edge #8F897F (form field borders, 3:1), error #A3392B. All text pairs pass AA. Field borders and focus pass 3:1. Tests cover both.
+- Kept the old lotus-teal, mint, sand, cream, ink, body, line and rose tokens. The hub's service mocks (components/mocks) still use them, and the hub was out of scope.
+- Removed from the Lotus site: mint and sand section backgrounds, the teal CTA band and teal footer, the uniform rounded-3xl card grids, icon tiles, the hero arch and circles art, the timeline dots, round pill buttons, the outline buttons, icons inside buttons, the animated ping on the live dot, and the uppercase teal eyebrows.
+- New structure: sections separated by a 1px rule inside the content width, py-20 to py-32. Section heads put the title left and the intro right on wide screens. Services, reasons, hours and training are rows split by hairlines, not cards.
+- Cards stay only where a surface helps: the booking form, the login and the dashboard day lists. White, 1px rule border, 8px radius, no shadow.
+- Buttons: solid forest primary with 8px radius. Secondary actions are text links with an arrow. Shared class strings live in demos/lotus-clinic/ui.ts.
+- Pills kept only on dashboard rows: visit type (outline) and status (New solid forest, Confirmed forest outline, Cancelled grey outline). 6px radius.
+- Doctor portrait placeholder: stone panel with the initials in Newsreader. Replace with a real photo when the clinic sends one.
+- Tests stub next/font/google in tests/setup.ts, because LotusSite now imports the fonts.
