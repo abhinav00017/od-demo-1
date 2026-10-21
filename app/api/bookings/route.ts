@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 }
 
 function summary(m: MessageLog | undefined): WhatsAppSummary | null {
-  return m ? { kind: m.kind, status: m.status, error: m.error, at: m.updatedAt } : null;
+  return m ? { kind: m.kind, status: m.status, error: m.error, at: m.updatedAt, provider: m.provider } : null;
 }
 
 /** Bookings from today (clinic time) onward, each with its latest WhatsApp message. Admin only. */

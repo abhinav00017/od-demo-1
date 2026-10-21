@@ -102,5 +102,19 @@ describe("WhatsApp status line", () => {
     render(<Dashboard {...props} bookings={rows} />);
     expect(screen.getByText("WhatsApp: sent 8:51 pm")).toBeTruthy();
     expect(screen.getAllByText(/^WhatsApp/)).toHaveLength(1);
+    expect(screen.queryByText("via Twilio")).toBeNull();
+  });
+
+  it("adds a small 'via Twilio' note for Twilio sends only", () => {
+    const rows: DashboardBooking[] = [
+      { ...make({ name: "Twilio Tanvi" }), whatsapp: { kind: "confirmation", status: "delivered", error: null, at: "2026-10-20T15:21:00.000Z", provider: "twilio" } },
+      { ...make({ name: "Meta Mira" }), whatsapp: { kind: "reminder", status: "sent", error: null, at: "2026-10-20T15:21:00.000Z", provider: "meta" } },
+    ];
+    render(<Dashboard {...props} bookings={rows} />);
+    expect(screen.getByText("WhatsApp: delivered 8:51 pm")).toBeTruthy();
+    const notes = screen.getAllByText("via Twilio");
+    expect(notes).toHaveLength(1);
+    expect(notes[0].className).toContain("text-lotus-grey");
+    expect(notes[0].closest("li")?.textContent).toContain("Twilio Tanvi");
   });
 });

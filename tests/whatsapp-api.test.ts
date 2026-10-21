@@ -47,6 +47,12 @@ beforeEach(() => {
   vi.stubEnv("ADMIN_SECRET", "test-secret");
   vi.stubEnv("WHATSAPP_TOKEN", "");
   vi.stubEnv("WHATSAPP_FAKE", "");
+  vi.stubEnv("WHATSAPP_PROVIDER", "");
+  vi.stubEnv("TWILIO_ACCOUNT_SID", "");
+  vi.stubEnv("TWILIO_AUTH_TOKEN", "");
+  vi.stubEnv("TWILIO_WHATSAPP_FROM", "");
+  vi.stubEnv("TWILIO_API_BASE", "");
+  vi.stubEnv("WHATSAPP_PUBLIC_URL", "");
   vi.stubEnv("WHATSAPP_TEMPLATE_CONFIRM", "");
   vi.stubEnv("WHATSAPP_TEMPLATE_REMINDER", "");
   vi.stubEnv("WHATSAPP_VERIFY_TOKEN", "verify-me");
@@ -78,7 +84,8 @@ describe("Confirm sends the WhatsApp confirmation", () => {
     expect(logs.join("\n")).not.toMatch(/9876543210|Priya/);
 
     const data = await (await list(req("/api/bookings", { headers: { cookie: adminCookie() } }))).json();
-    expect(data.bookings[0].whatsapp).toEqual({ kind: "confirmation", status: "sent", error: null, at: m.updatedAt });
+    expect(m.provider).toBe("fake");
+    expect(data.bookings[0].whatsapp).toEqual({ kind: "confirmation", status: "sent", error: null, at: m.updatedAt, provider: "fake" });
   });
 
   it("still confirms, and logs a failed row, when the real send fails", async () => {

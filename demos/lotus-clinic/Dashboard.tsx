@@ -57,10 +57,17 @@ export function whatsappLine(w: WhatsAppSummary) {
   return `${label}: ${w.status} ${clinicTime(w.at)}`;
 }
 
+/** Small grey note after the line. Only Twilio gets one: Meta is the default, and fake only runs locally. */
+export function providerNote(w: WhatsAppSummary) {
+  return w.provider === "twilio" ? "via Twilio" : null;
+}
+
 function WhatsAppStatus({ w }: { w: WhatsAppSummary }) {
+  const note = providerNote(w);
   return (
     <p suppressHydrationWarning className={`mt-1 text-sm ${w.status === "failed" ? "text-lotus-error" : "text-lotus-grey"}`} title={w.error ?? undefined}>
       {whatsappLine(w)}
+      {note ? <span className="ml-2 text-xs text-lotus-grey">{note}</span> : null}
     </p>
   );
 }
