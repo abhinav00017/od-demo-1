@@ -4,7 +4,7 @@ import { Suspense, type ReactNode } from "react";
 import { qrPath } from "@/lib/qr";
 import { whatsappOptIn } from "@/lib/whatsapp/optin";
 import { AdminApp } from "./AdminApp";
-import { DoctorCard, HeroArt } from "./Art";
+import { DoctorCard } from "./Art";
 import { BookingForm, BookingFormFromUrl } from "./BookingForm";
 import { ClinicMap, DirectionsLink, VisitBlock } from "./ClinicMap";
 import { clinic } from "./data";
@@ -76,16 +76,14 @@ export function LotusHome({ nav }: { nav: Nav }) {
   const { doctor } = clinic;
   return (
     <>
-      <section className="bg-lotus-sand">
-        <LotusContainer className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-24">
+      {/* Hero and "Meet your doctor" in one: the doctor is the first thing a patient sees. */}
+      <section className="bg-lotus-sand" aria-labelledby="doctor-heading">
+        <LotusContainer className="grid gap-8 py-14 sm:gap-10 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:gap-x-16 lg:py-24">
           <div>
             <Eyebrow>Women&apos;s clinic in {clinic.city}</Eyebrow>
             <h1 className="mt-4 font-lotus text-[2.6rem] leading-[1.08] font-semibold text-lotus-ink sm:text-6xl">
               Expert care for women, at every stage of life.
             </h1>
-            <p className="mt-5 max-w-xl text-lg sm:text-xl">
-              {doctor.name}, {doctor.degree}, sees women at the clinic in Siripuram and online.
-            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <LotusButton href={nav.href("book")}>
                 <CalendarCheck aria-hidden className="size-5" />
@@ -96,58 +94,37 @@ export function LotusHome({ nav }: { nav: Nav }) {
                 Online consultation
               </LotusButton>
             </div>
-            <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4">
-              {clinic.stats.map((s) => (
-                <div key={s.label}>
-                  <dt className="sr-only">{s.label}</dt>
-                  <dd className="font-lotus text-3xl font-semibold text-lotus-teal">{s.value}</dd>
-                  <dd className="mt-1 text-sm leading-snug">{s.label}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
-          <div className="mx-auto w-full max-w-md lg:max-w-none">
-            <HeroArt />
-          </div>
-        </LotusContainer>
-      </section>
-
-      <section>
-        <LotusContainer className="py-16 sm:py-24">
-          <SectionTitle eyebrow="Services" title="Care for every stage">
-            From the first period to menopause, and every pregnancy in between.
-          </SectionTitle>
-          <ServiceCards nav={nav} />
-        </LotusContainer>
-      </section>
-
-      <section className="bg-white">
-        <LotusContainer className="grid items-center gap-10 py-16 sm:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-          <DoctorCard initials={doctor.initials} className="mx-auto w-full max-w-sm" />
-          <div>
-            <SectionTitle eyebrow="Meet your doctor" title={doctor.name} />
+          {/* Phones: headline, portrait, then the doctor. Wide screens: portrait on the right, beside both. */}
+          <DoctorCard initials={doctor.initials} className="mx-auto w-full max-w-64 sm:max-w-sm lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-w-none lg:self-center" />
+          <div className="rounded-3xl bg-white p-7 ring-1 ring-lotus-line sm:p-8">
+            <Eyebrow>Meet your doctor</Eyebrow>
+            <h2 id="doctor-heading" className="mt-3 font-lotus text-3xl leading-tight font-semibold text-lotus-ink sm:text-4xl">
+              {doctor.name}
+            </h2>
             <p className="mt-2 font-semibold text-lotus-ink">{doctor.degree}</p>
-            <p className="mt-5 text-lg">{doctor.intro}</p>
+            <p className="mt-4 text-lg">{doctor.intro}</p>
             <p className="mt-3">Speaks {doctor.languages}.</p>
-            <LotusButton href={nav.href("about")} variant="outline" className="mt-8">
-              About Dr. Rao
-            </LotusButton>
+            <Link href={nav.href("about")} className="mt-5 inline-block font-semibold text-lotus-teal hover:underline">
+              More about Dr. Rao →
+            </Link>
           </div>
         </LotusContainer>
       </section>
 
-      <section>
+      <section aria-labelledby="numbers-heading">
         <LotusContainer className="py-16 sm:py-24">
-          <SectionTitle eyebrow="Why Lotus" title="A clinic that makes things easy" />
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {clinic.why.map((w, i) => (
-              <li key={w.title} className="rounded-3xl bg-lotus-mint p-7">
-                <span className="font-lotus text-2xl font-semibold text-lotus-teal">0{i + 1}</span>
-                <h3 className="mt-4 text-lg font-bold text-lotus-ink">{w.title}</h3>
-                <p className="mt-2">{w.text}</p>
-              </li>
+          <h2 id="numbers-heading" className="sr-only">
+            Lotus in numbers
+          </h2>
+          <dl className="grid gap-5 sm:grid-cols-3">
+            {clinic.stats.map((s) => (
+              <div key={s.label} className="flex flex-col-reverse rounded-3xl bg-white p-8 text-center ring-1 ring-lotus-line sm:p-10">
+                <dt className="mt-3 text-lg font-semibold text-lotus-ink">{s.label}</dt>
+                <dd className="font-lotus text-6xl leading-none font-semibold text-lotus-teal sm:text-7xl">{s.value}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
         </LotusContainer>
       </section>
 
@@ -168,7 +145,31 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="visit-heading">
+      <section className="bg-white">
+        <LotusContainer className="py-16 sm:py-24">
+          <SectionTitle eyebrow="Why Lotus" title="A clinic that makes things easy" />
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {clinic.why.map((w, i) => (
+              <li key={w.title} className="rounded-3xl bg-lotus-mint p-7">
+                <span className="font-lotus text-2xl font-semibold text-lotus-teal">0{i + 1}</span>
+                <h3 className="mt-4 text-lg font-bold text-lotus-ink">{w.title}</h3>
+                <p className="mt-2">{w.text}</p>
+              </li>
+            ))}
+          </ul>
+        </LotusContainer>
+      </section>
+
+      <section>
+        <LotusContainer className="py-16 sm:py-24">
+          <SectionTitle eyebrow="Services" title="Care for every stage">
+            From the first period to menopause, and every pregnancy in between.
+          </SectionTitle>
+          <ServiceCards nav={nav} />
+        </LotusContainer>
+      </section>
+
+      <section aria-labelledby="visit-heading" className="bg-white">
         <LotusContainer className="py-16 sm:py-24">
           <div className="max-w-2xl">
             <Eyebrow>Visit us</Eyebrow>

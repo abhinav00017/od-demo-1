@@ -38,7 +38,7 @@ export const clinic = {
     languages: "English, Telugu and Hindi",
   },
   stats: [
-    { value: "12+", label: "years of practice" },
+    { value: "12+", label: "years of experience" },
     { value: "8,000+", label: "women cared for" },
     { value: "4.9", label: "Google rating, 312 reviews" },
   ],

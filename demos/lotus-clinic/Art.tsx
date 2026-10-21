@@ -11,24 +11,6 @@ export function LotusMark({ className = "size-9" }: { className?: string }) {
   );
 }
 
-export function HeroArt() {
-  return (
-    <svg viewBox="0 0 480 480" className="h-auto w-full" aria-hidden>
-      <circle cx="240" cy="240" r="220" className="fill-lotus-sand" />
-      <path d="M110 420V230a130 130 0 0 1 260 0v190Z" className="fill-lotus-teal" />
-      <path d="M150 420V240a90 90 0 0 1 180 0v180Z" className="fill-lotus-teal-deep" />
-      <g transform="translate(240 300)">
-        <path d="M0-120c26 30 32 76 0 128-32-52-26-98 0-128Z" className="fill-lotus-mint" />
-        <path d="M-92-64c44 2 78 30 92 72-46 8-84-20-92-72Z" className="fill-lotus-mint" opacity=".85" />
-        <path d="M92-64c-44 2-78 30-92 72 46 8 84-20 92-72Z" className="fill-lotus-mint" opacity=".85" />
-        <path d="M-84 44q21-12 42 0t42 0 42 0 42 0" fill="none" className="stroke-lotus-mint" strokeWidth="8" strokeLinecap="round" opacity=".7" />
-      </g>
-      <circle cx="384" cy="118" r="26" className="fill-lotus-rose" />
-      <circle cx="92" cy="150" r="12" className="fill-lotus-teal" />
-    </svg>
-  );
-}
-
 export function DoctorCard({ initials, className = "" }: { initials: string; className?: string }) {
   return (
     <div className={`relative overflow-hidden rounded-[2rem] bg-lotus-teal ${className}`} aria-hidden>
