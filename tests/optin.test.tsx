@@ -84,6 +84,8 @@ describe("booking success screen", () => {
     expect(button.getAttribute("target")).toBe("_blank");
     expect(button.getAttribute("rel")).toBe("noopener");
     expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "You’ll send a short message to +1 737 250 8034. That’s it.")).toBeTruthy();
+    expect(screen.getByText("You’ll get the real message on WhatsApp once the clinic confirms. Tap Open WhatsApp above first.")).toBeTruthy();
+    expect(screen.queryByText(/No message was sent/)).toBeNull();
   });
 
   it("shows no join step when opt-in is not configured", async () => {
@@ -92,6 +94,8 @@ describe("booking success screen", () => {
     expect(screen.queryByRole("link", { name: "Open WhatsApp" })).toBeNull();
     expect(screen.queryByText("Get updates on WhatsApp")).toBeNull();
     expect(container.innerHTML).not.toContain("wa.me");
+    expect(screen.getByText("You’ll get the real message on WhatsApp once the clinic confirms.")).toBeTruthy();
+    expect(screen.queryByText(/Tap Open WhatsApp/)).toBeNull();
   });
 });
 

@@ -180,7 +180,9 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           Booking id: <span className="font-mono font-semibold text-lotus-ink">{shortBookingId(sent.id)}</span>
         </p>
         {optIn ? <WhatsAppJoin optIn={optIn} /> : null}
-        <p className="mt-4 text-sm">Demo: the WhatsApp message above is a preview. No message was sent.</p>
+        <p className="mt-4 text-sm">
+          You&rsquo;ll get the real message on WhatsApp once the clinic confirms.{optIn ? " Tap Open WhatsApp above first." : null}
+        </p>
         <button
           type="button"
           onClick={() => {
