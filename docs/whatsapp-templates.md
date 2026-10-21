@@ -2,29 +2,26 @@
 
 The code sends WhatsApp through one of two providers. `WHATSAPP_PROVIDER` picks it.
 
-- **Twilio sandbox**, for demos now. Sends the plain text of each message. See "Twilio sandbox" below.
+- **Twilio**, for demos now. Sends Twilio Content Templates. See "Twilio" below.
 - **Meta Cloud API**, for verified businesses. Sends templates. Until the templates below are approved, it sends Meta's `hello_world` instead, and the server log shows what the real template would have said.
 
 Unset `WHATSAPP_PROVIDER` means: Twilio if its three vars are set, else Meta if `WHATSAPP_TOKEN` is set, else a fake sender that only logs.
 
-## Twilio sandbox
+## Twilio
 
-Meta needs business verification before it sends to real numbers. The Twilio sandbox does not.
-It only sends to phones that joined it, so it is for demos, not for clinics.
+Meta needs business verification before it sends to real numbers. Twilio's quickstart does not.
+It runs on a Twilio trial account, so it is for demos, not for clinics.
 
-### Join the sandbox from your phone
+### The quickstart sender replaces the sandbox
 
-1. In the Twilio console, open Messaging > Try it out > Send a WhatsApp message.
-2. It shows a code of two words, like `join example-word`.
-3. From your phone's WhatsApp, send `join <your two words>` to **+1 415 523 8886**.
-4. Twilio replies that you joined. Every demo phone must do this once.
+Twilio's WhatsApp quickstart no longer uses the shared sandbox number (+1 415 523 8886) and its `join` code.
+It gives your account its own sender number, shown on the quickstart page.
+Put that number in `TWILIO_WHATSAPP_FROM`.
 
-### The 24 hour rule
-
-After a phone messages the sandbox, Twilio can send it free text for 24 hours.
-After that, sends fail with error 63016. Send any message to +1 415 523 8886 again to reopen the window.
-Do this shortly before each demo.
-If sends fail with error 63015, the phone is no longer in the sandbox. Send the join message again.
+This sender only takes business-initiated messages as a **Content Template**:
+a `ContentSid` (starts with `HX`) plus `ContentVariables`.
+Plain text (`Body`) fails with error 21654 "ContentSid Required".
+The dashboard then shows the error with the hint "set TWILIO_CONTENT_SID_*".
 
 ### Keys
 
@@ -32,28 +29,70 @@ If sends fail with error 63015, the phone is no longer in the sandbox. Send the 
 2. On Vercel (Production), add:
    - `TWILIO_ACCOUNT_SID` = the Account SID
    - `TWILIO_AUTH_TOKEN` = the Auth Token (sensitive)
-   - `TWILIO_WHATSAPP_FROM` = `+14155238886`
+   - `TWILIO_WHATSAPP_FROM` = your quickstart sender, like `+17372508034`
+   - `TWILIO_CONTENT_SID_CONFIRM` = the HX sid of the confirmation template (see below)
+   - `TWILIO_CONTENT_SID_REMINDER` = the HX sid of the reminder template (optional)
+   - `TWILIO_CONTENT_SID_CLINIC_ALERT` = the HX sid of the clinic alert template (optional)
    - `WHATSAPP_PUBLIC_URL` = `https://od-demo-lyart.vercel.app`
    - `WHATSAPP_PROVIDER` = `twilio` (optional; the Twilio vars alone pick it)
 3. Redeploy.
 
-Never paste the Auth Token in chat, code or memory files.
+If the reminder or clinic alert sid is unset, that message reuses the confirmation sid, and the server log says so.
+That lets the demo run on one template, like Twilio's sample, until the custom ones are approved.
+If no sid is set at all, Twilio gets plain text. That only lands inside a 24 hour session the recipient opened by messaging the sender.
+Outside it, sends fail with error 63016, also shown with the hint.
+
+Never paste the Auth Token or the Account SID in chat, code or memory files. GitHub push protection blocks Account SIDs.
+
+### Create the content templates
+
+1. Twilio console > Messaging > Content Template Builder > Create new.
+2. Name: use the names below. Language: English.
+3. Content type: **Text**.
+4. Body: paste the text below, with `{{1}}` and `{{2}}` as written. Add a sample value for each.
+5. Save, then **Submit for WhatsApp approval**. Category: **Utility**.
+6. When it shows Approved, copy its **Content SID** (starts with `HX`) into the matching env var on Vercel. Redeploy.
+
+The wording follows the Meta templates below. Twilio's version has two variables, so the clinic name is written in.
+The code sends the variables in the order listed in `CONTENT_VARIABLES` in `lib/whatsapp/messages.ts`. Change that map if a template needs another order.
+
+#### Booking confirmed: `lotus_booking_confirmed` → `TWILIO_CONTENT_SID_CONFIRM`
+
+```
+Hello, your visit at Lotus Women's Clinic is confirmed for {{1}}, {{2}}. Reply to this message if you need to change it.
+```
+
+Samples: {{1}} `Sat 24 Oct`, {{2}} `Morning, 10 am – 1 pm`
+
+#### Visit reminder: `lotus_booking_reminder` → `TWILIO_CONTENT_SID_REMINDER`
+
+```
+Hello, this is a reminder from Lotus Women's Clinic. Your visit is tomorrow, {{1}}, {{2}}. Reply to this message if you need to change it.
+```
+
+Samples: same as above.
+
+#### New booking alert (to the clinic): `lotus_new_booking_alert` → `TWILIO_CONTENT_SID_CLINIC_ALERT`
+
+```
+New booking: {{1}}, {{2}}. Open the dashboard to confirm.
+```
+
+Samples: {{1}} `Priya (Clinic visit)`, {{2}} `Sat 24 Oct, Morning, 10 am – 1 pm`
+
+{{1}} is the patient's first name and visit type. The reason is not sent, to keep it off Twilio.
 
 ### Delivery statuses
 
 Each send asks Twilio to post its status to the URL below, when `WHATSAPP_PUBLIC_URL` is set.
-Also paste it in Messaging > Try it out > Send a WhatsApp message > Sandbox settings > "Status callback URL", method POST:
+If the console offers a status callback URL for the sender, paste the same URL there, method POST:
 
 ```
 https://od-demo-lyart.vercel.app/api/whatsapp/twilio-status
 ```
 
 The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`. The dashboard row then moves from "sent" to "delivered" or "read", and shows "via Twilio".
-
-### What gets sent
-
-The same words as the Meta templates below, with the booking's details filled in.
-No `hello_world`: the sandbox takes free text inside the 24 hour window.
+The message log stores the HX sid in its `template` column for content sends, and `text` for plain-text sends.
 
 ### Meta stays
 
