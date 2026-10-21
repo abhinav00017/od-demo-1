@@ -6,7 +6,8 @@ import { memoryStore, resetMemoryStore } from "@/lib/bookings/memory";
 import type { Booking } from "@/lib/bookings/types";
 import { getWhatsApp, isConfigured, providerName, providerProblem } from "@/lib/whatsapp";
 import { sendBookingMessage } from "@/lib/whatsapp/notify";
-import { twilioAddress, twilioSender, twilioStatusUrl } from "@/lib/whatsapp/twilio";
+import { buildMessage, CONTENT_VARIABLES, contentVariablesFor } from "@/lib/whatsapp/messages";
+import { twilioAddress, twilioContentSid, twilioSender, twilioStatusUrl, withContentHint } from "@/lib/whatsapp/twilio";
 import { mapTwilioStatus, twilioSignature, twilioStatusError, validTwilioSignature } from "@/lib/whatsapp/twilioStatus";
 
 const booking: Booking = {
@@ -161,7 +162,7 @@ describe("sendBookingMessage via Twilio", () => {
     expect(form.get("Body")).toBe(
       "Hello Priya, your visit at Lotus Women's Clinic is confirmed for Sat 24 Oct, Morning, 10 am – 1 pm. Visit type: Clinic visit. Reply to this message if you need to change it.",
     );
-    expect(logs.join("\n")).toContain("sent as text via twilio: Hello [first name], your visit");
+    expect(logs.join("\n")).toContain("sent as text via twilio (no TWILIO_CONTENT_SID_CONFIRM): Hello [first name], your visit");
     expect(logs.join("\n")).not.toMatch(/Priya|9876543210|hello_world/);
   });
 
@@ -182,6 +183,105 @@ describe("sendBookingMessage via Twilio", () => {
     const meta = vi.fn(async () => new Response(JSON.stringify({ messages: [{ id: "wamid.M" }] }), { status: 200 }));
     const sender = getWhatsApp({ WHATSAPP_TOKEN: "t" }, meta);
     expect(await sendBookingMessage(booking, "reminder", { store: memoryStore, sender, env: {} })).toMatchObject({ provider: "meta", template: "hello_world" });
+  });
+});
+
+describe("twilio content templates", () => {
+  const HX = "HX00000000000000000000000000000001";
+
+  it("sends ContentSid and ContentVariables as a JSON string, and no Body", async () => {
+    const fetchImpl = created();
+    const sender = twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl });
+    const res = await sender.sendTemplate({ to: "919876543210", template: "hello_world", text: "fallback words", contentSid: HX, contentVariables: { "1": "Sat 24 Oct", "2": "Morning" } });
+    expect(res.ok).toBe(true);
+    const form = Object.fromEntries(new URLSearchParams(String(call(fetchImpl)[1].body)));
+    expect(form).toEqual({ From: "whatsapp:+17372508034", To: "whatsapp:+919876543210", ContentSid: HX, ContentVariables: '{"1":"Sat 24 Oct","2":"Morning"}' });
+    expect(JSON.parse(form.ContentVariables)).toEqual({ "1": "Sat 24 Oct", "2": "Morning" });
+  });
+
+  it("leaves out ContentVariables when there are none, and falls back to Body without a sid", async () => {
+    const fetchImpl = created();
+    const sender = twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl });
+    await sender.sendTemplate({ to: "919876543210", template: "hello_world", contentSid: HX, contentVariables: {} });
+    await sender.sendTemplate({ to: "919876543210", template: "hello_world", text: "Hello Priya" });
+    const first = new URLSearchParams(String(call(fetchImpl, 0)[1].body));
+    expect(first.get("ContentSid")).toBe(HX);
+    expect(first.has("ContentVariables")).toBe(false);
+    expect(first.has("Body")).toBe(false);
+    const second = new URLSearchParams(String(call(fetchImpl, 1)[1].body));
+    expect(second.get("Body")).toBe("Hello Priya");
+    expect(second.has("ContentSid")).toBe(false);
+  });
+
+  it("picks the sid per kind and reuses CONFIRM for the others when theirs is unset", () => {
+    expect(twilioContentSid("confirmation", {})).toEqual({ reused: false });
+    expect(twilioContentSid("reminder", {})).toEqual({ reused: false });
+    const one = { TWILIO_CONTENT_SID_CONFIRM: HX };
+    expect(twilioContentSid("confirmation", one)).toEqual({ sid: HX, reused: false });
+    expect(twilioContentSid("reminder", one)).toEqual({ sid: HX, reused: true });
+    expect(twilioContentSid("clinic_alert", one)).toEqual({ sid: HX, reused: true });
+    const all = { ...one, TWILIO_CONTENT_SID_REMINDER: "HXrem", TWILIO_CONTENT_SID_CLINIC_ALERT: "HXalert" };
+    expect(twilioContentSid("reminder", all)).toEqual({ sid: "HXrem", reused: false });
+    expect(twilioContentSid("clinic_alert", all)).toEqual({ sid: "HXalert", reused: false });
+    // Reminder set without CONFIRM: confirmation still has none.
+    expect(twilioContentSid("confirmation", { TWILIO_CONTENT_SID_REMINDER: "HXrem" })).toEqual({ reused: false });
+  });
+
+  it("builds the variable map per kind", () => {
+    expect(CONTENT_VARIABLES).toEqual({ confirmation: ["date", "slot"], reminder: ["date", "slot"], clinic_alert: ["firstNameAndVisit", "dateAndSlot"] });
+    expect(contentVariablesFor("confirmation", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
+    expect(contentVariablesFor("reminder", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
+    expect(contentVariablesFor("clinic_alert", booking)).toEqual({ "1": "Priya (Clinic visit)", "2": "Sat 24 Oct, Morning, 10 am – 1 pm" });
+    expect(contentVariablesFor("clinic_alert", booking, true)).toEqual({ "1": "[first name] (Clinic visit)", "2": "Sat 24 Oct, Morning, 10 am – 1 pm" });
+    const online = buildMessage("clinic_alert", { ...booking, visitType: "online", date: "2026-10-22" }, { TWILIO_CONTENT_SID_CONFIRM: HX });
+    expect(online).toMatchObject({ contentSid: HX, contentSidReused: true, contentVariables: { "1": "Priya (Online consultation)", "2": "Thu 22 Oct, Morning, 10 am – 1 pm" } });
+    expect(buildMessage("confirmation", booking, {})).toMatchObject({ contentSid: undefined, contentSidReused: false });
+  });
+
+  it("adds the content hint to 21654 and 63016 only, within 160 chars", async () => {
+    expect(withContentHint(21654, "21654: ContentSid Required")).toBe("21654: ContentSid Required (set TWILIO_CONTENT_SID_*)");
+    expect(withContentHint("63016", "63016: x")).toBe("63016: x (set TWILIO_CONTENT_SID_*)");
+    expect(withContentHint(20003, "20003: Authenticate")).toBe("20003: Authenticate");
+    expect(withContentHint(null, "x")).toBe("x");
+    const long = withContentHint(21654, `21654: ${"a".repeat(300)}`);
+    expect(long.length).toBe(160);
+    expect(long.endsWith("(set TWILIO_CONTENT_SID_*)")).toBe(true);
+    const bad = vi.fn(async () => new Response(JSON.stringify({ code: 21654, message: "ContentSid Required", status: 400 }), { status: 400 }));
+    const res = await twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl: bad }).sendText({ to: "919876543210", body: "x" });
+    expect(res).toEqual({ ok: false, error: "21654: ContentSid Required (set TWILIO_CONTENT_SID_*)" });
+  });
+
+  it("sendBookingMessage sends the content template, logs the HX sid as template, and logs no names", async () => {
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => void logs.push(a.join(" ")));
+    const fetchImpl = created();
+    const sender = twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl });
+    const env = { TWILIO_CONTENT_SID_CONFIRM: HX, CLINIC_WHATSAPP: "919000000001" };
+    const row = await sendBookingMessage(booking, "confirmation", { store: memoryStore, sender, env });
+    expect(row).toMatchObject({ provider: "twilio", template: HX, status: "sent", providerMessageId: "SM11111111111111111111111111111111" });
+    const form = new URLSearchParams(String(call(fetchImpl)[1].body));
+    expect(form.get("ContentSid")).toBe(HX);
+    expect(JSON.parse(form.get("ContentVariables")!)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
+    expect(form.has("Body")).toBe(false);
+
+    const alert = await sendBookingMessage(booking, "clinic_alert", { store: memoryStore, sender, env });
+    expect(alert).toMatchObject({ template: HX, toMasked: "••••0001" });
+    expect(JSON.parse(new URLSearchParams(String(call(fetchImpl, 1)[1].body)).get("ContentVariables")!)).toEqual({ "1": "Priya (Clinic visit)", "2": "Sat 24 Oct, Morning, 10 am – 1 pm" });
+    const all = logs.join("\n");
+    expect(all).toContain(`confirmation for booking 3F2A9C1E sent as content ${HX} via twilio`);
+    expect(all).toContain("TWILIO_CONTENT_SID_CLINIC_ALERT not set; clinic_alert reuses TWILIO_CONTENT_SID_CONFIRM");
+    expect(all).toContain('"1":"[first name] (Clinic visit)"');
+    expect(all).not.toMatch(/Priya|9876543210|9000000001/);
+  });
+
+  it("logs a failed content send with the hint for the dashboard", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ code: 63016, message: "Failed to send freeform message because you are outside the allowed window" }), { status: 400 }));
+    const sender = twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl });
+    const row = await sendBookingMessage(booking, "reminder", { store: memoryStore, sender, env: {} });
+    expect(row).toMatchObject({ status: "failed", template: "text" });
+    expect(row!.error).toMatch(/^63016: .*\(set TWILIO_CONTENT_SID_\*\)$/);
   });
 });
 
@@ -221,7 +321,9 @@ describe("twilio status mapping", () => {
   ])("%s -> %s", (raw, want) => expect(mapTwilioStatus(raw)).toBe(want));
 
   it("builds the error from ErrorCode and ErrorMessage, scrubbed", () => {
-    expect(twilioStatusError(new URLSearchParams({ ErrorCode: "63016", ErrorMessage: "Outside the allowed window" }))).toBe("63016: Outside the allowed window");
+    expect(twilioStatusError(new URLSearchParams({ ErrorCode: "63016", ErrorMessage: "Outside the allowed window" }))).toBe(
+      "63016: Outside the allowed window (set TWILIO_CONTENT_SID_*)",
+    );
     expect(twilioStatusError(new URLSearchParams({ ErrorCode: "63003", MessageStatus: "undelivered" }))).toBe("63003: undelivered");
     expect(twilioStatusError(new URLSearchParams({ ErrorMessage: "bad number +91 98765 43210" }))).toBe("bad number •••");
   });
@@ -287,7 +389,7 @@ describe("POST /api/whatsapp/twilio-status", () => {
   it("maps undelivered to failed with the error code and message", async () => {
     const latest = await seed("SM_D");
     await signed({ MessageSid: "SM_D", MessageStatus: "undelivered", ErrorCode: "63016", ErrorMessage: "Outside the allowed window" });
-    expect(await latest()).toMatchObject({ status: "failed", error: "63016: Outside the allowed window" });
+    expect(await latest()).toMatchObject({ status: "failed", error: "63016: Outside the allowed window (set TWILIO_CONTENT_SID_*)" });
   });
 
   it("skips the check with one log line when TWILIO_AUTH_TOKEN is unset, and answers 200 to junk", async () => {

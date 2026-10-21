@@ -19,8 +19,12 @@ export type TemplateRequest = {
   template: string;
   language?: string;
   components?: TemplateComponent[];
-  /** The plain text the template would show. Providers that send free text (Twilio sandbox) send this instead. */
+  /** The plain text the template would show. Twilio sends this as Body when no contentSid is set. */
   text?: string;
+  /** Twilio Content Template sid (HX...). Set = Twilio sends ContentSid + ContentVariables, no Body. Meta ignores it. */
+  contentSid?: string;
+  /** Twilio content variables, keys "1", "2", ... Sent as a JSON string. */
+  contentVariables?: Record<string, string>;
 };
 export type TextRequest = { to: string; body: string };
 

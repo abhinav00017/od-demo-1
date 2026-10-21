@@ -2,8 +2,10 @@
  * Twilio WhatsApp sender. Plain fetch, no SDK.
  * Docs: https://www.twilio.com/docs/messaging/api/message-resource#create-a-message-resource
  *
- * The Twilio sandbox sends free text inside the 24 h session that opens when the recipient
- * sends the join message. So sendTemplate sends the template's plain-text body, not a template.
+ * Twilio's quickstart WhatsApp sender only takes business-initiated messages as Content Templates:
+ * ContentSid (HX...) plus ContentVariables. So sendTemplate sends the content template when the request
+ * carries a contentSid, and the plain-text body (Body) otherwise. Body only works inside a 24 h session
+ * the recipient opened; outside it Twilio answers 21654 or 63016.
  */
 import { scrubDigits, type SendResult, type WhatsAppSender } from "./client";
 
@@ -34,6 +36,39 @@ export function twilioStatusUrl(publicUrl: string) {
   return `${publicUrl.replace(/\/+$/, "")}${TWILIO_STATUS_PATH}`;
 }
 
+type Env = Record<string, string | undefined>;
+type ContentKind = "confirmation" | "reminder" | "clinic_alert";
+
+/** The env var holding the Twilio Content Template sid (HX...) for each message kind. */
+export const TWILIO_CONTENT_SID_VARS: Record<ContentKind, string> = {
+  confirmation: "TWILIO_CONTENT_SID_CONFIRM",
+  reminder: "TWILIO_CONTENT_SID_REMINDER",
+  clinic_alert: "TWILIO_CONTENT_SID_CLINIC_ALERT",
+};
+
+/**
+ * The Content Template sid for a kind. Reminder and clinic alert reuse the confirmation sid when their own
+ * var is unset, so the demo runs on one sample template. `reused` says that happened. No sid = send Body.
+ */
+export function twilioContentSid(kind: ContentKind, env: Env = process.env): { sid?: string; reused: boolean } {
+  const own = env[TWILIO_CONTENT_SID_VARS[kind]]?.trim();
+  if (own) return { sid: own, reused: false };
+  const confirm = env.TWILIO_CONTENT_SID_CONFIRM?.trim();
+  if (kind !== "confirmation" && confirm) return { sid: confirm, reused: true };
+  return { reused: false };
+}
+
+/** Twilio errors that mean "this send needs a content template". The dashboard shows the hint with them. */
+const NEEDS_CONTENT = new Set(["21654", "63016"]);
+export const CONTENT_HINT = "set TWILIO_CONTENT_SID_*";
+
+/** "21654: ContentSid Required" -> "21654: ContentSid Required (set TWILIO_CONTENT_SID_*)". Other errors pass through. Max 160 chars. */
+export function withContentHint(code: string | number | null | undefined, line: string) {
+  if (code === null || code === undefined || !NEEDS_CONTENT.has(String(code))) return line.slice(0, 160);
+  const hint = ` (${CONTENT_HINT})`;
+  return `${line.slice(0, 160 - hint.length)}${hint}`;
+}
+
 type TwilioError = { code?: number; message?: string };
 type TwilioOk = { sid?: string };
 
@@ -41,7 +76,7 @@ type TwilioOk = { sid?: string };
 function shortError(status: number, body: unknown) {
   const e = body as TwilioError | undefined;
   const text = e?.message || `HTTP ${status}`;
-  return scrubDigits(`${e?.code ? `${e.code}: ` : ""}${text}`).slice(0, 160);
+  return withContentHint(e?.code, scrubDigits(`${e?.code ? `${e.code}: ` : ""}${text}`));
 }
 
 export function twilioSender(opts: TwilioOptions): WhatsAppSender {
@@ -49,9 +84,16 @@ export function twilioSender(opts: TwilioOptions): WhatsAppSender {
   const url = `${base}/2010-04-01/Accounts/${encodeURIComponent(opts.accountSid)}/Messages.json`;
   const auth = `Basic ${Buffer.from(`${opts.accountSid}:${opts.authToken}`).toString("base64")}`;
 
-  async function post(to: string, body: string): Promise<SendResult> {
+  /** Sends either a Body or a content template. Never both: Twilio wants no Body with a ContentSid. */
+  async function post(to: string, message: { body: string } | { contentSid: string; contentVariables?: Record<string, string> }): Promise<SendResult> {
     try {
-      const form = new URLSearchParams({ From: twilioAddress(opts.from), To: twilioAddress(to), Body: body });
+      const form = new URLSearchParams({ From: twilioAddress(opts.from), To: twilioAddress(to) });
+      if ("contentSid" in message) {
+        form.set("ContentSid", message.contentSid);
+        if (message.contentVariables && Object.keys(message.contentVariables).length) form.set("ContentVariables", JSON.stringify(message.contentVariables));
+      } else {
+        form.set("Body", message.body);
+      }
       if (opts.publicUrl) form.set("StatusCallback", twilioStatusUrl(opts.publicUrl));
       const res = await (opts.fetchImpl ?? fetch)(url, {
         method: "POST",
@@ -70,13 +112,14 @@ export function twilioSender(opts: TwilioOptions): WhatsAppSender {
 
   return {
     kind: "twilio",
-    async sendTemplate({ to, template, text }) {
-      // No templates in the sandbox. The builder's plain-text body is the message.
-      if (!text?.trim()) return { ok: false, error: `no text for template ${template}; Twilio sends plain text only` };
-      return post(to, text);
+    async sendTemplate({ to, template, text, contentSid, contentVariables }) {
+      if (contentSid) return post(to, { contentSid, contentVariables });
+      // No content template configured: send the plain text. Works only inside a 24 h session.
+      if (!text?.trim()) return { ok: false, error: `no text for template ${template} and no content sid; ${CONTENT_HINT}` };
+      return post(to, { body: text });
     },
     sendText({ to, body }) {
-      return post(to, body);
+      return post(to, { body });
     },
   };
 }

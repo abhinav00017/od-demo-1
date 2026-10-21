@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MessageStatus } from "@/lib/bookings/types";
 import { scrubDigits } from "./client";
+import { withContentHint } from "./twilio";
 
 /**
  * Twilio's request signature: HMAC-SHA1, keyed with the auth token, of the full URL Twilio called
@@ -45,9 +46,12 @@ export function mapTwilioStatus(status: string | null): MessageStatus | null {
   }
 }
 
-/** A failed callback's reason as a short line with no phone numbers, like "63016: Outside the allowed window". */
+/**
+ * A failed callback's reason as a short line with no phone numbers, like "63003: undelivered".
+ * 21654 and 63016 get the hint "(set TWILIO_CONTENT_SID_*)".
+ */
 export function twilioStatusError(params: URLSearchParams) {
   const code = params.get("ErrorCode");
   const text = params.get("ErrorMessage") || params.get("MessageStatus") || "failed";
-  return scrubDigits(`${code ? `${code}: ` : ""}${text}`).slice(0, 160);
+  return withContentHint(code, scrubDigits(`${code ? `${code}: ` : ""}${text}`));
 }

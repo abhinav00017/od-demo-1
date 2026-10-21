@@ -2,6 +2,7 @@ import { clinic } from "@/demos/lotus-clinic/data";
 import type { Booking } from "@/lib/bookings/types";
 import type { TemplateComponent } from "./client";
 import { HELLO_WORLD, whatsappSettings } from "./index";
+import { twilioContentSid } from "./twilio";
 
 type Env = Record<string, string | undefined>;
 
@@ -23,6 +24,14 @@ export type BuiltMessage = {
   text: string;
   /** The same text with names and reasons swapped for labels. The only form that goes to logs. */
   logPreview: string;
+  /** Twilio Content Template sid for this kind, from TWILIO_CONTENT_SID_*. Unset = Twilio sends `text` as Body. */
+  contentSid?: string;
+  /** True when this kind has no sid of its own and borrows TWILIO_CONTENT_SID_CONFIRM. */
+  contentSidReused: boolean;
+  /** Twilio ContentVariables, keys "1", "2", ... See CONTENT_VARIABLES. */
+  contentVariables: Record<string, string>;
+  /** The same variables with names swapped for labels. The only form that goes to logs. */
+  logContentVariables: Record<string, string>;
 };
 
 /**
@@ -41,6 +50,20 @@ const REDACT: Record<SendKind, Record<number, string>> = {
   confirmation: { 0: "[first name]" },
   reminder: { 0: "[first name]" },
   clinic_alert: { 0: "[name]", 4: "[reason]" },
+};
+
+/** One value a Twilio content variable can carry. */
+export type ContentField = "date" | "slot" | "firstNameAndVisit" | "dateAndSlot";
+
+/**
+ * Twilio Content Template variables per kind, in {{1}}, {{2}}.. order. Reorder or swap fields here to match a new template.
+ * Patient templates: {{1}} date, {{2}} slot. Clinic alert: {{1}} first name and visit type, {{2}} date and slot.
+ * docs/whatsapp-templates.md has the bodies these fit.
+ */
+export const CONTENT_VARIABLES: Record<SendKind, ContentField[]> = {
+  confirmation: ["date", "slot"],
+  reminder: ["date", "slot"],
+  clinic_alert: ["firstNameAndVisit", "dateAndSlot"],
 };
 
 /** WhatsApp wants E.164 without the plus. The booking keeps 10 Indian digits. */
@@ -64,8 +87,29 @@ function fill(body: string, params: string[]) {
   return body.replace(/\{\{(\d)\}\}/g, (_, n: string) => params[Number(n) - 1] ?? "");
 }
 
+const visitLabel = (b: Booking) => clinic.booking.visitTypes.find((t) => t.id === b.visitType)?.label ?? b.visitType;
+
+function contentField(field: ContentField, b: Booking, redact: boolean) {
+  const name = redact ? "[first name]" : firstName(b.name);
+  switch (field) {
+    case "date":
+      return shortDate(b.date);
+    case "slot":
+      return b.slot;
+    case "firstNameAndVisit":
+      return `${name} (${visitLabel(b)})`;
+    case "dateAndSlot":
+      return `${shortDate(b.date)}, ${b.slot}`;
+  }
+}
+
+/** Twilio ContentVariables for a kind and booking: {"1": .., "2": ..}. `redact` swaps names for labels, for logs. */
+export function contentVariablesFor(kind: SendKind, b: Booking, redact = false): Record<string, string> {
+  return Object.fromEntries(CONTENT_VARIABLES[kind].map((field, i) => [String(i + 1), contentField(field, b, redact)]));
+}
+
 function paramsFor(kind: SendKind, b: Booking) {
-  const visit = clinic.booking.visitTypes.find((t) => t.id === b.visitType)?.label ?? b.visitType;
+  const visit = visitLabel(b);
   if (kind === "clinic_alert") return [b.name.trim(), visit, shortDate(b.date), b.slot, b.reason];
   return [firstName(b.name), clinic.name, shortDate(b.date), b.slot, visit];
 }
@@ -76,6 +120,7 @@ export function buildMessage(kind: SendKind, b: Booking, env: Env = process.env)
   const params = paramsFor(kind, b);
   const isHello = template === HELLO_WORLD;
   const text = fill(TEMPLATE_BODIES[kind], params);
+  const content = twilioContentSid(kind, env);
   return {
     kind,
     template,
@@ -86,6 +131,10 @@ export function buildMessage(kind: SendKind, b: Booking, env: Env = process.env)
     preview: text,
     text,
     logPreview: fill(TEMPLATE_BODIES[kind], params.map((p, i) => REDACT[kind][i] ?? p)),
+    contentSid: content.sid,
+    contentSidReused: content.reused,
+    contentVariables: contentVariablesFor(kind, b),
+    logContentVariables: contentVariablesFor(kind, b, true),
   };
 }
 
