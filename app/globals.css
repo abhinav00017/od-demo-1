@@ -23,7 +23,20 @@
   --color-line: #dbe5e7;
   --color-chip: #e6eef0;
 
-  /* Lotus Women's Clinic (fictional client site): deep teal + soft sand */
+  /* Lotus Women's Clinic site (fictional client): one deep forest accent on warm off-white. */
+  --color-lotus-paper: #faf8f4;
+  --color-lotus-stone: #efebe4;
+  --color-lotus-text: #1b1c1a;
+  --color-lotus-grey: #5f5b54;
+  --color-lotus-forest: #1f3d38;
+  --color-lotus-forest-deep: #152b27;
+  /* Hairline rules. Decoration only, never the only edge of a control. */
+  --color-lotus-rule: #e4dfd6;
+  /* Form field borders: 3:1 on white and paper (WCAG 1.4.11). */
+  --color-lotus-edge: #8f897f;
+  --color-lotus-error: #a3392b;
+
+  /* Lotus service mocks on the hub preview pages (components/mocks): deep teal + soft sand */
   --color-lotus-teal: #0e5e5a;
   --color-lotus-teal-deep: #0a4542;
   --color-lotus-mint: #dcefeb;
@@ -66,7 +79,11 @@
 
 @theme inline {
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* Hub mocks of Lotus services only. */
   --font-lotus: var(--font-fraunces), ui-serif, Georgia, serif;
+  /* Lotus site. The variables are set on the site wrapper, not on <html>, so hub pages never use them. */
+  --font-lotus-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-lotus-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -104,6 +121,8 @@
   }
 
   [data-site="lotus"] :focus-visible {
-    outline-color: var(--color-lotus-teal);
+    outline: 2px solid var(--color-lotus-forest);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 }

@@ -26,7 +26,13 @@ const NORMAL: [string, string][] = [
   ["muted", "surface"], ["muted", "canvas"], ["muted", "canvas-deep"], ["muted", "chip"],
   ["brand", "surface"], ["brand", "canvas"], ["brand", "brand-soft"],
   ["white", "brand"], ["white", "brand-strong"], ["white", "ink"],
-  // Lotus demo
+  // Lotus site
+  ["lotus-text", "lotus-paper"], ["lotus-text", "white"], ["lotus-text", "lotus-stone"],
+  ["lotus-grey", "lotus-paper"], ["lotus-grey", "white"], ["lotus-grey", "lotus-stone"],
+  ["lotus-forest", "lotus-paper"], ["lotus-forest", "white"], ["lotus-forest", "lotus-stone"],
+  ["white", "lotus-forest"], ["white", "lotus-forest-deep"],
+  ["lotus-error", "white"], ["lotus-error", "lotus-paper"],
+  // Hub mocks of Lotus services
   ["lotus-ink", "lotus-cream"], ["lotus-ink", "lotus-sand"], ["lotus-ink", "lotus-mint"], ["lotus-ink", "white"],
   ["lotus-body", "lotus-cream"], ["lotus-body", "lotus-sand"], ["lotus-body", "lotus-mint"], ["lotus-body", "white"],
   ["lotus-teal", "white"], ["lotus-teal", "lotus-cream"], ["lotus-teal", "lotus-sand"], ["lotus-teal", "lotus-mint"],
@@ -49,6 +55,14 @@ const LARGE: [string, string][] = [
   ["tagline", "canvas-deep"],
 ];
 
+// Non-text (WCAG 1.4.11): field borders and focus rings must reach 3:1 against what is next to them.
+const NON_TEXT: [string, string][] = [
+  ["lotus-edge", "white"],
+  ["lotus-edge", "lotus-paper"],
+  ["lotus-forest", "lotus-paper"],
+  ["lotus-forest", "white"],
+];
+
 describe("WCAG AA contrast", () => {
   it.each(NORMAL)("%s on %s is at least 4.5:1", (fg, bg) => {
     expect(tokens[fg], fg).toBeDefined();
@@ -57,6 +71,11 @@ describe("WCAG AA contrast", () => {
   });
 
   it.each(LARGE)("%s on %s is at least 3:1 (large text)", (fg, bg) => {
+    expect(ratio(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(NON_TEXT)("%s against %s is at least 3:1 (borders and focus)", (fg, bg) => {
+    expect(tokens[fg], fg).toBeDefined();
     expect(ratio(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(3);
   });
 });
