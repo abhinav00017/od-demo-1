@@ -3,7 +3,7 @@ import { LIVE_DEMOS, type DemoId, type DemoPage } from "@/lib/demos";
 import type { Industry, Service } from "@/lib/schema";
 import { clinic } from "./lotus-clinic/data";
 import { LotusSite, type Nav } from "./lotus-clinic/LotusSite";
-import { LotusAbout, LotusBook, LotusContact, LotusHome, LotusServices } from "./lotus-clinic/pages";
+import { LotusAbout, LotusAdmin, LotusBook, LotusContact, LotusHome, LotusServices } from "./lotus-clinic/pages";
 
 const LOTUS_PAGES: Record<DemoPage, (props: { nav: Nav }) => React.ReactNode> = {
   "": LotusHome,
@@ -11,6 +11,7 @@ const LOTUS_PAGES: Record<DemoPage, (props: { nav: Nav }) => React.ReactNode> = 
   about: LotusAbout,
   contact: LotusContact,
   book: LotusBook,
+  admin: LotusAdmin,
 };
 
 /** Page title for a live demo page, as the client's own site would set it. */

@@ -11,6 +11,7 @@ export const LIVE_DEMOS = {
       { slug: "about", label: "About" },
       { slug: "contact", label: "Contact" },
       { slug: "book", label: "Book" },
+      { slug: "admin", label: "Clinic dashboard" },
     ],
   },
 } as const;

@@ -135,8 +135,11 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
             <p className="text-sm text-white/85">{clinic.email}</p>
           </div>
         </LotusContainer>
-        <LotusContainer className="border-t border-white/15 py-5 text-xs text-white/85">
-          Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.
+        <LotusContainer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 py-5 text-xs text-white/85">
+          <span>Demo website by onlydevs. Lotus Women&apos;s Clinic and Dr. Ananya Rao are made up.</span>
+          <Link href={nav.href("admin")} className="font-semibold underline-offset-4 hover:underline">
+            Clinic login
+          </Link>
         </LotusContainer>
       </footer>
     </div>

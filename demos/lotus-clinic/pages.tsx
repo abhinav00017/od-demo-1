@@ -1,6 +1,7 @@
 import { CalendarCheck, Clock, Mail, MapPin, MessageCircle, Phone, Quote } from "lucide-react";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
+import { AdminApp } from "./AdminApp";
 import { DoctorCard, HeroArt } from "./Art";
 import { BookingForm, BookingFormFromUrl } from "./BookingForm";
 import { ClinicMap, DirectionsLink, VisitBlock } from "./ClinicMap";
@@ -326,6 +327,24 @@ export function LotusBook() {
         <Suspense fallback={<BookingForm />}>
           <BookingFormFromUrl />
         </Suspense>
+      </LotusContainer>
+    </>
+  );
+}
+
+/** The clinic's private page: bookings from the website. Not in the site nav. */
+export function LotusAdmin({ nav }: { nav: Nav }) {
+  return (
+    <>
+      <section className="bg-lotus-sand">
+        <LotusContainer className="py-10 sm:py-12">
+          <Eyebrow>Clinic staff</Eyebrow>
+          <h1 className="mt-3 font-lotus text-4xl leading-tight font-semibold text-lotus-ink sm:text-5xl">Clinic dashboard</h1>
+          <p className="mt-3 max-w-2xl text-lg">Bookings from the website, today and upcoming. New requests appear within seconds.</p>
+        </LotusContainer>
+      </section>
+      <LotusContainer className="py-10 sm:py-14">
+        <AdminApp bookHref={nav.href("book")} />
       </LotusContainer>
     </>
   );

@@ -11,14 +11,18 @@ vi.mock("next/navigation", async (importOriginal) => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// The admin page asks the API for its session on mount. Tests have no server, so the request just waits.
+vi.stubGlobal("fetch", () => new Promise(() => {}));
+
 describe("every service route resolves", () => {
-  it("generates 12 service routes and 4 inner demo pages", () => {
+  it("generates 12 service routes and 5 inner demo pages", () => {
     expect(serviceParams()).toHaveLength(12);
     expect(demoPageParams().map((p) => `/${p.industry}/${p.service}/${p.page}`)).toEqual([
       "/clinic/website/services",
       "/clinic/website/about",
       "/clinic/website/contact",
       "/clinic/website/book",
+      "/clinic/website/admin",
     ]);
   });
 
