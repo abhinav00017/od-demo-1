@@ -63,3 +63,8 @@ Append only. Newest at the bottom.
 - 21 Oct 2026: level 2 verified by Abhinav's session (lint, typecheck, 128 tests, build; test booking posted and seen live on the dashboard; map iframe present on contact) and deployed. Live dashboard shows "Dashboard not configured" until ADMIN_PASSWORD is set on Vercel. Bookings live in memory until DATABASE_URL is set; Neon terms still pending Abhinav.
 - 21 Oct 2026: Neon terms accepted by Abhinav, database `od-demo-db` created through the Vercel marketplace and connected to project `od-demo`. Bookings table migrated. ADMIN_PASSWORD and ADMIN_SECRET set on Vercel (production, development; preview add did not stick, retry if previews need it). Live test: booking saved to Postgres, admin login OK, dashboard API listed it. Test row deleted. Values live in the git-ignored `.env.local`, never in chat.
 - Local network quirk: the home router's DNS (192.168.29.1) refuses `*.neon.tech` hostnames, so `npm run db:migrate` fails locally with "fetch failed / ENOTFOUND". Cloudflare 1.1.1.1 resolves them. Workaround used: a one-off runner that gives undici a custom lookup via 1.1.1.1. Vercel itself has no such problem.
+
+## 2026-10-21 (Lotus restyle)
+
+- Abhinav's feedback on the Lotus clinic demo: fonts, colours and UI look generic, "AI generated". Hub (onlydevs pages) stays as is for now.
+- Restyle the Lotus demo only. Keep it clean, minimal, straight and simple. Make it feel designed: a distinctive font pair (editorial serif headings, quiet sans body), one deep accent on warm off-white, no pastel panels, fewer uniform rounded cards, fewer pills and badges, smaller radii, thin rules, more space between sections. Same content, same routes, same booking flow and dashboard.
