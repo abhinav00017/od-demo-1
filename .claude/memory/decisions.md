@@ -45,3 +45,18 @@ Append only. Newest at the bottom.
 - Abhinav chose: build level 2 on the Lotus demo now, upgrade to level 3 later. Level 3 reuses the level 2 bookings table.
 - Add the Google Maps embed to the Lotus demo (home contact block and contact page), as Dr. Gowthami's site has.
 - Level 2 design: Postgres on Vercel (Neon) via DATABASE_URL. Same repository interface backed by an in-memory store when DATABASE_URL is missing, so dev and tests run without a database. Dashboard at /clinic/website/admin behind ADMIN_PASSWORD. Dashboard polls so a new booking appears within seconds. Email notification to the clinic via Resend when RESEND_API_KEY is set; skipped otherwise.
+
+## 2026-10-21 (map + level 2 build)
+
+- Google Maps embed is on the Lotus home contact block and the contact page (commit 0252666). The iframe uses loading="lazy", so it only paints when scrolled into view.
+- Storage: `BookingStore` interface in `lib/bookings/`. `getStore()` returns the Neon Postgres store when DATABASE_URL is set, else the in-memory store. Driver: `@neondatabase/serverless` over HTTP, plain SQL with $n parameters, no ORM.
+- Schema: `lib/bookings/schema.sql`, one `bookings` table (uuid id, created_at, clinic_slug, name, phone, visit_type, date, slot, reason, status new|confirmed|cancelled, notes). `npm run db:migrate` applies it. Safe to rerun.
+- Dates are read as `date::text`, so the clinic's calendar day never shifts by server time zone. "Today" on the server is India time (Asia/Kolkata).
+- POST /api/bookings reruns the form's `validateBooking`, normalises the phone to 10 digits, saves, returns `{ok, id, booking}` (201) or 400 with `fieldErrors`. Honeypot field `lotus_hp`: filled means a fake 201 and nothing saved. In-memory rate limit, 10 requests a minute per IP, also on admin login.
+- Admin: /clinic/website/admin, a client page that asks /api/admin/session. Password from ADMIN_PASSWORD. Cookie `lotus_admin` is HMAC-signed (ADMIN_SECRET, falls back to the password), httpOnly, sameSite lax, secure in production, 12 hours. In `next dev` without ADMIN_PASSWORD the password is "demo" and the login screen says so. In production without it the page shows "Dashboard not configured".
+- Dashboard: today and upcoming, grouped by day, morning first. Tiles for today, this week, new. Confirm and Cancel call PATCH /api/bookings/[id]. Polls every 5 s while the tab is visible, with a Live dot. Phone is masked until tapped. A note shows when storage is memory.
+- Booking form posts to the API. Success says "Booking saved. The clinic will confirm on WhatsApp." with an 8-character booking id. The WhatsApp preview stays. Network and server errors show a red alert and keep the typed details.
+- Email: Resend REST API when RESEND_API_KEY and CLINIC_NOTIFY_EMAIL are set, sent after the response through `after()`. Otherwise one log line "notify skipped: not configured". Never blocks the save. Logs never carry phone numbers or names. Default sender onboarding@resend.dev only mails the Resend account's own address until a domain is verified.
+- The footer has a small "Clinic login" link to the dashboard. The dashboard is not in the main nav.
+- Postgres store is tested only with a mocked driver. It has not run against a real database. No DATABASE_URL yet: Neon marketplace terms are pending with Abhinav.
+- Without DATABASE_URL on Vercel, bookings live in one function instance's memory. They vanish on cold starts and may not show across instances. Fine for a quick look, not for a real demo.
