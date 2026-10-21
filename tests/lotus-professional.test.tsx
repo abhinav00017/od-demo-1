@@ -71,6 +71,35 @@ describe("Lotus professional copy", () => {
     }
   });
 
+  it("leads the stats with a centred headline and sub-heading", () => {
+    const { container } = renderPage("");
+    const numbers = section(container, "numbers-heading");
+    const h2 = numbers.querySelector("#numbers-heading")!;
+    expect(h2.tagName).toBe("H2");
+    expect(h2.textContent).toBe("Trusted by thousands of women across Visakhapatnam.");
+    expect(h2.className).not.toContain("sr-only");
+    expect(h2.firstElementChild?.hasAttribute("data-lotus-linemark")).toBe(true);
+    expect(h2.nextElementSibling!.textContent).toBe("Twelve years of compassionate, evidence-based care.");
+    expect(h2.parentElement!.className).toContain("text-center");
+    expect(h2.compareDocumentPosition(numbers.querySelector("dl")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("closes the stats with the doctor's quote from data.ts, attributed under it", () => {
+    const { container } = renderPage("");
+    const numbers = section(container, "numbers-heading");
+    const quote = numbers.querySelector("[data-quote]")!;
+    expect(clinic.quote).toBe("Every woman deserves care that listens first.");
+    expect(quote.className).toContain("text-center");
+    expect(numbers.querySelector("dl")!.compareDocumentPosition(quote) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const text = quote.querySelector("blockquote")!;
+    expect(text.textContent).toContain(clinic.quote);
+    expect(text.className).toContain("italic");
+    expect(text.className).toContain("sm:text-2xl");
+    const mark = text.querySelector("[aria-hidden]")!;
+    expect(mark.className).toContain("text-lotus-accent");
+    expect(quote.querySelector("figcaption")!.textContent).toBe("Dr. Ananya Rao, Consultant Obstetrician & Gynecologist");
+  });
+
   it("gives each home service card an icon circle, a clinical title, two sentences and a Know More pill", () => {
     const { container } = renderPage("");
     const cards = section(container, "services-heading").querySelectorAll("ul > li");

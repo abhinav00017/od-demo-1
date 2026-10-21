@@ -196,10 +196,14 @@ export function LotusHome({ nav }: { nav: Nav }) {
 
       <section aria-labelledby="numbers-heading">
         <LotusContainer className={ui.section}>
-          <h2 id="numbers-heading" className="sr-only">
-            Lotus in numbers
-          </h2>
-          <dl className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 id="numbers-heading" className={`text-balance ${ui.h2}`}>
+              <LotusLineMark className="mr-3 inline-block size-6 align-[-0.1em]" />
+              Trusted by thousands of women across Visakhapatnam.
+            </h2>
+            <p className="mt-3 text-lg">Twelve years of compassionate, evidence-based care.</p>
+          </div>
+          <dl className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:mt-12 lg:grid-cols-4 lg:gap-8">
             {clinic.stats.map((s) => (
               <div key={s.label} data-stat="" className="flex flex-col-reverse rounded-3xl bg-lotus-avatar px-5 py-6 sm:px-7 sm:py-8">
                 <dt className="mt-4 text-sm font-medium sm:text-base">
@@ -222,6 +226,17 @@ export function LotusHome({ nav }: { nav: Nav }) {
               </div>
             ))}
           </dl>
+          <figure data-quote="" className="mx-auto mt-12 max-w-2xl text-center lg:mt-16">
+            <blockquote className="text-xl leading-relaxed text-pretty text-lotus-text italic sm:text-2xl">
+              <span aria-hidden className="mr-1 text-4xl leading-none text-lotus-accent not-italic sm:text-5xl">
+                &ldquo;
+              </span>
+              {clinic.quote}
+            </blockquote>
+            <figcaption className="mt-4 text-sm font-medium tracking-wider text-lotus-muted uppercase">
+              {clinic.doctor.name}, {clinic.doctor.role}
+            </figcaption>
+          </figure>
         </LotusContainer>
       </section>
 

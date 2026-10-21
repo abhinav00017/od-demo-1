@@ -48,6 +48,8 @@ export const clinic = {
     ],
     languages: "English, Telugu and Hindi",
   },
+  /** The quote strip under the stats on the home page. */
+  quote: "Every woman deserves care that listens first.",
   stats: [
     { value: "12+", label: "Years of Experience" },
     { value: "8,000+", label: "Patients Treated" },
