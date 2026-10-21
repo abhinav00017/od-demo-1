@@ -50,6 +50,15 @@ function storeContract(name: string, store: BookingStore, reset: () => void) {
       expect(await store.updateStatus("00000000-0000-4000-8000-000000000000", "cancelled")).toBeNull();
     });
 
+    it("records the provider on each message, meta when not given", async () => {
+      const a = await store.create(base);
+      const old = await store.logMessage({ bookingId: a.id, kind: "confirmation", toMasked: "••••3210", template: "hello_world", status: "sent" });
+      const tw = await store.logMessage({ bookingId: a.id, kind: "reminder", provider: "twilio", toMasked: "••••3210", template: "text", status: "sent", providerMessageId: "SM1" });
+      expect(old.provider).toBe("meta");
+      expect(tw.provider).toBe("twilio");
+      expect((await store.listMessagesForBookings([a.id])).map((m) => m.provider).sort()).toEqual(["meta", "twilio"]);
+    });
+
     it("logs messages and lists them newest first for the asked bookings", async () => {
       const a = await store.create(base);
       const b = await store.create({ ...base, name: "Other" });

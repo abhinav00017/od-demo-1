@@ -30,16 +30,23 @@ export type MessageKind = (typeof MESSAGE_KINDS)[number];
 export const MESSAGE_STATUSES = ["queued", "sent", "delivered", "read", "failed"] as const;
 export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
 
+/** Who carried a message. Rows from before the Twilio build are "meta". */
+export const MESSAGE_PROVIDERS = ["meta", "twilio", "fake"] as const;
+export type MessageProvider = (typeof MESSAGE_PROVIDERS)[number];
+
 /** One row of the messages table: a WhatsApp message sent, or tried, for a booking. */
 export type MessageLog = {
   id: string;
   bookingId: string;
   kind: MessageKind;
   channel: "whatsapp";
+  /** meta, twilio or fake. */
+  provider: MessageProvider;
   /** Last 4 digits only, like "••••3210". Never the full number. */
   toMasked: string;
+  /** Template name, or "text" when the provider sent plain text (Twilio sandbox). */
   template: string;
-  /** Meta's message id (wamid...). Null when the send failed before Meta answered. */
+  /** The provider's message id: Meta's wamid... or Twilio's SM... sid. Null when the send failed before the provider answered. */
   providerMessageId: string | null;
   status: MessageStatus;
   error: string | null;
@@ -49,6 +56,8 @@ export type MessageLog = {
 };
 
 export type NewMessageLog = Pick<MessageLog, "bookingId" | "kind" | "toMasked" | "template" | "status"> & {
+  /** Default "meta", the same as the database column. */
+  provider?: MessageProvider;
   providerMessageId?: string | null;
   error?: string | null;
 };
@@ -63,8 +72,8 @@ export interface BookingStore {
   /** Saves one message log row. */
   logMessage(input: NewMessageLog): Promise<MessageLog>;
   /**
-   * Moves a message to a new status, found by Meta's message id. Status only moves forward
-   * (queued, sent, delivered, read; failed beats all), because Meta's webhooks can arrive out of order.
+   * Moves a message to a new status, found by the provider's message id. Status only moves forward
+   * (queued, sent, delivered, read; failed beats all), because webhooks can arrive out of order.
    * Returns the row when it changed, or null when no row matched or the status was not newer.
    */
   updateMessageStatus(providerMessageId: string, status: MessageStatus, error?: string | null): Promise<MessageLog | null>;
@@ -73,7 +82,11 @@ export interface BookingStore {
 }
 
 /** The latest WhatsApp message for a booking, as GET /api/bookings and the dashboard show it. No number, no template. */
-export type WhatsAppSummary = Pick<MessageLog, "kind" | "status" | "error"> & { at: string };
+export type WhatsAppSummary = Pick<MessageLog, "kind" | "status" | "error"> & {
+  at: string;
+  /** Who carried it. The dashboard shows "via Twilio" for twilio. */
+  provider?: MessageProvider;
+};
 
 /** A booking row on the dashboard. `whatsapp` is null when nothing was sent. */
 export type DashboardBooking = Booking & { whatsapp?: WhatsAppSummary | null };

@@ -35,3 +35,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS messages_booking_idx ON messages (booking_id, created_at);
 
 CREATE UNIQUE INDEX IF NOT EXISTS messages_provider_id_idx ON messages (provider_message_id) WHERE provider_message_id IS NOT NULL;
+
+-- Which provider carried each message: meta (Cloud API), twilio (WhatsApp sandbox) or fake (local dev).
+-- Added with the Twilio provider. Rows sent before it were all Meta, hence the default.
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'meta' CHECK (provider IN ('meta', 'twilio', 'fake'));

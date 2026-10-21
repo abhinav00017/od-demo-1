@@ -7,6 +7,7 @@ import {
   type BookingStore,
   type MessageKind,
   type MessageLog,
+  type MessageProvider,
   type MessageStatus,
   type NewBooking,
 } from "./types";
@@ -44,13 +45,14 @@ function toBooking(r: Row): Booking {
   };
 }
 
-const MESSAGE_COLUMNS = `id, booking_id, kind, channel, to_masked, template, provider_message_id, status, error, created_at, updated_at`;
+const MESSAGE_COLUMNS = `id, booking_id, kind, channel, provider, to_masked, template, provider_message_id, status, error, created_at, updated_at`;
 
 type MessageRow = {
   id: string;
   booking_id: string;
   kind: MessageKind;
   channel: "whatsapp";
+  provider: MessageProvider;
   to_masked: string;
   template: string;
   provider_message_id: string | null;
@@ -66,6 +68,7 @@ function toMessage(r: MessageRow): MessageLog {
     bookingId: r.booking_id,
     kind: r.kind,
     channel: r.channel,
+    provider: r.provider,
     toMasked: r.to_masked,
     template: r.template,
     providerMessageId: r.provider_message_id,
@@ -115,10 +118,10 @@ export function postgresStore(databaseUrl: string): BookingStore {
 
     async logMessage(input) {
       const [row] = await runMessages(
-        `INSERT INTO messages (booking_id, kind, channel, to_masked, template, provider_message_id, status, error)
-         VALUES ($1::uuid, $2, 'whatsapp', $3, $4, $5, $6, $7)
+        `INSERT INTO messages (booking_id, kind, channel, to_masked, template, provider_message_id, status, error, provider)
+         VALUES ($1::uuid, $2, 'whatsapp', $3, $4, $5, $6, $7, $8)
          RETURNING ${MESSAGE_COLUMNS}`,
-        [input.bookingId, input.kind, input.toMasked, input.template, input.providerMessageId ?? null, input.status, input.error ?? null],
+        [input.bookingId, input.kind, input.toMasked, input.template, input.providerMessageId ?? null, input.status, input.error ?? null, input.provider ?? "meta"],
       );
       return toMessage(row);
     },

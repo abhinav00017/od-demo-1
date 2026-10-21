@@ -53,6 +53,7 @@ export const memoryStore: BookingStore = {
       bookingId: input.bookingId,
       kind: input.kind,
       channel: "whatsapp",
+      provider: input.provider ?? "meta",
       toMasked: input.toMasked,
       template: input.template,
       providerMessageId: input.providerMessageId ?? null,

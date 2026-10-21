@@ -77,6 +77,7 @@ describe("postgres store (driver mocked)", () => {
     booking_id: row.id,
     kind: "confirmation",
     channel: "whatsapp",
+    provider: "meta",
     to_masked: "••••3210",
     template: "hello_world",
     provider_message_id: "wamid.ABC",
@@ -98,12 +99,14 @@ describe("postgres store (driver mocked)", () => {
     });
     const [text, params] = query.mock.calls[0];
     expect(text).toMatch(/^INSERT INTO messages/);
-    expect(params).toEqual([row.id, "confirmation", "••••3210", "hello_world", "wamid.ABC", "sent", null]);
+    expect(text).toContain("provider");
+    expect(params).toEqual([row.id, "confirmation", "••••3210", "hello_world", "wamid.ABC", "sent", null, "meta"]);
     expect(m).toEqual({
       id: msgRow.id,
       bookingId: row.id,
       kind: "confirmation",
       channel: "whatsapp",
+      provider: "meta",
       toMasked: "••••3210",
       template: "hello_world",
       providerMessageId: "wamid.ABC",
@@ -112,6 +115,24 @@ describe("postgres store (driver mocked)", () => {
       createdAt: "2026-10-21T15:21:00.000Z",
       updatedAt: "2026-10-21T15:21:00.000Z",
     });
+  });
+
+  it("logs a Twilio message with its provider, and reads the provider back", async () => {
+    query.mockResolvedValue([{ ...msgRow, provider: "twilio", template: "text", provider_message_id: "SM123" }]);
+    const m = await postgresStore("postgres://x").logMessage({
+      bookingId: row.id,
+      kind: "confirmation",
+      provider: "twilio",
+      toMasked: "••••3210",
+      template: "text",
+      status: "sent",
+      providerMessageId: "SM123",
+    });
+    const [text, params] = query.mock.calls[0];
+    expect(text.replace(/\s+/g, " ")).toMatch(/INSERT INTO messages \(.*provider\) VALUES \(.*\$8\)/);
+    expect(text).toMatch(/RETURNING .*provider, to_masked/);
+    expect(params[7]).toBe("twilio");
+    expect(m).toMatchObject({ provider: "twilio", template: "text", providerMessageId: "SM123" });
   });
 
   it("updates a status forward only, by provider id", async () => {

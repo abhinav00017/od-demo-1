@@ -1,6 +1,6 @@
 /**
- * Creates the bookings and messages tables and their indexes, from lib/bookings/schema.sql.
- * Safe to run more than once (every statement is IF NOT EXISTS).
+ * Creates the bookings and messages tables, their indexes and later columns, from lib/bookings/schema.sql.
+ * Safe to run more than once (every statement is IF NOT EXISTS, including ADD COLUMN IF NOT EXISTS).
  * Usage: npm run db:migrate   (reads DATABASE_URL from the shell or .env.local)
  */
 import { readFileSync } from "node:fs";
