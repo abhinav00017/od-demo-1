@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Dashboard } from "@/demos/lotus-clinic/Dashboard";
+import { Dashboard, whatsappLine } from "@/demos/lotus-clinic/Dashboard";
 import { dashboardCounts, endOfWeek, maskPhone } from "@/demos/lotus-clinic/dashboardData";
-import type { Booking } from "@/lib/bookings/types";
+import type { Booking, DashboardBooking } from "@/lib/bookings/types";
 
 const TODAY = "2026-10-20"; // Tuesday
 
@@ -81,5 +81,26 @@ describe("Dashboard", () => {
     expect(screen.getByRole("heading", { name: "No bookings yet" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Open the booking page" }).getAttribute("href")).toBe("/clinic/website/book");
     expect(screen.getByText(/Test storage/)).toBeTruthy();
+  });
+});
+
+describe("WhatsApp status line", () => {
+  it("reads sent, delivered and failed in clinic time", () => {
+    // 15:21 UTC is 8:51 pm in India.
+    expect(whatsappLine({ kind: "confirmation", status: "sent", error: null, at: "2026-10-20T15:21:00.000Z" })).toBe("WhatsApp: sent 8:51 pm");
+    expect(whatsappLine({ kind: "reminder", status: "delivered", error: null, at: "2026-10-20T12:31:00.000Z" })).toBe("WhatsApp reminder: delivered 6:01 pm");
+    expect(whatsappLine({ kind: "confirmation", status: "failed", error: "131030: Recipient phone number not in allowed list", at: "2026-10-20T15:21:00.000Z" })).toBe(
+      "WhatsApp: failed: 131030: Recipient phone number not in allowed list",
+    );
+  });
+
+  it("shows on a row only when a message exists", () => {
+    const rows: DashboardBooking[] = [
+      { ...make({ name: "Sent Sita" }), whatsapp: { kind: "confirmation", status: "sent", error: null, at: "2026-10-20T15:21:00.000Z" } },
+      { ...make({ name: "Quiet Qamar" }), whatsapp: null },
+    ];
+    render(<Dashboard {...props} bookings={rows} />);
+    expect(screen.getByText("WhatsApp: sent 8:51 pm")).toBeTruthy();
+    expect(screen.getAllByText(/^WhatsApp/)).toHaveLength(1);
   });
 });

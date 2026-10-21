@@ -37,8 +37,8 @@ const slotRank = (slot: string) => {
 };
 
 /** Groups bookings by day, earliest first. Inside a day: morning, afternoon, evening, then by arrival. */
-export function groupByDay(bookings: Booking[]) {
-  const days = new Map<string, Booking[]>();
+export function groupByDay<T extends Booking>(bookings: T[]) {
+  const days = new Map<string, T[]>();
   for (const b of [...bookings].sort((a, b) => a.date.localeCompare(b.date) || slotRank(a.slot) - slotRank(b.slot) || a.createdAt.localeCompare(b.createdAt))) {
     days.set(b.date, [...(days.get(b.date) ?? []), b]);
   }

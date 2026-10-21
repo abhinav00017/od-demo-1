@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff, LogOut } from "lucide-react";
 import { useState } from "react";
-import type { Booking, BookingStatus } from "@/lib/bookings/types";
+import type { BookingStatus, DashboardBooking, WhatsAppSummary } from "@/lib/bookings/types";
 import { dashboardCounts, dayLabel, formatPhone, groupByDay, maskPhone } from "./dashboardData";
 import { buttonClass, buttonSmallClass, panelClass } from "./ui";
 
@@ -15,7 +15,7 @@ const STATUS_STYLE: Record<BookingStatus, { label: string; className: string }> 
 const pill = "rounded-md border px-2 py-0.5 text-xs font-medium";
 
 export type DashboardProps = {
-  bookings: Booking[];
+  bookings: DashboardBooking[];
   /** YYYY-MM-DD in clinic time, from the API. */
   today: string;
   storage?: "memory" | "postgres";
@@ -42,7 +42,30 @@ function Phone({ phone, name }: { phone: string; name: string }) {
   );
 }
 
-function Row({ b, busy, onStatus }: { b: Booking; busy: boolean; onStatus: DashboardProps["onStatus"] }) {
+/** "8:51 pm", in clinic time. */
+function clinicTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+}
+
+/** "WhatsApp: sent 8:51 pm", "WhatsApp reminder: delivered 6:02 pm", "WhatsApp: failed: <reason>". */
+export function whatsappLine(w: WhatsAppSummary) {
+  const label = w.kind === "confirmation" ? "WhatsApp" : `WhatsApp ${w.kind.replace("_", " ")}`;
+  if (w.status === "failed") {
+    const reason = (w.error ?? "unknown error").trim();
+    return `${label}: failed: ${reason.length > 60 ? `${reason.slice(0, 59)}…` : reason}`;
+  }
+  return `${label}: ${w.status} ${clinicTime(w.at)}`;
+}
+
+function WhatsAppStatus({ w }: { w: WhatsAppSummary }) {
+  return (
+    <p suppressHydrationWarning className={`mt-1 text-sm ${w.status === "failed" ? "text-lotus-error" : "text-lotus-grey"}`} title={w.error ?? undefined}>
+      {whatsappLine(w)}
+    </p>
+  );
+}
+
+function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStatus: DashboardProps["onStatus"] }) {
   const [part, time] = b.slot.split(", ");
   const status = STATUS_STYLE[b.status];
   return (
@@ -59,6 +82,7 @@ function Row({ b, busy, onStatus }: { b: Booking; busy: boolean; onStatus: Dashb
         </div>
         <p className="mt-1 text-[15px]">{b.reason}</p>
         <Phone phone={b.phone} name={b.name} />
+        {b.whatsapp ? <WhatsAppStatus w={b.whatsapp} /> : null}
       </div>
       <div className="flex items-center gap-2">
         <button

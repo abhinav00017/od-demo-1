@@ -2,7 +2,7 @@
 
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
-import type { Booking, BookingStatus } from "@/lib/bookings/types";
+import type { Booking, BookingStatus, DashboardBooking } from "@/lib/bookings/types";
 import { Dashboard } from "./Dashboard";
 import { buttonClass, fieldClass, labelClass, panelClass } from "./ui";
 
@@ -79,7 +79,7 @@ function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => vo
 /** Password gate plus the live bookings view. Everything loads in the browser, so the page itself stays static. */
 export function AdminApp({ bookHref }: { bookHref: string }) {
   const [view, setView] = useState<View>({ kind: "loading" });
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<DashboardBooking[]>([]);
   const [today, setToday] = useState("");
   const [storage, setStorage] = useState<Session["storage"]>();
   const [live, setLive] = useState(false);
@@ -102,7 +102,7 @@ export function AdminApp({ bookHref }: { bookHref: string }) {
         restart.current();
         return;
       }
-      const data = (await res.json()) as { ok: boolean; today: string; storage: Session["storage"]; bookings: Booking[] };
+      const data = (await res.json()) as { ok: boolean; today: string; storage: Session["storage"]; bookings: DashboardBooking[] };
       if (!data.ok) throw new Error("not ok");
       if (startedAt !== edits.current) return;
       setBookings(data.bookings);
@@ -157,7 +157,8 @@ export function AdminApp({ bookHref }: { bookHref: string }) {
       const data = (await res.json()) as { ok: boolean; booking?: Booking; error?: string };
       if (!data.ok || !data.booking) throw new Error(data.error);
       const updated = data.booking;
-      setBookings((list) => list.map((b) => (b.id === id ? updated : b)));
+      // Keep the row's WhatsApp line. The next poll brings the new one, sent after this response.
+      setBookings((list) => list.map((b) => (b.id === id ? { ...b, ...updated } : b)));
     } catch {
       setActionError("Could not update that booking. Try again.");
     } finally {
