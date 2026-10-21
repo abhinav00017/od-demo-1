@@ -1,8 +1,63 @@
 # WhatsApp setup for the Lotus demo
 
-The code sends WhatsApp messages through Meta's Cloud API.
-Until the two templates below are approved, it sends Meta's `hello_world` template instead.
-The server log shows what the real template would have said.
+The code sends WhatsApp through one of two providers. `WHATSAPP_PROVIDER` picks it.
+
+- **Twilio sandbox**, for demos now. Sends the plain text of each message. See "Twilio sandbox" below.
+- **Meta Cloud API**, for verified businesses. Sends templates. Until the templates below are approved, it sends Meta's `hello_world` instead, and the server log shows what the real template would have said.
+
+Unset `WHATSAPP_PROVIDER` means: Twilio if its three vars are set, else Meta if `WHATSAPP_TOKEN` is set, else a fake sender that only logs.
+
+## Twilio sandbox
+
+Meta needs business verification before it sends to real numbers. The Twilio sandbox does not.
+It only sends to phones that joined it, so it is for demos, not for clinics.
+
+### Join the sandbox from your phone
+
+1. In the Twilio console, open Messaging > Try it out > Send a WhatsApp message.
+2. It shows a code of two words, like `join example-word`.
+3. From your phone's WhatsApp, send `join <your two words>` to **+1 415 523 8886**.
+4. Twilio replies that you joined. Every demo phone must do this once.
+
+### The 24 hour rule
+
+After a phone messages the sandbox, Twilio can send it free text for 24 hours.
+After that, sends fail with error 63016. Send any message to +1 415 523 8886 again to reopen the window.
+Do this shortly before each demo.
+If sends fail with error 63015, the phone is no longer in the sandbox. Send the join message again.
+
+### Keys
+
+1. Twilio console home, under Account Info: copy the **Account SID** (starts with `AC`) and the **Auth Token** (click Show).
+2. On Vercel (Production), add:
+   - `TWILIO_ACCOUNT_SID` = the Account SID
+   - `TWILIO_AUTH_TOKEN` = the Auth Token (sensitive)
+   - `TWILIO_WHATSAPP_FROM` = `+14155238886`
+   - `WHATSAPP_PUBLIC_URL` = `https://od-demo-lyart.vercel.app`
+   - `WHATSAPP_PROVIDER` = `twilio` (optional; the Twilio vars alone pick it)
+3. Redeploy.
+
+Never paste the Auth Token in chat, code or memory files.
+
+### Delivery statuses
+
+Each send asks Twilio to post its status to the URL below, when `WHATSAPP_PUBLIC_URL` is set.
+Also paste it in Messaging > Try it out > Send a WhatsApp message > Sandbox settings > "Status callback URL", method POST:
+
+```
+https://od-demo-lyart.vercel.app/api/whatsapp/twilio-status
+```
+
+The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`. The dashboard row then moves from "sent" to "delivered" or "read", and shows "via Twilio".
+
+### What gets sent
+
+The same words as the Meta templates below, with the booking's details filled in.
+No `hello_world`: the sandbox takes free text inside the 24 hour window.
+
+### Meta stays
+
+The Meta route is unchanged. For a verified business, set `WHATSAPP_PROVIDER=meta` (or remove the Twilio vars) and follow the steps below.
 
 ## 1. Create three templates
 
@@ -96,7 +151,7 @@ It sends the reminder to every confirmed booking for tomorrow that has no remind
 Set `CRON_SECRET` on Vercel to a long random string. Vercel sends it automatically.
 On the Hobby plan, Vercel may run the job any time within that hour.
 
-## Test number limits
+## Meta test number limits
 
 The test number +1 (555) 672-3191 only sends to up to 5 numbers you verify on the API Setup page.
 Real clinic numbers need Meta business verification first.
