@@ -3,6 +3,8 @@
  * Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
  */
 
+import type { MessageProvider } from "@/lib/bookings/types";
+
 export const GRAPH_VERSION = "v25.0";
 /** The Onlydevs test number, +1 (555) 672-3191. An id, not a secret. */
 export const DEFAULT_PHONE_NUMBER_ID = "1300202886519854";
@@ -12,11 +14,22 @@ export type SendResult = { ok: boolean; messageId?: string; error?: string };
 /** A body parameter list for a template, as the Cloud API expects it. */
 export type TemplateComponent = { type: "body"; parameters: { type: "text"; text: string }[] };
 
-export type TemplateRequest = { to: string; template: string; language?: string; components?: TemplateComponent[] };
+export type TemplateRequest = {
+  to: string;
+  template: string;
+  language?: string;
+  components?: TemplateComponent[];
+  /** The plain text the template would show. Providers that send free text (Twilio sandbox) send this instead. */
+  text?: string;
+};
 export type TextRequest = { to: string; body: string };
 
+/** Who carries the message: meta, twilio or fake. Stored on every message log row. */
+export type Provider = MessageProvider;
+
 export interface WhatsAppSender {
-  readonly kind: "cloud" | "fake";
+  /** "cloud" is Meta's Cloud API. */
+  readonly kind: "cloud" | "twilio" | "fake";
   sendTemplate(req: TemplateRequest): Promise<SendResult>;
   sendText(req: TextRequest): Promise<SendResult>;
 }
@@ -25,6 +38,11 @@ export interface WhatsAppSender {
 export function maskNumber(to: string) {
   const digits = to.replace(/\D/g, "");
   return `••••${digits.slice(-4)}`;
+}
+
+/** The provider name a sender stands for, as the message log stores it. */
+export function providerOf(sender: Pick<WhatsAppSender, "kind">): Provider {
+  return sender.kind === "cloud" ? "meta" : sender.kind;
 }
 
 /** Long digit runs could be phone numbers. Errors are logged and stored, so they never carry one. */

@@ -19,6 +19,8 @@ export type BuiltMessage = {
   params: string[];
   /** The custom template's text with the parameters filled in. */
   preview: string;
+  /** The plain-text message for providers that send free text, not templates (the Twilio sandbox). Same words as preview. */
+  text: string;
   /** The same text with names and reasons swapped for labels. The only form that goes to logs. */
   logPreview: string;
 };
@@ -73,6 +75,7 @@ export function buildMessage(kind: SendKind, b: Booking, env: Env = process.env)
   const template = settings.templates[kind];
   const params = paramsFor(kind, b);
   const isHello = template === HELLO_WORLD;
+  const text = fill(TEMPLATE_BODIES[kind], params);
   return {
     kind,
     template,
@@ -80,7 +83,8 @@ export function buildMessage(kind: SendKind, b: Booking, env: Env = process.env)
     language: isHello ? "en_US" : settings.language,
     components: isHello ? [] : [{ type: "body", parameters: params.map((text) => ({ type: "text", text })) }],
     params,
-    preview: fill(TEMPLATE_BODIES[kind], params),
+    preview: text,
+    text,
     logPreview: fill(TEMPLATE_BODIES[kind], params.map((p, i) => REDACT[kind][i] ?? p)),
   };
 }
