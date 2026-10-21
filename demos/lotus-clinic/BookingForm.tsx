@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Bubble } from "@/components/mocks/ChatMock";
-import { confirmationMessage, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
+import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
 
 const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
@@ -57,7 +57,11 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
   const [values, setValues] = useState<BookingInput>({ ...EMPTY, visitType: start });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [tried, setTried] = useState(false);
-  const [sent, setSent] = useState<BookingInput | null>(null);
+  const [sent, setSent] = useState<(BookingInput & { id: string }) | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [trap, setTrap] = useState("");
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const dateRef = useRef<HTMLInputElement>(null);
   const doneRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -80,17 +84,45 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
     if (tried) setErrors(validateBooking(next, new Date()));
   }
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving) return;
     const found = validateBooking(values, new Date());
     setTried(true);
     setErrors(found);
+    setSubmitError("");
     if (Object.keys(found).length) {
       requestAnimationFrame(() => summaryRef.current?.focus());
       return;
     }
-    setSent(values);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...values, [HONEYPOT_FIELD]: trap }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; id?: string; error?: string; fieldErrors?: FieldErrors };
+      if (res.ok && data.ok && data.id) {
+        setSent({ ...values, id: data.id });
+        return;
+      }
+      if (data.fieldErrors && Object.keys(data.fieldErrors).length) {
+        setErrors(data.fieldErrors);
+        requestAnimationFrame(() => summaryRef.current?.focus());
+        return;
+      }
+      setSubmitError(data.error ?? "We could not save your booking. Please try again.");
+    } catch {
+      setSubmitError("We could not reach the clinic. Check your internet connection and try again. Your details are still here.");
+    } finally {
+      setSaving(false);
+    }
   }
+
+  useEffect(() => {
+    if (submitError) errorRef.current?.focus();
+  }, [submitError]);
 
   if (sent) {
     return (
@@ -114,7 +146,11 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             </Bubble>
           </div>
         </div>
-        <p className="mt-4 text-sm">Demo only. No message was sent and nothing was saved.</p>
+        <p className="mt-6 font-semibold text-lotus-ink">Booking saved. The clinic will confirm on WhatsApp.</p>
+        <p className="mt-1 text-sm">
+          Booking id: <span className="font-mono font-semibold text-lotus-ink">{shortBookingId(sent.id)}</span>
+        </p>
+        <p className="mt-4 text-sm">Demo: the WhatsApp message above is a preview. No message was sent.</p>
         <button
           type="button"
           onClick={() => {
@@ -122,6 +158,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
             setValues({ ...EMPTY, visitType: start });
             setTried(false);
             setErrors({});
+            setTrap("");
           }}
           className="mt-6 rounded-full px-6 py-3 font-semibold text-lotus-teal ring-2 ring-lotus-teal hover:bg-lotus-mint"
         >
@@ -135,7 +172,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-      <form noValidate onSubmit={onSubmit} className="rounded-3xl bg-white p-6 ring-1 ring-lotus-line sm:p-9" aria-label="Book a visit">
+      <form noValidate onSubmit={onSubmit} className="relative rounded-3xl bg-white p-6 ring-1 ring-lotus-line sm:p-9" aria-label="Book a visit">
         {errorList.length ? (
           <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-8 rounded-2xl bg-lotus-sand p-5 focus:outline-none">
             <p className="font-semibold text-lotus-ink">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
@@ -297,8 +334,25 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
           </Field>
         </div>
 
-        <button type="submit" className="mt-8 w-full rounded-full bg-lotus-teal px-6 py-4 text-lg font-semibold text-white hover:bg-lotus-teal-deep sm:w-auto">
-          Request appointment
+        {/* Bots fill every field. People never see this one. */}
+        <div aria-hidden className="absolute -left-[9999px] size-px overflow-hidden">
+          <label htmlFor={`${id}-trap`}>Leave this empty</label>
+          <input id={`${id}-trap`} name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} />
+        </div>
+
+        {submitError ? (
+          <p ref={errorRef} tabIndex={-1} role="alert" className="mt-8 rounded-2xl bg-white p-4 font-semibold text-lotus-rose ring-2 ring-lotus-rose focus:outline-none">
+            {submitError}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={saving}
+          aria-busy={saving || undefined}
+          className="mt-8 w-full rounded-full bg-lotus-teal px-6 py-4 text-lg font-semibold text-white hover:bg-lotus-teal-deep disabled:cursor-wait disabled:bg-lotus-teal-deep sm:w-auto"
+        >
+          {saving ? "Saving your booking…" : "Request appointment"}
         </button>
       </form>
 
