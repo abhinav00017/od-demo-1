@@ -71,4 +71,69 @@ describe("postgres store (driver mocked)", () => {
     expect(query.mock.calls[0][1]).toEqual([row.id, "confirmed"]);
     expect(await store.updateStatus(row.id, "cancelled")).toBeNull();
   });
+
+  const msgRow = {
+    id: "9a9a9a9a-1111-4222-8333-444455556666",
+    booking_id: row.id,
+    kind: "confirmation",
+    channel: "whatsapp",
+    to_masked: "••••3210",
+    template: "hello_world",
+    provider_message_id: "wamid.ABC",
+    status: "sent",
+    error: null,
+    created_at: new Date("2026-10-21T15:21:00Z"),
+    updated_at: "2026-10-21T15:21:00.000Z",
+  };
+
+  it("logs a message with $n parameters and maps the row", async () => {
+    query.mockResolvedValue([msgRow]);
+    const m = await postgresStore("postgres://x").logMessage({
+      bookingId: row.id,
+      kind: "confirmation",
+      toMasked: "••••3210",
+      template: "hello_world",
+      status: "sent",
+      providerMessageId: "wamid.ABC",
+    });
+    const [text, params] = query.mock.calls[0];
+    expect(text).toMatch(/^INSERT INTO messages/);
+    expect(params).toEqual([row.id, "confirmation", "••••3210", "hello_world", "wamid.ABC", "sent", null]);
+    expect(m).toEqual({
+      id: msgRow.id,
+      bookingId: row.id,
+      kind: "confirmation",
+      channel: "whatsapp",
+      toMasked: "••••3210",
+      template: "hello_world",
+      providerMessageId: "wamid.ABC",
+      status: "sent",
+      error: null,
+      createdAt: "2026-10-21T15:21:00.000Z",
+      updatedAt: "2026-10-21T15:21:00.000Z",
+    });
+  });
+
+  it("updates a status forward only, by provider id", async () => {
+    query.mockResolvedValueOnce([{ ...msgRow, status: "delivered" }]).mockResolvedValueOnce([]);
+    const store = postgresStore("postgres://x");
+    expect((await store.updateMessageStatus("wamid.ABC", "delivered"))?.status).toBe("delivered");
+    const [text, params] = query.mock.calls[0];
+    expect(text.replace(/\s+/g, " ")).toMatch(/WHERE provider_message_id = \$1 AND CASE status .* END < CASE \$2::text .* END/);
+    expect(text).toContain("WHEN 'read' THEN 3");
+    expect(params).toEqual(["wamid.ABC", "delivered", null]);
+    expect(await store.updateMessageStatus("wamid.ABC", "sent")).toBeNull();
+  });
+
+  it("lists messages for many bookings in one query, and skips the query for none", async () => {
+    query.mockResolvedValue([msgRow]);
+    const store = postgresStore("postgres://x");
+    expect(await store.listMessagesForBookings([])).toEqual([]);
+    expect(query).not.toHaveBeenCalled();
+    const list = await store.listMessagesForBookings([row.id]);
+    const [text, params] = query.mock.calls[0];
+    expect(text).toMatch(/WHERE booking_id = ANY\(\$1::uuid\[\]\) ORDER BY created_at DESC/);
+    expect(params).toEqual([[row.id]]);
+    expect(list[0].providerMessageId).toBe("wamid.ABC");
+  });
 });

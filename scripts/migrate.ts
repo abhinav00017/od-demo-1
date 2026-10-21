@@ -1,10 +1,12 @@
 /**
- * Creates the bookings table. Safe to run more than once (IF NOT EXISTS).
+ * Creates the bookings and messages tables and their indexes, from lib/bookings/schema.sql.
+ * Safe to run more than once (every statement is IF NOT EXISTS).
  * Usage: npm run db:migrate   (reads DATABASE_URL from the shell or .env.local)
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { neon } from "@neondatabase/serverless";
+import { schemaStatements } from "../lib/bookings/migrations";
 
 // Values already in the shell win over .env.local.
 for (const file of [".env.local", ".env"]) {
@@ -23,22 +25,17 @@ if (!url) {
 
 const sql = neon(url);
 const file = path.join(process.cwd(), "lib/bookings/schema.sql");
-// The HTTP driver runs one statement per call, so split on the semicolons that end a line.
-const statements = readFileSync(file, "utf8")
-  .split("\n")
-  .filter((line) => !line.trim().startsWith("--"))
-  .join("\n")
-  .split(/;\s*$/m)
-  .map((s) => s.trim())
-  .filter(Boolean);
+const statements = schemaStatements(readFileSync(file, "utf8"));
 
 async function main() {
   for (const statement of statements) {
     await sql.query(statement);
     console.log(`ok: ${statement.split("\n")[0]}`);
   }
-  const [{ count }] = (await sql.query("SELECT count(*)::int AS count FROM bookings")) as { count: number }[];
-  console.log(`bookings table ready, ${count} rows`);
+  for (const table of ["bookings", "messages"]) {
+    const [{ count }] = (await sql.query(`SELECT count(*)::int AS count FROM ${table}`)) as { count: number }[];
+    console.log(`${table} table ready, ${count} rows`);
+  }
 }
 
 main().catch((err: unknown) => {

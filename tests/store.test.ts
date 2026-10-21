@@ -50,6 +50,27 @@ function storeContract(name: string, store: BookingStore, reset: () => void) {
       expect(await store.updateStatus("00000000-0000-4000-8000-000000000000", "cancelled")).toBeNull();
     });
 
+    it("logs messages and lists them newest first for the asked bookings", async () => {
+      const a = await store.create(base);
+      const b = await store.create({ ...base, name: "Other" });
+      await store.logMessage({ bookingId: a.id, kind: "confirmation", toMasked: "••••3210", template: "hello_world", status: "sent", providerMessageId: "wamid.1" });
+      await store.logMessage({ bookingId: a.id, kind: "reminder", toMasked: "••••3210", template: "hello_world", status: "failed", error: "131030: not allowed" });
+      await store.logMessage({ bookingId: b.id, kind: "confirmation", toMasked: "••••3210", template: "hello_world", status: "sent" });
+      const list = await store.listMessagesForBookings([a.id]);
+      expect(list.map((m) => m.kind)).toEqual(["reminder", "confirmation"]);
+      expect(list[0]).toMatchObject({ channel: "whatsapp", status: "failed", error: "131030: not allowed", providerMessageId: null });
+      expect(await store.listMessagesForBookings([])).toEqual([]);
+    });
+
+    it("moves a message status forward only, by provider id", async () => {
+      const a = await store.create(base);
+      await store.logMessage({ bookingId: a.id, kind: "confirmation", toMasked: "••••3210", template: "hello_world", status: "sent", providerMessageId: "wamid.2" });
+      expect((await store.updateMessageStatus("wamid.2", "read"))?.status).toBe("read");
+      expect(await store.updateMessageStatus("wamid.2", "delivered")).toBeNull();
+      expect((await store.updateMessageStatus("wamid.2", "failed", "131026: undeliverable"))?.error).toBe("131026: undeliverable");
+      expect(await store.updateMessageStatus("wamid.unknown", "read")).toBeNull();
+    });
+
     it("hands out copies, so callers cannot change stored rows", async () => {
       const b = await store.create(base);
       b.status = "cancelled";
