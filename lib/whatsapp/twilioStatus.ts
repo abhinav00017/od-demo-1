@@ -48,7 +48,7 @@ export function mapTwilioStatus(status: string | null): MessageStatus | null {
 
 /**
  * A failed callback's reason as a short line with no phone numbers, like "63003: undelivered".
- * 21654 and 63016 get the hint "(set TWILIO_CONTENT_SID_*)".
+ * 21654 and 63016 get the hint "(set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)".
  */
 export function twilioStatusError(params: URLSearchParams) {
   const code = params.get("ErrorCode");

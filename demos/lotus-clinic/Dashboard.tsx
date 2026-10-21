@@ -3,6 +3,8 @@
 import { Eye, EyeOff, LogOut } from "lucide-react";
 import { useState } from "react";
 import type { BookingStatus, DashboardBooking, WhatsAppSummary } from "@/lib/bookings/types";
+import type { QrPath } from "@/lib/qr";
+import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { dashboardCounts, dayLabel, formatPhone, groupByDay, maskPhone } from "./dashboardData";
 import { buttonClass, buttonSmallClass, panelClass } from "./ui";
 
@@ -25,7 +27,11 @@ export type DashboardProps = {
   bookHref: string;
   onStatus: (id: string, status: BookingStatus) => void;
   onLogout: () => void;
+  /** The join link and its QR, drawn on the server. Null or missing = no join step, no panel. */
+  optIn?: DeskOptIn | null;
 };
+
+export type DeskOptIn = WhatsAppOptIn & { qr: QrPath };
 
 function Phone({ phone, name }: { phone: string; name: string }) {
   const [shown, setShown] = useState(false);
@@ -47,11 +53,21 @@ function clinicTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 }
 
+/** The "(set TWILIO_CONTENT_SID_*, ...)" hint at the end of a Twilio no-session error. */
+const HINT_AT_END = /\s*\((set TWILIO_CONTENT_SID_\*[^()]*)\)$/;
+
+/** Splits a stored error into the reason and its hint, so the hint survives the row's 60-char cut. */
+export function splitHint(error: string | null | undefined): { reason: string; hint: string | null } {
+  const text = (error ?? "").trim();
+  const m = HINT_AT_END.exec(text);
+  return m ? { reason: text.slice(0, m.index), hint: m[1] } : { reason: text, hint: null };
+}
+
 /** "WhatsApp: sent 8:51 pm", "WhatsApp reminder: delivered 6:02 pm", "WhatsApp: failed: <reason>". */
 export function whatsappLine(w: WhatsAppSummary) {
   const label = w.kind === "confirmation" ? "WhatsApp" : `WhatsApp ${w.kind.replace("_", " ")}`;
   if (w.status === "failed") {
-    const reason = (w.error ?? "unknown error").trim();
+    const reason = splitHint(w.error).reason || "unknown error";
     return `${label}: failed: ${reason.length > 60 ? `${reason.slice(0, 59)}…` : reason}`;
   }
   return `${label}: ${w.status} ${clinicTime(w.at)}`;
@@ -64,11 +80,50 @@ export function providerNote(w: WhatsAppSummary) {
 
 function WhatsAppStatus({ w }: { w: WhatsAppSummary }) {
   const note = providerNote(w);
+  const hint = w.status === "failed" ? splitHint(w.error).hint : null;
   return (
-    <p suppressHydrationWarning className={`mt-1 text-sm ${w.status === "failed" ? "text-lotus-error" : "text-lotus-grey"}`} title={w.error ?? undefined}>
-      {whatsappLine(w)}
-      {note ? <span className="ml-2 text-xs text-lotus-grey">{note}</span> : null}
-    </p>
+    <>
+      <p suppressHydrationWarning className={`mt-1 text-sm ${w.status === "failed" ? "text-lotus-error" : "text-lotus-grey"}`} title={w.error ?? undefined}>
+        {whatsappLine(w)}
+        {note ? <span className="ml-2 text-xs text-lotus-grey">{note}</span> : null}
+      </p>
+      {hint ? <p className="mt-0.5 text-xs text-lotus-grey">Hint: {hint}</p> : null}
+    </>
+  );
+}
+
+/** The front-desk QR: patients scan it to send the join message, so the clinic can reach them on WhatsApp. */
+export function DeskQr({ optIn }: { optIn: DeskOptIn }) {
+  const { qr } = optIn;
+  return (
+    <section aria-labelledby="whatsapp-optin" className={`mt-8 grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-8 sm:p-6 ${panelClass}`}>
+      <svg
+        role="img"
+        aria-label="QR code that opens WhatsApp with the join message"
+        viewBox={`0 0 ${qr.size} ${qr.size}`}
+        shapeRendering="crispEdges"
+        className="size-40 bg-white text-lotus-text sm:size-36"
+      >
+        <rect width={qr.size} height={qr.size} fill="#fff" />
+        <path d={qr.d} fill="currentColor" />
+      </svg>
+      <div className="min-w-0">
+        <h2 id="whatsapp-optin" className="font-lotus-serif text-[1.65rem] leading-tight tracking-[-0.01em] text-lotus-text">
+          WhatsApp opt-in
+        </h2>
+        <p className="mt-2">Patients scan this at the desk to get updates on WhatsApp.</p>
+        <p className="mt-4 text-sm">
+          They send <code className="rounded bg-lotus-stone px-1.5 py-0.5 font-mono text-[13px] text-lotus-text">join {optIn.keyword}</code> to{" "}
+          <span className="tabular-nums text-lotus-text">{optIn.displayNumber}</span>.
+        </p>
+        <p className="mt-2 text-sm">
+          Link:{" "}
+          <a href={optIn.href} target="_blank" rel="noopener" className="font-mono text-[13px] break-all text-lotus-forest underline decoration-lotus-rule underline-offset-4 hover:decoration-lotus-forest">
+            {optIn.href}
+          </a>
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -130,7 +185,7 @@ export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }
 }
 
 /** The bookings view. Pure: data in, callbacks out. AdminApp feeds it. */
-export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, bookHref, onStatus, onLogout }: DashboardProps) {
+export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, bookHref, onStatus, onLogout, optIn }: DashboardProps) {
   const counts = dashboardCounts(bookings, today);
   const groups = groupByDay(bookings);
   const tiles = [
@@ -156,6 +211,8 @@ export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, b
           </div>
         ))}
       </dl>
+
+      {optIn ? <DeskQr optIn={optIn} /> : null}
 
       {storage === "memory" ? (
         <p className="mt-6 border-l-2 border-lotus-forest py-0.5 pl-4 text-sm text-lotus-text">

@@ -58,14 +58,19 @@ export function twilioContentSid(kind: ContentKind, env: Env = process.env): { s
   return { reused: false };
 }
 
-/** Twilio errors that mean "this send needs a content template". The dashboard shows the hint with them. */
+/**
+ * Twilio errors that mean "no session with this recipient": either the send needs a content template,
+ * or the recipient never sent the join message. The dashboard shows the hint with them.
+ */
 const NEEDS_CONTENT = new Set(["21654", "63016"]);
 export const CONTENT_HINT = "set TWILIO_CONTENT_SID_*";
+/** The hint those errors carry. The dashboard shows it on its own line, because the row cuts long errors. */
+export const NO_SESSION_HINT = `${CONTENT_HINT}, or patient has not joined on WhatsApp yet`;
 
-/** "21654: ContentSid Required" -> "21654: ContentSid Required (set TWILIO_CONTENT_SID_*)". Other errors pass through. Max 160 chars. */
+/** "21654: ContentSid Required" -> "21654: ContentSid Required (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)". Other errors pass through. Max 160 chars. */
 export function withContentHint(code: string | number | null | undefined, line: string) {
   if (code === null || code === undefined || !NEEDS_CONTENT.has(String(code))) return line.slice(0, 160);
-  const hint = ` (${CONTENT_HINT})`;
+  const hint = ` (${NO_SESSION_HINT})`;
   return `${line.slice(0, 160 - hint.length)}${hint}`;
 }
 

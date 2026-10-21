@@ -3,7 +3,7 @@
 import { Lock } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import type { Booking, BookingStatus, DashboardBooking } from "@/lib/bookings/types";
-import { Dashboard } from "./Dashboard";
+import { Dashboard, type DeskOptIn } from "./Dashboard";
 import { buttonClass, fieldClass, labelClass, panelClass } from "./ui";
 
 /** How often the dashboard asks for new bookings. */
@@ -77,7 +77,7 @@ function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => vo
 }
 
 /** Password gate plus the live bookings view. Everything loads in the browser, so the page itself stays static. */
-export function AdminApp({ bookHref }: { bookHref: string }) {
+export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOptIn | null }) {
   const [view, setView] = useState<View>({ kind: "loading" });
   const [bookings, setBookings] = useState<DashboardBooking[]>([]);
   const [today, setToday] = useState("");
@@ -211,6 +211,7 @@ export function AdminApp({ bookHref }: { bookHref: string }) {
             bookHref={bookHref}
             onStatus={(id, s) => void setStatus(id, s)}
             onLogout={() => void logout()}
+            optIn={optIn}
           />
         </>
       );

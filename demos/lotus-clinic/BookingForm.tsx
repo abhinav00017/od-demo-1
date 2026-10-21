@@ -4,9 +4,10 @@ import { CheckCircle2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Bubble } from "@/components/mocks/ChatMock";
+import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
-import { buttonBusyClass, fieldClass, labelClass, panelClass, textLinkClass } from "./ui";
+import { buttonBusyClass, buttonClass, fieldClass, labelClass, panelClass, textLinkClass } from "./ui";
 
 const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
 
@@ -46,13 +47,33 @@ function describedBy(name: FieldName, errors: FieldErrors, hint = false) {
   return [hint ? `${name}-hint` : "", errors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined;
 }
 
-/** Reads ?type=online in the browser. Render it inside <Suspense>: ensureStatic allows useSearchParams only there. */
-export function BookingFormFromUrl() {
-  const type = useSearchParams().get("type");
-  return <BookingForm key={type ?? "default"} initialVisitType={type ?? undefined} />;
+/** The join step for Twilio's quickstart sender: one tap opens WhatsApp with "join <keyword>" typed in. */
+export function WhatsAppJoin({ optIn }: { optIn: WhatsAppOptIn }) {
+  return (
+    <div className="mt-8 border-t border-lotus-rule pt-8">
+      <h3 className="font-lotus-serif text-[1.65rem] leading-tight tracking-[-0.01em] text-lotus-text">Get updates on WhatsApp</h3>
+      <p className="mt-2">Tap once to allow confirmations and reminders on WhatsApp.</p>
+      <a href={optIn.href} target="_blank" rel="noopener" className={`mt-5 w-full sm:w-auto ${buttonClass}`}>
+        Open WhatsApp
+      </a>
+      <p className="mt-3 text-sm text-lotus-grey">You&rsquo;ll send a short message to {optIn.displayNumber}. That&rsquo;s it.</p>
+    </div>
+  );
 }
 
-export function BookingForm({ initialVisitType }: { initialVisitType?: string }) {
+type FormProps = {
+  initialVisitType?: string;
+  /** From the server page. Null or missing = no join step, nothing renders. */
+  optIn?: WhatsAppOptIn | null;
+};
+
+/** Reads ?type=online in the browser. Render it inside <Suspense>: ensureStatic allows useSearchParams only there. */
+export function BookingFormFromUrl({ optIn }: Pick<FormProps, "optIn">) {
+  const type = useSearchParams().get("type");
+  return <BookingForm key={type ?? "default"} initialVisitType={type ?? undefined} optIn={optIn} />;
+}
+
+export function BookingForm({ initialVisitType, optIn }: FormProps) {
   const start = clinic.booking.visitTypes.find((t) => t.id === initialVisitType)?.id ?? EMPTY.visitType;
   const [values, setValues] = useState<BookingInput>({ ...EMPTY, visitType: start });
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -150,6 +171,7 @@ export function BookingForm({ initialVisitType }: { initialVisitType?: string })
         <p className="mt-1 text-sm">
           Booking id: <span className="font-mono font-medium text-lotus-text">{shortBookingId(sent.id)}</span>
         </p>
+        {optIn ? <WhatsAppJoin optIn={optIn} /> : null}
         <p className="mt-4 text-sm">Demo: the WhatsApp message above is a preview. No message was sent.</p>
         <button
           type="button"

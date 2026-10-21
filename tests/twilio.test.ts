@@ -239,16 +239,16 @@ describe("twilio content templates", () => {
   });
 
   it("adds the content hint to 21654 and 63016 only, within 160 chars", async () => {
-    expect(withContentHint(21654, "21654: ContentSid Required")).toBe("21654: ContentSid Required (set TWILIO_CONTENT_SID_*)");
-    expect(withContentHint("63016", "63016: x")).toBe("63016: x (set TWILIO_CONTENT_SID_*)");
+    expect(withContentHint(21654, "21654: ContentSid Required")).toBe("21654: ContentSid Required (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)");
+    expect(withContentHint("63016", "63016: x")).toBe("63016: x (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)");
     expect(withContentHint(20003, "20003: Authenticate")).toBe("20003: Authenticate");
     expect(withContentHint(null, "x")).toBe("x");
     const long = withContentHint(21654, `21654: ${"a".repeat(300)}`);
     expect(long.length).toBe(160);
-    expect(long.endsWith("(set TWILIO_CONTENT_SID_*)")).toBe(true);
+    expect(long.endsWith("(set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)")).toBe(true);
     const bad = vi.fn(async () => new Response(JSON.stringify({ code: 21654, message: "ContentSid Required", status: 400 }), { status: 400 }));
     const res = await twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl: bad }).sendText({ to: "919876543210", body: "x" });
-    expect(res).toEqual({ ok: false, error: "21654: ContentSid Required (set TWILIO_CONTENT_SID_*)" });
+    expect(res).toEqual({ ok: false, error: "21654: ContentSid Required (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)" });
   });
 
   it("sendBookingMessage sends the content template, logs the HX sid as template, and logs no names", async () => {
@@ -281,7 +281,7 @@ describe("twilio content templates", () => {
     const sender = twilioSender({ accountSid: SID, authToken: TOKEN, from: "+17372508034", fetchImpl });
     const row = await sendBookingMessage(booking, "reminder", { store: memoryStore, sender, env: {} });
     expect(row).toMatchObject({ status: "failed", template: "text" });
-    expect(row!.error).toMatch(/^63016: .*\(set TWILIO_CONTENT_SID_\*\)$/);
+    expect(row!.error).toMatch(/^63016: .*\(set TWILIO_CONTENT_SID_\*, or patient has not joined on WhatsApp yet\)$/);
   });
 });
 
@@ -322,7 +322,7 @@ describe("twilio status mapping", () => {
 
   it("builds the error from ErrorCode and ErrorMessage, scrubbed", () => {
     expect(twilioStatusError(new URLSearchParams({ ErrorCode: "63016", ErrorMessage: "Outside the allowed window" }))).toBe(
-      "63016: Outside the allowed window (set TWILIO_CONTENT_SID_*)",
+      "63016: Outside the allowed window (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)",
     );
     expect(twilioStatusError(new URLSearchParams({ ErrorCode: "63003", MessageStatus: "undelivered" }))).toBe("63003: undelivered");
     expect(twilioStatusError(new URLSearchParams({ ErrorMessage: "bad number +91 98765 43210" }))).toBe("bad number •••");
@@ -389,7 +389,7 @@ describe("POST /api/whatsapp/twilio-status", () => {
   it("maps undelivered to failed with the error code and message", async () => {
     const latest = await seed("SM_D");
     await signed({ MessageSid: "SM_D", MessageStatus: "undelivered", ErrorCode: "63016", ErrorMessage: "Outside the allowed window" });
-    expect(await latest()).toMatchObject({ status: "failed", error: "63016: Outside the allowed window (set TWILIO_CONTENT_SID_*)" });
+    expect(await latest()).toMatchObject({ status: "failed", error: "63016: Outside the allowed window (set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet)" });
   });
 
   it("skips the check with one log line when TWILIO_AUTH_TOKEN is unset, and answers 200 to junk", async () => {

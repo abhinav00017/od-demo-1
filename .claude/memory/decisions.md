@@ -159,3 +159,10 @@ Append only. Newest at the bottom.
 
 - Sending to any number without a join step needs Meta business verification on every route. Real clients verify their own clinic through Twilio's signup and send from the clinic's number; needs the Twilio account upgraded off trial.
 - For demos now, Abhinav chose: make the join step part of the flow. Booking success screen gets a "Get updates on WhatsApp" button that opens WhatsApp with the join message pre-filled (wa.me/<sender digits>?text=join%20<keyword>). Dashboard gets a QR code with the same link for the front desk. Join keyword and sender come from env (TWILIO_JOIN_KEYWORD, TWILIO_WHATSAPP_FROM); the public page reads them through a small server-rendered config, never exposing secrets.
+
+## 2026-10-21 (Lotus: back to the first look, new order)
+
+- Abhinav looked at the restyled Lotus demo again and found it too small and not clear. Decision: bring back the first Lotus look (teal #0e5e5a and sand/cream, Fraunces headings, Plus Jakarta body, bigger cards and buttons), as it was before the "Lotus restyle" and "colour pass" commits. The onlydevs purple stays on the hub and the demo bar only; client demos keep their own palette so prospects see "my clinic", not "a tech company". Abhinav agreed.
+- New home order: header → Meet your doctor → numbers (years, women cared for, Google rating) as its own section → patient stories → Why Lotus → services → map and contact.
+- Header gets the clinic phone number as a direct WhatsApp link (wa.me) next to Book a visit.
+- Keep everything built since: map, level 2 bookings, Twilio WhatsApp, the opt-in button and QR. Only the look and the section order change.

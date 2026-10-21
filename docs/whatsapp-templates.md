@@ -21,7 +21,7 @@ Put that number in `TWILIO_WHATSAPP_FROM`.
 This sender only takes business-initiated messages as a **Content Template**:
 a `ContentSid` (starts with `HX`) plus `ContentVariables`.
 Plain text (`Body`) fails with error 21654 "ContentSid Required".
-The dashboard then shows the error with the hint "set TWILIO_CONTENT_SID_*".
+The dashboard then shows the error with the hint "set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet".
 
 ### Keys
 
@@ -35,6 +35,7 @@ The dashboard then shows the error with the hint "set TWILIO_CONTENT_SID_*".
    - `TWILIO_CONTENT_SID_CLINIC_ALERT` = the HX sid of the clinic alert template (optional)
    - `WHATSAPP_PUBLIC_URL` = `https://od-demo-lyart.vercel.app`
    - `WHATSAPP_PROVIDER` = `twilio` (optional; the Twilio vars alone pick it)
+   - `TWILIO_JOIN_KEYWORD` = the word after "join" on the quickstart page, like `twilio-trail` (see "Opt-in" below)
 3. Redeploy.
 
 If the reminder or clinic alert sid is unset, that message reuses the confirmation sid, and the server log says so.
@@ -81,6 +82,27 @@ New booking: {{1}}, {{2}}. Open the dashboard to confirm.
 Samples: {{1}} `Priya (Clinic visit)`, {{2}} `Sat 24 Oct, Morning, 10 am – 1 pm`
 
 {{1}} is the patient's first name and visit type. The reason is not sent, to keep it off Twilio.
+
+### Opt-in: the join step
+
+On a trial account, Twilio only delivers to numbers that first sent `join <keyword>` to the sender.
+The demo makes that step part of the flow:
+
+- **Booking success screen.** After "Booking saved", a block "Get updates on WhatsApp" with an **Open WhatsApp** button.
+  It opens `https://wa.me/<sender digits>?text=join%20<keyword>`, with the join message typed in. The patient taps Send.
+- **Clinic dashboard.** A "WhatsApp opt-in" panel under the counts: a QR code of the same link for the front desk,
+  the join message in monospace, and the plain link.
+
+Both read `TWILIO_WHATSAPP_FROM` and `TWILIO_JOIN_KEYWORD` on the server (`whatsappOptIn` in `lib/whatsapp/optin.ts`)
+and pass the link down as a prop. Neither is a secret, and neither is a `NEXT_PUBLIC_` var.
+The pages are static, so a change to either var shows after the next deploy.
+
+The block and the panel only show when the provider is Twilio and both vars are set.
+For a verified business sender there is no join step: leave `TWILIO_JOIN_KEYWORD` unset (or switch to Meta) and both disappear.
+`WHATSAPP_FAKE=1` hides them too, because the fake sender needs no join.
+
+A send to someone who has not joined fails. If Twilio answers 21654 or 63016, the dashboard row shows
+"Hint: set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet" under the error.
 
 ### Delivery statuses
 

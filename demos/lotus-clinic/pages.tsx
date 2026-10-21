@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
+import { qrPath } from "@/lib/qr";
+import { whatsappOptIn } from "@/lib/whatsapp/optin";
 import { AdminApp } from "./AdminApp";
 import { DoctorCard } from "./Art";
 import { BookingForm, BookingFormFromUrl } from "./BookingForm";
@@ -291,6 +293,8 @@ export function LotusContact({ nav }: { nav: Nav }) {
 }
 
 export function LotusBook() {
+  // Read on the server and passed down, so the client bundle never reads env. Null when there is no join step.
+  const optIn = whatsappOptIn();
   return (
     <>
       <PageHead
@@ -300,8 +304,8 @@ export function LotusBook() {
       />
       <LotusContainer>
         <div className="border-t border-lotus-rule pt-12 pb-24 sm:pt-16 sm:pb-32">
-          <Suspense fallback={<BookingForm />}>
-            <BookingFormFromUrl />
+          <Suspense fallback={<BookingForm optIn={optIn} />}>
+            <BookingFormFromUrl optIn={optIn} />
           </Suspense>
         </div>
       </LotusContainer>
@@ -311,6 +315,9 @@ export function LotusBook() {
 
 /** The clinic's private page: bookings from the website. Not in the site nav. */
 export function LotusAdmin({ nav }: { nav: Nav }) {
+  const optIn = whatsappOptIn();
+  // The QR is drawn here, on the server, so the encoder stays out of the browser bundle.
+  const deskOptIn = optIn ? { ...optIn, qr: qrPath(optIn.href) } : null;
   return (
     <>
       <section>
@@ -322,7 +329,7 @@ export function LotusAdmin({ nav }: { nav: Nav }) {
       </section>
       <LotusContainer>
         <div className="border-t border-lotus-rule pt-10 pb-24 sm:pt-12">
-          <AdminApp bookHref={nav.href("book")} />
+          <AdminApp bookHref={nav.href("book")} optIn={deskOptIn} />
         </div>
       </LotusContainer>
     </>
