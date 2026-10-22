@@ -3,7 +3,10 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getService } from "@/lib/catalog";
 import { LiveDemo } from "@/demos/render";
-import { CountUp, formatFigure, MotionProvider, parseFigure, Reveal, RevealGroup, RevealItem } from "@/demos/lotus-clinic/Motion";
+import { clinic, homeServiceSlugs } from "@/demos/lotus-clinic/data";
+import { Dashboard } from "@/demos/lotus-clinic/Dashboard";
+import { CountUp, ecgPath, formatFigure, MotionProvider, parseFigure, Reveal, RevealGroup, RevealItem } from "@/demos/lotus-clinic/Motion";
+import type { DashboardBooking } from "@/lib/bookings/types";
 import { intersectAll, setReducedMotion } from "./setup";
 
 vi.mock("next/navigation", async (importOriginal) => ({
@@ -116,5 +119,114 @@ describe("server HTML", () => {
     expect(html).toContain("<noscript><style>[data-motion]{opacity:1!important;transform:none!important}</style></noscript>");
     // The figures are in the HTML at their final values; the count-up only runs in the browser.
     for (const v of ["12+", "8,000+", "3,000+", "4.9"]) expect(html).toContain(`data-count="${v}"`);
+  });
+});
+
+describe("motion pass 2", () => {
+  it("adds How a Visit Works after the numbers and before the specialities, with four steps in order", () => {
+    const { container } = renderHome();
+    const journey = container.querySelector('[aria-labelledby="journey-heading"]') as HTMLElement;
+    expect(journey.querySelector("#journey-heading")!.textContent).toBe("How a Visit Works");
+    const steps = [...journey.querySelectorAll("[data-journey] > li")];
+    expect(steps).toHaveLength(4);
+    expect(steps.map((li) => li.querySelector("h3")!.textContent)).toEqual(["Book online", "WhatsApp confirmation", "Visit the clinic", "Follow-up reminder"]);
+    expect(steps.map((li) => li.querySelector("p")!.textContent)).toEqual(clinic.journey.map((j) => j.text));
+    expect(journey.querySelector('[data-step="whatsapp"] [data-journey-phone]')).toBeTruthy();
+    const sections = [...container.querySelectorAll("main section[aria-labelledby]")].map((el) => el.getAttribute("aria-labelledby"));
+    expect(sections.slice(0, 3)).toEqual(["numbers-heading", "journey-heading", "services-heading"]);
+  });
+
+  it("shows the phone mock's final state in the static HTML and keeps it under reduced motion", async () => {
+    const found = getService("clinic", "website");
+    if (!found || found.service.status !== "live") throw new Error("clinic website demo is not live");
+    const html = renderToString(<LiveDemo industry={found.industry} service={found.service} page="" />);
+    expect(html).toContain(clinic.journeyChat.thanks);
+
+    setReducedMotion(true);
+    const { container } = renderHome();
+    const phone = container.querySelector("[data-phone-mock]") as HTMLElement;
+    expect(phone.getAttribute("role")).toBe("img");
+    act(() => intersectAll());
+    await new Promise((r) => setTimeout(r, 50));
+    expect(phone.getAttribute("data-step")).toBe("7");
+    expect(phone.textContent).toContain(clinic.journeyChat.confirmation);
+    expect(phone.textContent).toContain(clinic.journeyChat.thanks);
+    expect(phone.querySelectorAll("[data-phone-button]")).toHaveLength(2);
+    expect(phone.querySelector("[data-typing]")).toBeNull();
+  });
+
+  it("gives each home speciality card a what-to-expect line from data.ts", () => {
+    const { container } = renderHome();
+    const cards = [...container.querySelectorAll('[aria-labelledby="services-heading"] ul > li')];
+    expect(cards.map((c) => c.querySelector("[data-expect]")!.textContent)).toEqual(
+      homeServiceSlugs.map((slug) => `What to expect: ${clinic.services.find((s) => s.slug === slug)!.expect}`),
+    );
+    // Hidden by opacity only on mouse screens, so it takes its space from the start and the card never resizes.
+    expect(cards[0].querySelector("[data-expect]")!.className).toContain("pointer-fine:opacity-0");
+    expect(cards[0].querySelector("[data-expect]")!.className).not.toMatch(/\bh-0\b|max-h/);
+    for (const s of clinic.services) expect(s.expect.length).toBeGreaterThan(20);
+  });
+
+  it("draws a 2px scroll progress line under the demo bar, at zero before any scroll", () => {
+    const { container } = renderHome();
+    const bar = container.querySelector("[data-scroll-progress]") as HTMLElement;
+    expect(bar).toBeTruthy();
+    expect(bar.className).toContain("h-0.5");
+    expect(bar.style.transform).toBe("scaleX(0)");
+    expect(bar.parentElement!.className).toContain("sticky");
+  });
+
+  it("puts one section dot per home section, desktop only, linking to each heading", () => {
+    const { container } = renderHome();
+    const dots = container.querySelector("[data-section-dots]") as HTMLElement;
+    expect(dots.className).toContain("hidden");
+    expect(dots.className).toContain("lg:flex");
+    const links = [...dots.querySelectorAll("a")];
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(
+      ["hero-heading", "numbers-heading", "journey-heading", "services-heading", "why-heading", "stories-heading", "visit-heading"].map((id) => `#${id}`),
+    );
+    for (const a of links) expect(document.getElementById(a.getAttribute("href")!.slice(1)), a.getAttribute("href")!).toBeTruthy();
+    expect(links[0].getAttribute("aria-current")).toBe("true");
+  });
+
+  it("draws the ECG line at the measured width and blooms the header mark", () => {
+    expect(ecgPath(400)).toMatch(/^M1 16 .* H399$/);
+    const { container } = renderHome();
+    expect(container.querySelector("main section [data-ecg] path")).toBeTruthy();
+    expect(container.querySelector("header [data-bloom]")!.querySelectorAll("path")).toHaveLength(4);
+  });
+
+  it("turns cursor effects off without a fine pointer: no tilt, no magnetic offsets", () => {
+    const { container } = renderHome();
+    expect(container.querySelector("[data-tilt]")).toBeNull();
+    expect(container.querySelector("[data-tilt-sweep]")).toBeNull();
+    for (const el of container.querySelectorAll("[data-magnetic]")) expect((el as HTMLElement).style.transform).toBe("");
+  });
+
+  it("flashes only rows a poll adds, and ticks the counters", async () => {
+    const row = (id: string, name: string): DashboardBooking => ({
+      id,
+      createdAt: "2026-10-22T04:00:00.000Z",
+      clinicSlug: "lotus-clinic",
+      name,
+      phone: "9876543210",
+      visitType: "clinic",
+      date: "2026-10-22",
+      slot: "Morning, 10 am – 1 pm",
+      reason: "PCOS",
+      status: "new",
+      notes: null,
+      wantsNewTime: false,
+    });
+    const props = { today: "2026-10-22", live: true, bookHref: "/book", onStatus: () => undefined, onLogout: () => undefined };
+    const { container, rerender } = render(<Dashboard {...props} bookings={[row("a", "Asha")]} />);
+    expect(container.querySelector("[data-fresh]")).toBeNull();
+    rerender(<Dashboard {...props} bookings={[row("a", "Asha"), row("b", "Bina")]} />);
+    await waitFor(() => expect(container.querySelectorAll("[data-fresh]")).toHaveLength(1));
+    expect(container.querySelector("[data-fresh]")!.textContent).toContain("Bina");
+    expect(container.querySelector("[data-fresh] [data-row-flash]")).toBeTruthy();
+    const fresh = screen.getByText("New", { selector: "dt" }).nextElementSibling!;
+    expect(fresh.querySelector("[data-ticker]")).toBeTruthy();
+    await waitFor(() => expect(fresh.textContent).toBe("2"));
   });
 });
