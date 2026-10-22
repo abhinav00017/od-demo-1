@@ -22,6 +22,7 @@ const booking: Booking = {
   reason: "Pregnancy care",
   status: "confirmed",
   notes: null,
+  wantsNewTime: false,
 };
 
 const SID = "AC00000000000000000000000000000000";

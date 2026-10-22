@@ -21,7 +21,7 @@ CREATE INDEX IF NOT EXISTS bookings_clinic_date_idx ON bookings (clinic_slug, da
 CREATE TABLE IF NOT EXISTS messages (
   id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id          uuid        NOT NULL REFERENCES bookings (id) ON DELETE CASCADE,
-  kind                text        NOT NULL CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert')),
+  kind                text        NOT NULL CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed')),
   channel             text        NOT NULL DEFAULT 'whatsapp' CHECK (channel IN ('whatsapp')),
   to_masked           text        NOT NULL,
   template            text        NOT NULL,
@@ -39,3 +39,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS messages_provider_id_idx ON messages (provider
 -- Which provider carried each message: meta (Cloud API), twilio (WhatsApp sandbox) or fake (local dev).
 -- Added with the Twilio provider. Rows sent before it were all Meta, hence the default.
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'meta' CHECK (provider IN ('meta', 'twilio', 'fake'));
+
+-- The patient tapped "Change time" on WhatsApp. Cleared when staff confirm or cancel. Added with the inbound webhook.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS wants_new_time boolean NOT NULL DEFAULT false;
+
+-- Inbound WhatsApp messages and patient confirmations, added with the inbound webhook.
+-- Replaces the kind check on tables made before it. Postgres names an inline column check <table>_<column>_check.
+-- One statement, so the drop and the add happen together. Safe to rerun.
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed'));

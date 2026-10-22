@@ -15,6 +15,7 @@ const booking: Booking = {
   reason: "PCOS",
   status: "new",
   notes: null,
+  wantsNewTime: false,
 };
 
 afterEach(() => vi.restoreAllMocks());

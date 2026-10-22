@@ -24,6 +24,23 @@ export function validTwilioSignature(authToken: string, header: string | null, u
   });
 }
 
+type IncomingRequest = { url: string; headers: Headers; nextUrl: { pathname: string; search: string; protocol: string } };
+
+/**
+ * The URLs Twilio may have signed for a webhook: the public one we gave it (WHATSAPP_PUBLIC_URL + path),
+ * the one the request arrived on behind Vercel's proxy, and the raw request URL.
+ */
+export function twilioSignedUrls(req: IncomingRequest, publicUrl: string | undefined, path: string) {
+  const search = req.nextUrl.search;
+  const urls = new Set<string>();
+  if (publicUrl) urls.add(`${publicUrl.replace(/\/+$/, "")}${path}${search}`);
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const proto = req.headers.get("x-forwarded-proto") ?? req.nextUrl.protocol.replace(":", "");
+  if (host) urls.add(`${proto}://${host}${req.nextUrl.pathname}${search}`);
+  urls.add(req.url);
+  return [...urls];
+}
+
 /** Twilio's MessageStatus -> ours. Null for anything we do not track (like "receiving"). */
 export function mapTwilioStatus(status: string | null): MessageStatus | null {
   switch ((status ?? "").toLowerCase()) {

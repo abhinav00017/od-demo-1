@@ -1,3 +1,4 @@
+import { clinicToday } from "./clinicDay";
 import { byDayThenCreated, MESSAGE_STATUS_RANK, type Booking, type BookingStore, type MessageLog, type NewBooking } from "./types";
 
 // Kept on globalThis so every route in one server process shares the same list.
@@ -27,6 +28,7 @@ export const memoryStore: BookingStore = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       status: "new",
+      wantsNewTime: false,
     };
     rows().push(booking);
     return { ...booking };
@@ -43,7 +45,24 @@ export const memoryStore: BookingStore = {
     const found = rows().find((b) => b.id === id);
     if (!found) return null;
     found.status = status;
+    if (status !== "new") found.wantsNewTime = false;
     return { ...found };
+  },
+
+  async setWantsNewTime(id, value) {
+    const found = rows().find((b) => b.id === id);
+    if (!found) return null;
+    found.wantsNewTime = value;
+    return { ...found };
+  },
+
+  async findLatestByPhone(phone, today = clinicToday()) {
+    // Newest created first. Same-millisecond rows keep insertion order, later first.
+    const found = rows()
+      .map((b, i) => ({ b, i }))
+      .filter(({ b }) => b.phone === phone && (b.status === "new" || b.status === "confirmed") && b.date >= today)
+      .sort((x, y) => y.b.createdAt.localeCompare(x.b.createdAt) || y.i - x.i)[0];
+    return found ? { ...found.b } : null;
   },
 
   async logMessage(input) {

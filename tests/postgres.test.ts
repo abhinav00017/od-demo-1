@@ -52,6 +52,7 @@ describe("postgres store (driver mocked)", () => {
       reason: "Pregnancy care",
       status: "new",
       notes: null,
+      wantsNewTime: false,
     });
   });
 
@@ -70,6 +71,38 @@ describe("postgres store (driver mocked)", () => {
     expect((await store.updateStatus(row.id, "confirmed"))?.status).toBe("confirmed");
     expect(query.mock.calls[0][1]).toEqual([row.id, "confirmed"]);
     expect(await store.updateStatus(row.id, "cancelled")).toBeNull();
+  });
+
+  it("clears wants_new_time unless the status goes back to new", async () => {
+    query.mockResolvedValueOnce([{ ...row, status: "confirmed", wants_new_time: false }]);
+    await postgresStore("postgres://x").updateStatus(row.id, "confirmed");
+    expect(query.mock.calls[0][0]).toContain("wants_new_time = CASE WHEN $2 = 'new' THEN wants_new_time ELSE false END");
+  });
+
+  it("sets wants_new_time and maps it back", async () => {
+    query.mockResolvedValueOnce([{ ...row, wants_new_time: true }]).mockResolvedValueOnce([]);
+    const store = postgresStore("postgres://x");
+    expect((await store.setWantsNewTime(row.id, true))?.wantsNewTime).toBe(true);
+    const [text, params] = query.mock.calls[0];
+    expect(text).toMatch(/^UPDATE bookings SET wants_new_time = \$2 WHERE id = \$1::uuid RETURNING .*wants_new_time/);
+    expect(params).toEqual([row.id, true]);
+    expect(await store.setWantsNewTime(row.id, false)).toBeNull();
+  });
+
+  it("findLatestByPhone: open bookings from today, newest created first", async () => {
+    query.mockResolvedValueOnce([row]).mockResolvedValueOnce([]);
+    const store = postgresStore("postgres://x");
+    expect((await store.findLatestByPhone("9876543210", "2026-10-22"))?.id).toBe(row.id);
+    const [text, params] = query.mock.calls[0];
+    expect(text).toMatch(/WHERE phone = \$1 AND status IN \('new', 'confirmed'\) AND date >= \$2::date ORDER BY created_at DESC LIMIT 1$/);
+    expect(params).toEqual(["9876543210", "2026-10-22"]);
+    expect(await store.findLatestByPhone("9876543210", "2026-10-22")).toBeNull();
+  });
+
+  it("findLatestByPhone defaults to today in clinic time", async () => {
+    query.mockResolvedValueOnce([]);
+    await postgresStore("postgres://x").findLatestByPhone("9876543210");
+    expect(query.mock.calls[0][1][1]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   const msgRow = {

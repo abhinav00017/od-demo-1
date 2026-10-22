@@ -104,6 +104,56 @@ For a verified business sender there is no join step: leave `TWILIO_JOIN_KEYWORD
 A send to someone who has not joined fails. If Twilio answers 21654 or 63016, the dashboard row shows
 "Hint: set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet" under the error.
 
+### Quick Reply template
+
+The confirmation can carry two buttons, so the patient answers with one tap.
+
+1. Content Template Builder > Create new. Name: `lotus_booking_confirmed_buttons`. Language: English.
+2. Content type: **Quick Reply**.
+3. Body: the same text as `lotus_booking_confirmed` above, with `{{1}}` and `{{2}}`:
+
+   ```
+   Hello, your visit at Lotus Women's Clinic is confirmed for {{1}}, {{2}}. Reply to this message if you need to change it.
+   ```
+
+4. Buttons (title, then ID):
+   - `Confirm`, ID `confirm`
+   - `Change time`, ID `change_time`
+5. Save, then **Submit for WhatsApp approval**. Category: **Utility**.
+6. When approved, put its HX sid in `TWILIO_CONTENT_SID_CONFIRM` on Vercel. Redeploy.
+
+A tap reaches the inbound webhook below as `ButtonPayload` (the ID) and `ButtonText` (the title).
+Typed replies work too: `confirm`, `c` or `yes` confirm; `change time`, `change`, `r` or `reschedule` ask for a new time.
+So Twilio's sample template ("Reply C to confirm or R to reschedule") also works.
+
+### Inbound webhook
+
+Patient replies come to this URL:
+
+```
+https://od-demo-lyart.vercel.app/api/whatsapp/twilio-inbound
+```
+
+1. Twilio console > **Try out WhatsApp** > **Receive a message**.
+2. Choose **Custom webhook**, paste the URL above, method **HTTP POST**. Save.
+
+These menu names come from the brief and were not checked against the live console.
+
+What it does, for the sender's newest booking that is new or confirmed and today or later:
+
+- **Confirm**: the booking becomes confirmed. No second confirmation template is sent. The patient gets
+  "Thank you. Your visit is confirmed for <day>, <slot>. Lotus Women's Clinic."
+  The dashboard row says "Patient confirmed on WhatsApp".
+- **Change time**: the row gets an amber "Wants a new time" chip. The patient gets the booking link for the same visit type.
+  The chip clears when staff click Confirm or Cancel.
+- **Anything else**, or no open booking: one polite reply per sender per hour with the booking link and the clinic phone. After that, no reply.
+
+The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`, like the status callback, and answers 403 when it is wrong.
+Server logs carry the intent, the last 4 digits and the booking reference. Never the message text.
+The messages table logs each reply as kind `inbound` (template = the intent) and each tap on Confirm as `patient_confirmed`.
+
+These need the `wants_new_time` column and the new message kinds. Run `npm run db:migrate` on Neon before deploying.
+
 ### Delivery statuses
 
 Each send asks Twilio to post its status to the URL below, when `WHATSAPP_PUBLIC_URL` is set.

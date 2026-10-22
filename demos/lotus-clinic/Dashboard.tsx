@@ -61,8 +61,9 @@ export function splitHint(error: string | null | undefined): { reason: string; h
   return m ? { reason: text.slice(0, m.index), hint: m[1] } : { reason: text, hint: null };
 }
 
-/** "WhatsApp: sent 8:51 pm", "WhatsApp reminder: delivered 6:02 pm", "WhatsApp: failed: <reason>". */
+/** "WhatsApp: sent 8:51 pm", "WhatsApp reminder: delivered 6:02 pm", "WhatsApp: failed: <reason>", "Patient confirmed on WhatsApp". */
 export function whatsappLine(w: WhatsAppSummary) {
+  if (w.kind === "patient_confirmed") return "Patient confirmed on WhatsApp";
   const label = w.kind === "confirmation" ? "WhatsApp" : `WhatsApp ${w.kind.replace("_", " ")}`;
   if (w.status === "failed") {
     const reason = splitHint(w.error).reason || "unknown error";
@@ -73,7 +74,7 @@ export function whatsappLine(w: WhatsAppSummary) {
 
 /** Small grey note after the line. Only Twilio gets one: Meta is the default, and fake only runs locally. */
 export function providerNote(w: WhatsAppSummary) {
-  return w.provider === "twilio" ? "via Twilio" : null;
+  return w.provider === "twilio" && w.kind !== "patient_confirmed" ? "via Twilio" : null;
 }
 
 function WhatsAppStatus({ w }: { w: WhatsAppSummary }) {
@@ -143,6 +144,7 @@ function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStat
             {b.visitType === "online" ? "Online" : "Clinic"}
           </span>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
+          {b.wantsNewTime ? <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">Wants a new time</span> : null}
         </div>
         <p className="mt-1 text-sm">{b.reason}</p>
         <Phone phone={b.phone} name={b.name} />

@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       reason: input.reason,
       status: "new",
       notes: null,
+      wantsNewTime: false,
     };
     return json({ ok: true, id: fake.id, booking: fake }, 201);
   }
@@ -83,11 +84,12 @@ export async function GET(req: NextRequest) {
   try {
     const list = await store.list({ from: today, clinicSlug: CLINIC_SLUG });
     // The message log is extra. If it fails (say the table is not migrated yet), bookings still load.
-    // The row shows what the patient got, so the clinic's own alert is left out.
+    // The row shows what the patient got, so the clinic's own alert is left out, and so are the patient's own messages.
+    // A patient tapping Confirm (patient_confirmed) stays in: the row says so.
     let latest = new Map<string, MessageLog>();
     try {
       const sent = await store.listMessagesForBookings(list.map((b) => b.id));
-      latest = latestByBooking(sent.filter((m) => m.kind !== "clinic_alert"));
+      latest = latestByBooking(sent.filter((m) => m.kind !== "clinic_alert" && m.kind !== "inbound"));
     } catch (err) {
       console.error(`message list failed: ${err instanceof Error ? err.message : "unknown error"}`);
     }

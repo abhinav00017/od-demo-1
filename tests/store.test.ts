@@ -80,6 +80,32 @@ function storeContract(name: string, store: BookingStore, reset: () => void) {
       expect(await store.updateMessageStatus("wamid.unknown", "read")).toBeNull();
     });
 
+    it("findLatestByPhone: newest open booking on or after today, for that phone only", async () => {
+      expect(await store.findLatestByPhone(base.phone, "2026-10-22")).toBeNull();
+      const older = await store.create({ ...base, date: "2026-10-23", name: "Older" });
+      const newer = await store.create({ ...base, date: "2026-10-22", name: "Newer" });
+      const past = await store.create({ ...base, date: "2026-10-21", name: "Past" });
+      await store.create({ ...base, phone: "9123456789", name: "Other phone" });
+      expect((await store.findLatestByPhone(base.phone, "2026-10-22"))?.id).toBe(newer.id);
+      await store.updateStatus(newer.id, "cancelled");
+      expect((await store.findLatestByPhone(base.phone, "2026-10-22"))?.id).toBe(older.id);
+      await store.updateStatus(older.id, "confirmed");
+      expect((await store.findLatestByPhone(base.phone, "2026-10-22"))?.id).toBe(older.id);
+      expect((await store.findLatestByPhone(base.phone, "2026-10-21"))?.id).toBe(past.id);
+      expect(await store.findLatestByPhone(base.phone, "2026-10-24")).toBeNull();
+    });
+
+    it("sets wantsNewTime, and confirm or cancel clears it", async () => {
+      const b = await store.create(base);
+      expect(b.wantsNewTime).toBe(false);
+      expect((await store.setWantsNewTime(b.id, true))?.wantsNewTime).toBe(true);
+      expect((await store.updateStatus(b.id, "new"))?.wantsNewTime).toBe(true);
+      expect((await store.updateStatus(b.id, "confirmed"))?.wantsNewTime).toBe(false);
+      await store.setWantsNewTime(b.id, true);
+      expect((await store.updateStatus(b.id, "cancelled"))?.wantsNewTime).toBe(false);
+      expect(await store.setWantsNewTime("00000000-0000-4000-8000-000000000000", true)).toBeNull();
+    });
+
     it("hands out copies, so callers cannot change stored rows", async () => {
       const b = await store.create(base);
       b.status = "cancelled";

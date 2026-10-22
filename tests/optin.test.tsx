@@ -111,6 +111,7 @@ const booking: Booking = {
   reason: "Pregnancy care",
   status: "confirmed",
   notes: null,
+  wantsNewTime: false,
 };
 const props = { today: "2026-10-20", live: true, bookHref: "/clinic/website/book", onStatus: () => {}, onLogout: () => {} };
 

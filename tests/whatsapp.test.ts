@@ -18,6 +18,7 @@ const booking: Booking = {
   reason: "Pregnancy care",
   status: "confirmed",
   notes: null,
+  wantsNewTime: false,
 };
 
 afterEach(() => {

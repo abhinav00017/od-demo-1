@@ -17,14 +17,19 @@ export type Booking = {
   reason: string;
   status: BookingStatus;
   notes: string | null;
+  /** The patient tapped "Change time" on WhatsApp. Cleared when staff confirm or cancel. */
+  wantsNewTime: boolean;
 };
 
 export type NewBooking = Pick<Booking, "clinicSlug" | "name" | "phone" | "visitType" | "date" | "slot" | "reason"> & {
   notes?: string | null;
 };
 
-/** clinic_alert goes to the clinic's own number on every new booking. The rest go to the patient. */
-export const MESSAGE_KINDS = ["confirmation", "reminder", "cancellation", "clinic_alert"] as const;
+/**
+ * clinic_alert goes to the clinic's own number on every new booking. confirmation, reminder and cancellation go to the patient.
+ * inbound is a WhatsApp message from the patient. patient_confirmed is the patient tapping Confirm on WhatsApp.
+ */
+export const MESSAGE_KINDS = ["confirmation", "reminder", "cancellation", "clinic_alert", "inbound", "patient_confirmed"] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
 export const MESSAGE_STATUSES = ["queued", "sent", "delivered", "read", "failed"] as const;
@@ -67,8 +72,15 @@ export interface BookingStore {
   create(input: NewBooking): Promise<Booking>;
   /** Bookings on or after `from` (YYYY-MM-DD), earliest day first. */
   list(opts: { from: string; clinicSlug?: string }): Promise<Booking[]>;
-  /** Returns the updated booking, or null when no booking has that id. */
+  /** Returns the updated booking, or null when no booking has that id. Confirmed or cancelled also clears wantsNewTime. */
   updateStatus(id: string, status: BookingStatus): Promise<Booking | null>;
+  /** Sets the "wants a new time" flag. Returns the updated booking, or null when no booking has that id. */
+  setWantsNewTime(id: string, value: boolean): Promise<Booking | null>;
+  /**
+   * The newest booking (by created time) for a 10-digit phone that is still open (new or confirmed)
+   * and on or after `today` (YYYY-MM-DD, clinic time). Null when there is none.
+   */
+  findLatestByPhone(phone: string, today?: string): Promise<Booking | null>;
   /** Saves one message log row. */
   logMessage(input: NewMessageLog): Promise<MessageLog>;
   /**

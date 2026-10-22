@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { clinicToday } from "./clinicDay";
 import {
   byDayThenCreated,
   MESSAGE_STATUS_RANK,
@@ -13,7 +14,7 @@ import {
 } from "./types";
 
 // date::text keeps the calendar day as written. A JS Date would shift it by the server's time zone.
-const COLUMNS = `id, created_at, clinic_slug, name, phone, visit_type, date::text AS date, slot, reason, status, notes`;
+const COLUMNS = `id, created_at, clinic_slug, name, phone, visit_type, date::text AS date, slot, reason, status, notes, wants_new_time`;
 
 type Row = {
   id: string;
@@ -27,6 +28,7 @@ type Row = {
   reason: string;
   status: BookingStatus;
   notes: string | null;
+  wants_new_time?: boolean | null;
 };
 
 function toBooking(r: Row): Booking {
@@ -42,6 +44,7 @@ function toBooking(r: Row): Booking {
     reason: r.reason,
     status: r.status,
     notes: r.notes,
+    wantsNewTime: r.wants_new_time === true,
   };
 }
 
@@ -112,7 +115,24 @@ export function postgresStore(databaseUrl: string): BookingStore {
     },
 
     async updateStatus(id: string, status: BookingStatus) {
-      const [row] = await run(`UPDATE bookings SET status = $2 WHERE id = $1::uuid RETURNING ${COLUMNS}`, [id, status]);
+      // Staff (or the patient) settling the booking answers any "wants a new time" request.
+      const [row] = await run(
+        `UPDATE bookings SET status = $2, wants_new_time = CASE WHEN $2 = 'new' THEN wants_new_time ELSE false END WHERE id = $1::uuid RETURNING ${COLUMNS}`,
+        [id, status],
+      );
+      return row ? toBooking(row) : null;
+    },
+
+    async setWantsNewTime(id: string, value: boolean) {
+      const [row] = await run(`UPDATE bookings SET wants_new_time = $2 WHERE id = $1::uuid RETURNING ${COLUMNS}`, [id, value]);
+      return row ? toBooking(row) : null;
+    },
+
+    async findLatestByPhone(phone: string, today = clinicToday()) {
+      const [row] = await run(
+        `SELECT ${COLUMNS} FROM bookings WHERE phone = $1 AND status IN ('new', 'confirmed') AND date >= $2::date ORDER BY created_at DESC LIMIT 1`,
+        [phone, today],
+      );
       return row ? toBooking(row) : null;
     },
 

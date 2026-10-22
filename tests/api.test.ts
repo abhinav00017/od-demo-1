@@ -137,6 +137,17 @@ describe("GET /api/bookings", () => {
     expect(data.storage).toBe("memory");
     expect(data.bookings.map((b: { name: string }) => b.name)).toEqual(["Priya Sharma"]);
   });
+
+  it("carries wantsNewTime, and the WhatsApp line skips the patient's own messages but keeps patient_confirmed", async () => {
+    const b = await memoryStore.create({ clinicSlug: "lotus-clinic", name: "Asha", phone: "9876543210", visitType: "clinic", date: "2026-10-22", slot: "x", reason: "y" });
+    await memoryStore.setWantsNewTime(b.id, true);
+    await memoryStore.logMessage({ bookingId: b.id, kind: "patient_confirmed", provider: "twilio", toMasked: "••••3210", template: "patient_confirmed", status: "delivered" });
+    await memoryStore.logMessage({ bookingId: b.id, kind: "inbound", provider: "twilio", toMasked: "••••3210", template: "OTHER", status: "delivered" });
+    const data = await (await GET(req("/api/bookings", { cookie: adminCookie() }))).json();
+    const row = data.bookings.find((x: { id: string }) => x.id === b.id);
+    expect(row.wantsNewTime).toBe(true);
+    expect(row.whatsapp).toMatchObject({ kind: "patient_confirmed", status: "delivered" });
+  });
 });
 
 describe("PATCH /api/bookings/[id]", () => {

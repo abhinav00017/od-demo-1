@@ -19,6 +19,7 @@ function make(over: Partial<Booking>): Booking {
     reason: "Pregnancy care",
     status: "new",
     notes: null,
+    wantsNewTime: false,
     ...over,
   };
 }
@@ -116,5 +117,28 @@ describe("WhatsApp status line", () => {
     expect(notes).toHaveLength(1);
     expect(notes[0].className).toContain("text-lotus-muted");
     expect(notes[0].closest("li")?.textContent).toContain("Twilio Tanvi");
+  });
+
+  it("says the patient confirmed on WhatsApp, with no provider note", () => {
+    const rows: DashboardBooking[] = [
+      { ...make({ name: "Tapped Tara", status: "confirmed" }), whatsapp: { kind: "patient_confirmed", status: "delivered", error: null, at: "2026-10-20T15:21:00.000Z", provider: "twilio" } },
+    ];
+    render(<Dashboard {...props} bookings={rows} />);
+    expect(screen.getByText("Patient confirmed on WhatsApp")).toBeTruthy();
+    expect(screen.queryByText("via Twilio")).toBeNull();
+  });
+});
+
+describe("Wants a new time chip", () => {
+  it("shows an amber chip only on rows that asked, and keeps Confirm and Cancel", () => {
+    const rows: DashboardBooking[] = [{ ...make({ name: "Moving Maya", status: "confirmed", wantsNewTime: true }) }, { ...make({ name: "Settled Sana" }) }];
+    render(<Dashboard {...props} bookings={rows} />);
+    const chips = screen.getAllByText("Wants a new time");
+    expect(chips).toHaveLength(1);
+    expect(chips[0].className).toContain("bg-amber-100");
+    const row = chips[0].closest("li")!;
+    expect(row.textContent).toContain("Moving Maya");
+    expect(within(row).getByRole("button", { name: "Confirm Moving Maya" })).toBeTruthy();
+    expect(within(row).getByRole("button", { name: "Cancel Moving Maya" })).toBeTruthy();
   });
 });
