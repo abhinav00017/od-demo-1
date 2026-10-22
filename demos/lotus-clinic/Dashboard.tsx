@@ -1,11 +1,13 @@
 "use client";
 
 import { CalendarX2, Check, Eye, EyeOff, LogOut, X } from "lucide-react";
-import { useState } from "react";
+import { AnimatePresence, LazyMotion, m } from "motion/react";
+import { useState, type Ref } from "react";
 import type { BookingStatus, DashboardBooking, WhatsAppSummary } from "@/lib/bookings/types";
 import type { QrPath } from "@/lib/qr";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { dashboardCounts, dayLabel, formatPhone, groupByDay, maskPhone } from "./dashboardData";
+import { EASE, useCalmMotion } from "./Motion";
 import { ui } from "./ui";
 
 const STATUS_STYLE: Record<BookingStatus, { label: string; className: string }> = {
@@ -128,11 +130,37 @@ export function DeskQr({ optIn }: { optIn: DeskOptIn }) {
   );
 }
 
-function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStatus: DashboardProps["onStatus"] }) {
+/**
+ * One booking. Rows slide in on the first load (one after another) and when a poll brings a new one;
+ * the others glide to make room (`layout`), and a removed row fades out. Opacity only under reduced motion.
+ */
+function Row({
+  b,
+  index,
+  busy,
+  onStatus,
+  ref,
+}: {
+  b: DashboardBooking;
+  index: number;
+  busy: boolean;
+  onStatus: DashboardProps["onStatus"];
+  /** AnimatePresence's popLayout measures the row through this. */
+  ref?: Ref<HTMLLIElement>;
+}) {
   const [part, time] = b.slot.split(", ");
   const status = STATUS_STYLE[b.status];
+  const calm = useCalmMotion();
   return (
-    <li className="grid gap-3 rounded-2xl bg-white p-5 shadow-lotus ring-1 ring-lotus-hairline sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6">
+    <m.li
+      ref={ref}
+      layout={calm ? false : "position"}
+      initial={calm ? { opacity: 0 } : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE, delay: Math.min(index, 6) * 0.05 } }}
+      exit={{ opacity: 0, transition: { duration: 0.2 } }}
+      transition={{ layout: { duration: 0.3, ease: EASE } }}
+      className="grid gap-3 rounded-2xl bg-white p-5 shadow-lotus ring-1 ring-lotus-hairline sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6"
+    >
       <div>
         <p className="font-semibold text-lotus-text">{part}</p>
         {time ? <p className="text-sm">{time}</p> : null}
@@ -143,7 +171,20 @@ function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStat
           <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-lotus-text ring-1 ring-lotus-hairline">
             {b.visitType === "online" ? "Online" : "Clinic"}
           </span>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
+          {/* A status change cross-fades the chip. */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <m.span
+              key={b.status}
+              data-status={b.status}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {status.label}
+            </m.span>
+          </AnimatePresence>
           {b.wantsNewTime ? <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">Wants a new time</span> : null}
         </div>
         <p className="mt-1 text-sm">{b.reason}</p>
@@ -172,14 +213,25 @@ function Row({ b, busy, onStatus }: { b: DashboardBooking; busy: boolean; onStat
           Cancel
         </button>
       </div>
-    </li>
+    </m.li>
   );
 }
 
+/** The live dot. While live it sends out a soft teal ring every 2.4 s; still under reduced motion. */
 export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }) {
+  const calm = useCalmMotion();
   return (
     <p className="flex items-center gap-2 text-sm" aria-live="polite">
       <span aria-hidden className="relative flex size-2.5">
+        {live && !calm ? (
+          <m.span
+            data-live-pulse=""
+            className="absolute inset-0 rounded-full bg-lotus-accent"
+            initial={{ opacity: 0 }}
+            animate={{ transform: ["scale(1)", "scale(2.6)"], opacity: [0.35, 0] }}
+            transition={{ duration: 2.4, ease: "easeOut", repeat: Infinity, repeatDelay: 0.4 }}
+          />
+        ) : null}
         <span className={`relative inline-flex size-2.5 rounded-full ${live ? "bg-lotus-accent ring-4 ring-lotus-accent/15" : "bg-lotus-field"}`} />
       </span>
       <span className="font-semibold text-lotus-text">{live ? "Live" : "Reconnecting"}</span>
@@ -192,8 +244,21 @@ export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }
   );
 }
 
-/** The bookings view. Pure: data in, callbacks out. AdminApp feeds it. */
-export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, bookHref, onStatus, onLogout, optIn }: DashboardProps) {
+/**
+ * The bookings view. Pure: data in, callbacks out. AdminApp feeds it.
+ * Loads the layout animation features here, in their own chunk; the rest of the site only needs domAnimation.
+ */
+const loadLayoutFeatures = () => import("./motionMax").then((mod) => mod.default);
+
+export function Dashboard(props: DashboardProps) {
+  return (
+    <LazyMotion features={loadLayoutFeatures} strict>
+      <DashboardView {...props} />
+    </LazyMotion>
+  );
+}
+
+function DashboardView({ bookings, today, storage, live, updatedAt, busyId, bookHref, onStatus, onLogout, optIn }: DashboardProps) {
   const counts = dashboardCounts(bookings, today);
   const groups = groupByDay(bookings);
   const tiles = [
@@ -249,10 +314,12 @@ export function Dashboard({ bookings, today, storage, live, updatedAt, busyId, b
                   {g.items.length} {g.items.length === 1 ? "booking" : "bookings"}
                 </span>
               </h2>
-              <ul className="mt-4 space-y-3">
-                {g.items.map((b) => (
-                  <Row key={b.id} b={b} busy={busyId === b.id} onStatus={onStatus} />
-                ))}
+              <ul className="relative mt-4 space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {g.items.map((b, i) => (
+                    <Row key={b.id} b={b} index={i} busy={busyId === b.id} onStatus={onStatus} />
+                  ))}
+                </AnimatePresence>
               </ul>
             </section>
           ))}
