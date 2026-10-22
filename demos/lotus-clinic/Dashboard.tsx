@@ -1,13 +1,13 @@
 "use client";
 
 import { CalendarX2, Check, Eye, EyeOff, LogOut, X } from "lucide-react";
-import { AnimatePresence, LazyMotion, m } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { useState, type Ref } from "react";
 import type { BookingStatus, DashboardBooking, WhatsAppSummary } from "@/lib/bookings/types";
 import type { QrPath } from "@/lib/qr";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { dashboardCounts, dayLabel, formatPhone, groupByDay, maskPhone } from "./dashboardData";
-import { EASE, useCalmMotion } from "./Motion";
+import { EASE, LayoutMotion, Ticker, useCalmMotion } from "./Motion";
 import { ui } from "./ui";
 
 const STATUS_STYLE: Record<BookingStatus, { label: string; className: string }> = {
@@ -133,17 +133,21 @@ export function DeskQr({ optIn }: { optIn: DeskOptIn }) {
 /**
  * One booking. Rows slide in on the first load (one after another) and when a poll brings a new one;
  * the others glide to make room (`layout`), and a removed row fades out. Opacity only under reduced motion.
+ * A row a poll brings in (`fresh`) also flashes a teal tint that fades to white over 1.2 s.
  */
 function Row({
   b,
   index,
   busy,
+  fresh,
   onStatus,
   ref,
 }: {
   b: DashboardBooking;
   index: number;
   busy: boolean;
+  /** True when this row arrived after the first load. Read once, when the row mounts. */
+  fresh: boolean;
   onStatus: DashboardProps["onStatus"];
   /** AnimatePresence's popLayout measures the row through this. */
   ref?: Ref<HTMLLIElement>;
@@ -151,6 +155,7 @@ function Row({
   const [part, time] = b.slot.split(", ");
   const status = STATUS_STYLE[b.status];
   const calm = useCalmMotion();
+  const [flash] = useState(fresh);
   return (
     <m.li
       ref={ref}
@@ -159,8 +164,19 @@ function Row({
       animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE, delay: Math.min(index, 6) * 0.05 } }}
       exit={{ opacity: 0, transition: { duration: 0.2 } }}
       transition={{ layout: { duration: 0.3, ease: EASE } }}
-      className="grid gap-3 rounded-2xl bg-white p-5 shadow-lotus ring-1 ring-lotus-hairline sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6"
+      data-fresh={flash ? "" : undefined}
+      className="relative isolate grid gap-3 rounded-2xl bg-white p-5 shadow-lotus ring-1 ring-lotus-hairline sm:grid-cols-[9rem_1fr_auto] sm:items-center sm:gap-6"
     >
+      {flash ? (
+        <m.span
+          aria-hidden
+          data-row-flash=""
+          className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-lotus-accent/15"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut", delay: 0.15 }}
+        />
+      ) : null}
       <div>
         <p className="font-semibold text-lotus-text">{part}</p>
         {time ? <p className="text-sm">{time}</p> : null}
@@ -248,17 +264,18 @@ export function LiveDot({ live, updatedAt }: { live: boolean; updatedAt?: Date }
  * The bookings view. Pure: data in, callbacks out. AdminApp feeds it.
  * Loads the layout animation features here, in their own chunk; the rest of the site only needs domAnimation.
  */
-const loadLayoutFeatures = () => import("./motionMax").then((mod) => mod.default);
-
 export function Dashboard(props: DashboardProps) {
   return (
-    <LazyMotion features={loadLayoutFeatures} strict>
+    <LayoutMotion>
       <DashboardView {...props} />
-    </LazyMotion>
+    </LayoutMotion>
   );
 }
 
 function DashboardView({ bookings, today, storage, live, updatedAt, busyId, bookHref, onStatus, onLogout, optIn }: DashboardProps) {
+  // The ids in the first list that had any bookings. Rows that are not in it came in with a later poll.
+  const [firstIds, setFirstIds] = useState<Set<string> | null>(null);
+  if (firstIds === null && bookings.length) setFirstIds(new Set(bookings.map((b) => b.id)));
   const counts = dashboardCounts(bookings, today);
   const groups = groupByDay(bookings);
   const tiles = [
@@ -280,7 +297,9 @@ function DashboardView({ bookings, today, storage, live, updatedAt, busyId, book
         {tiles.map((t) => (
           <div key={t.label} className={`p-4 sm:p-6 ${ui.card}`}>
             <dt className="text-sm">{t.label}</dt>
-            <dd className="mt-1 text-3xl font-bold tracking-tight text-lotus-text sm:text-4xl">{t.value}</dd>
+            <dd className="mt-1 text-3xl font-bold tracking-tight text-lotus-text sm:text-4xl">
+              <Ticker value={t.value} />
+            </dd>
           </div>
         ))}
       </dl>
@@ -317,7 +336,7 @@ function DashboardView({ bookings, today, storage, live, updatedAt, busyId, book
               <ul className="relative mt-4 space-y-3">
                 <AnimatePresence mode="popLayout">
                   {g.items.map((b, i) => (
-                    <Row key={b.id} b={b} index={i} busy={busyId === b.id} onStatus={onStatus} />
+                    <Row key={b.id} b={b} index={i} busy={busyId === b.id} fresh={firstIds !== null && !firstIds.has(b.id)} onStatus={onStatus} />
                   ))}
                 </AnimatePresence>
               </ul>
