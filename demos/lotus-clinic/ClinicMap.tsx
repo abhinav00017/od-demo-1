@@ -1,7 +1,7 @@
 import { Clock, Mail, MapPin, Navigation, Phone } from "lucide-react";
 import type { ReactNode } from "react";
-import { ArrowCircle } from "./Art";
 import { clinic } from "./data";
+import { PillLink } from "./Motion";
 import { ui } from "./ui";
 
 /** Google Maps embed. No API key: the public `output=embed` URL. */
@@ -30,14 +30,13 @@ export function ClinicMap({ className = "" }: { className?: string }) {
 
 export function DirectionsLink({ className = "" }: { className?: string }) {
   return (
-    <a href={directionsUrl()} target="_blank" rel="noopener noreferrer" className={`${ui.secondaryArrow} ${className}`}>
+    <PillLink href={directionsUrl()} external arrow className={`${ui.secondaryArrow} ${className}`}>
       <span className="inline-flex items-center gap-2">
         <Navigation aria-hidden strokeWidth={1.75} className="size-4" />
         Get Directions
         <span className="sr-only">(opens Google Maps in a new tab)</span>
       </span>
-      <ArrowCircle />
-    </a>
+    </PillLink>
   );
 }
 

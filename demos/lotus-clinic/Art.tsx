@@ -1,4 +1,4 @@
-/** Small art for the Lotus demo: the logo, the rating marks and the pill arrow. No photos or drawings of people. */
+/** Small art for the Lotus demo: the logo and the rating marks. No photos or drawings of people. The pill arrow is in Motion.tsx. */
 
 export function LotusMark({ className = "size-8" }: { className?: string }) {
   return (
@@ -28,17 +28,6 @@ export function LotusLineMark({ className = "size-5" }: { className?: string }) 
       <path d="M40 18c-8 0-14 5-16 14 9 1 15-4 16-14Z" />
       <path d="M12 38h24" />
     </svg>
-  );
-}
-
-/** A small teal circle with an arrow, at the right end of an outline pill. */
-export function ArrowCircle({ className = "size-9" }: { className?: string }) {
-  return (
-    <span aria-hidden data-arrow-circle="" className={`flex shrink-0 items-center justify-center rounded-full bg-lotus-accent text-white ${className}`}>
-      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 12h14M13 6l6 6-6 6" />
-      </svg>
-    </span>
   );
 }
 
