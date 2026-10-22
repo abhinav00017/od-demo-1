@@ -7,7 +7,7 @@ import { clinic, clinicWhatsAppHref } from "./data";
 import { MenuStateProvider } from "./MenuState";
 import { MobileBar } from "./MobileBar";
 import { MobileMenu } from "./MobileMenu";
-import { FloatingButton, MotionProvider, PageFade, PillLink } from "./Motion";
+import { BloomMark, FloatingButton, MotionProvider, PageFade, PillLink, ScrollProgress } from "./Motion";
 import { ui } from "./ui";
 
 export type Nav = { base: string; href: (page: DemoPage) => string; page: DemoPage; hubHref: string };
@@ -24,22 +24,25 @@ export function LotusButton({
   children,
   variant = "primary",
   className = "",
+  magnetic = false,
 }: {
   href: string;
   children: ReactNode;
   /** `arrow` is the outline pill with a small arrow circle at the right end. */
   variant?: "primary" | "secondary" | "arrow";
   className?: string;
+  /** Pulls the pill a few px toward a desktop cursor. The hero's two buttons. */
+  magnetic?: boolean;
 }) {
   if (variant === "arrow") {
     return (
-      <PillLink href={href} className={`${ui.secondaryArrow} ${className}`} arrow>
+      <PillLink href={href} className={`${ui.secondaryArrow} ${className}`} arrow magnetic={magnetic}>
         <span className="inline-flex items-center gap-2">{children}</span>
       </PillLink>
     );
   }
   return (
-    <PillLink href={href} className={`${ui[variant]} ${className}`}>
+    <PillLink href={href} className={`${ui[variant]} ${className}`} magnetic={magnetic}>
       {children}
     </PillLink>
   );
@@ -123,10 +126,11 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
             <style>{NO_SCRIPT_CSS}</style>
           </noscript>
           <DemoBar hubHref={nav.hubHref} />
+          <ScrollProgress />
           <header className="relative border-b border-lotus-hairline bg-white">
             <LotusContainer className="flex items-center justify-between gap-6 py-3.5">
               <Link href={nav.base} className="flex items-center gap-2.5 rounded-lg">
-                <LotusMark />
+                <BloomMark />
                 <span className="leading-tight">
                   <span className="block text-base font-semibold tracking-tight text-lotus-text sm:text-lg">{clinic.name}</span>
                   <span className="hidden text-xs text-lotus-muted sm:block">

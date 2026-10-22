@@ -17,6 +17,12 @@ export const ui = {
    * transitions transform or opacity on these cards. Not for forms or the dashboard.
    */
   lift: "transition-shadow duration-200 hover:shadow-lotus-lift",
+  /**
+   * A service card's hover line. CSS only: opacity and a 6px slide, 250 ms, on cards with `group`.
+   * Shown at once on touch screens; fades without the slide under reduced motion.
+   */
+  expect:
+    "mt-4 text-sm leading-relaxed text-lotus-text transition-[opacity,translate] duration-[250ms] ease-out pointer-fine:translate-y-1.5 pointer-fine:opacity-0 pointer-fine:group-hover:translate-y-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:translate-y-0 pointer-fine:group-focus-within:opacity-100 motion-reduce:translate-y-0",
   /** Page headlines: extra bold, tight tracking. */
   h1: "font-extrabold tracking-[-0.03em] text-lotus-text",
   h2: "text-3xl font-bold tracking-tight text-lotus-text sm:text-4xl",

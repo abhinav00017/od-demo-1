@@ -56,6 +56,19 @@ export const clinic = {
     { value: "3,000+", label: "Successful Deliveries" },
     { value: "4.9", label: "Google Rating", reviews: "312 reviews" },
   ],
+  /** "How a visit works" on the home page: four steps, from booking to follow-up. */
+  journey: [
+    { icon: "book", title: "Book online", text: "Choose a visit type, a day and a time. It takes a minute." },
+    { icon: "whatsapp", title: "WhatsApp confirmation", text: "The clinic confirms the exact time on WhatsApp within 2 hours." },
+    { icon: "visit", title: "Visit the clinic", text: "Meet Dr. Rao in Siripuram, or join the call from home." },
+    { icon: "reminder", title: "Follow-up reminder", text: "A WhatsApp reminder arrives before your next visit or scan." },
+  ],
+  /** The chat the phone mock plays beside the steps. Meera is made up. */
+  journeyChat: {
+    confirmation: "Hi Meera, Dr. Rao can see you on Tuesday, 28 Oct at 10:30 am at the clinic. Please confirm.",
+    buttons: ["Confirm", "Change time"],
+    thanks: "Thank you, see you on Tuesday, 28 Oct at 10:30 am.",
+  },
   services: [
     {
       slug: "pregnancy-care",
@@ -63,6 +76,8 @@ export const clinic = {
       name: "Obstetrics & Pregnancy Care",
       short:
         "Dr. Rao provides complete care from the first positive test through delivery and recovery. Each trimester follows a planned schedule of visits, scans and tests.",
+      /** One line the card reveals on hover. */
+      expect: "First visit: your history, an early scan and a plan for each trimester.",
       details: ["Visit and scan plan for each trimester", "Nutrition and exercise guidance", "Normal and caesarean delivery", "Postnatal care and follow-up"],
     },
     {
@@ -71,6 +86,8 @@ export const clinic = {
       name: "Gynecology Consultations",
       short:
         "The clinic treats irregular or painful periods, infections, pelvic pain and other common concerns. Routine screening, including Pap smears and breast examinations, is also available.",
+      /** One line the card reveals on hover. */
+      expect: "A private talk, an examination only if needed, and a clear written plan.",
       details: ["Irregular or painful periods", "Vaginal discharge and infections", "Pelvic pain", "Pap smear and breast examination"],
     },
     {
@@ -79,6 +96,8 @@ export const clinic = {
       name: "Fertility & IVF Guidance",
       short:
         "Couples trying to conceive receive a structured evaluation of both partners. Dr. Rao explains every option and refers to trusted IVF centres when treatment is needed.",
+      /** One line the card reveals on hover. */
+      expect: "Both partners are seen together, and the first tests are planned that day.",
       details: ["Evaluation of both partners", "Ovulation tracking", "Lifestyle guidance", "IVF referral when needed"],
     },
     {
@@ -87,6 +106,8 @@ export const clinic = {
       name: "PCOS & Hormonal Health",
       short:
         "PCOS and hormonal conditions are managed with long-term plans for cycles, weight, skin and fertility. Regular follow-ups track progress and adjust treatment.",
+      /** One line the card reveals on hover. */
+      expect: "Blood tests, a diet and activity plan, and a date for your first follow-up.",
       details: ["Diagnosis and blood tests", "Diet and activity plan", "Medication when needed", "Regular follow-ups"],
     },
     {
@@ -95,6 +116,8 @@ export const clinic = {
       name: "Menopause Care",
       short:
         "Women going through menopause receive relief for hot flushes, sleep problems and mood changes. Care also includes screening for bone and heart health.",
+      /** One line the card reveals on hover. */
+      expect: "A full symptom review, screening tests, and every option explained plainly.",
       details: ["Symptom review", "Bone and heart health screening", "Treatment options explained", "Ongoing follow-up plan"],
     },
     {
@@ -103,6 +126,8 @@ export const clinic = {
       name: "Online Consultations",
       short:
         "Patients can consult Dr. Rao by video or phone from home. Online visits suit follow-ups, report reviews and second opinions.",
+      /** One line the card reveals on hover. */
+      expect: "A video or phone link on WhatsApp, and your prescription after the call.",
       details: ["Video or phone consultation", "Payment by UPI before the call", "Prescription on WhatsApp", "Sundays and evenings"],
     },
   ],
@@ -152,5 +177,8 @@ export const clinicWhatsAppHref = `https://wa.me/${clinic.phone.replace(/\D/g, "
 
 /** The line icon each service card shows. Names match lucide-react icons, mapped in ServiceIcon.tsx. */
 export type ServiceIconName = (typeof clinic.services)[number]["icon"];
+
+/** The four steps of a visit, mapped to icons in Journey.tsx. */
+export type JourneyIcon = (typeof clinic.journey)[number]["icon"];
 
 export type VisitTypeId = (typeof clinic.booking.visitTypes)[number]["id"];

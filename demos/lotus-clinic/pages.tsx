@@ -9,13 +9,25 @@ import { BookingForm, BookingFormFromUrl } from "./BookingForm";
 import { VisitBlock } from "./ClinicMap";
 import { clinic, homeServiceSlugs } from "./data";
 import { LotusButton, LotusContainer, type Nav } from "./LotusSite";
-import { CountUp, HeroCard, HeroGlow, PillLink, Reveal, RevealGroup, RevealItem, StarsFill } from "./Motion";
+import { JourneySteps, PhoneMock } from "./Journey";
+import { CountUp, EcgLine, HeroCard, HeroGlow, PillLink, Reveal, RevealGroup, RevealItem, SectionDots, StarsFill, TiltHighlight } from "./Motion";
 import { ServiceIcon } from "./ServiceIcon";
 import { ui } from "./ui";
 
 /** The hero backdrop: the 4% teal tint, full-bleed, with one faint teal glow on top (HeroGlow). One per page at most. */
 const HERO_BACKDROP = { backgroundColor: "var(--color-lotus-tint)" };
 const HERO_GLOW = "radial-gradient(60% 70% at 78% 20%, color-mix(in srgb, var(--color-lotus-accent) 10%, transparent), transparent 70%)";
+
+/** The home sections, top to bottom, for the dot nav: each one's heading id and the dot's label. */
+const HOME_SECTIONS = [
+  { id: "hero-heading", label: "Introduction" },
+  { id: "numbers-heading", label: "In numbers" },
+  { id: "journey-heading", label: "How a visit works" },
+  { id: "services-heading", label: "Specialities" },
+  { id: "why-heading", label: "Why choose us" },
+  { id: "stories-heading", label: "Patient stories" },
+  { id: "visit-heading", label: "Visit us" },
+] as const;
 
 /** "Sravani K." becomes "SK". */
 function initials(name: string) {
@@ -58,6 +70,18 @@ function SectionTitle({ id, title, line, link }: { id?: string; title: string; l
   );
 }
 
+/**
+ * A service card's "what to expect" line. With a mouse it waits invisible in its own space and slides up when
+ * the card is hovered or focused, so the card never changes size. Touch screens show it at once.
+ */
+function Expect({ text }: { text: string }) {
+  return (
+    <p data-expect="" className={ui.expect}>
+      <span className="font-semibold text-lotus-accent-hover">What to expect:</span> {text}
+    </p>
+  );
+}
+
 /** The "12+ years" chip beside the doctor's role. */
 function YearsChip() {
   return (
@@ -71,7 +95,7 @@ function YearsChip() {
  * The doctor's photo slot: "AR" in a soft teal circle, until the clinic sends a real photo.
  * `portrait` is the large 4:5 rounded card; `avatar` is a small round version. Decorative: the name is always beside it.
  */
-function Initials({ variant, className = "" }: { variant: "portrait" | "avatar"; className?: string }) {
+function Initials({ variant, className = "", children }: { variant: "portrait" | "avatar"; className?: string; children?: ReactNode }) {
   if (variant === "avatar") {
     return (
       <span
@@ -93,6 +117,7 @@ function Initials({ variant, className = "" }: { variant: "portrait" | "avatar";
       <span className="flex aspect-square w-[68%] items-center justify-center rounded-full bg-lotus-avatar text-7xl font-extrabold tracking-[-0.04em] text-lotus-accent-hover lg:text-8xl">
         {clinic.doctor.initials}
       </span>
+      {children}
     </div>
   );
 }
@@ -104,7 +129,9 @@ function Initials({ variant, className = "" }: { variant: "portrait" | "avatar";
 function HeroDoctor({ nav }: { nav: Nav }) {
   return (
     <HeroCard className="mx-auto w-full max-w-sm lg:mr-0 lg:max-w-[24rem]">
-      <Initials variant="portrait" className="hidden sm:flex" />
+      <Initials variant="portrait" className="hidden sm:flex">
+        <TiltHighlight />
+      </Initials>
       <div className={`relative flex items-center gap-4 p-5 sm:mx-5 sm:-mt-16 sm:block sm:p-6 ${ui.card}`}>
         <Initials variant="avatar" className="sm:hidden" />
         <div className="min-w-0">
@@ -173,9 +200,10 @@ export function LotusHome({ nav }: { nav: Nav }) {
         <HeroGlow backgroundImage={HERO_GLOW} />
         <LotusContainer className="relative grid items-center gap-12 py-14 sm:py-20 lg:min-h-[80vh] lg:grid-cols-[1.15fr_0.85fr] lg:gap-20 lg:py-20">
           <RevealGroup onMount>
-            <RevealItem as="h1" distance={12} className={`text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-7xl ${ui.h1}`}>
+            <RevealItem as="h1" id="hero-heading" distance={12} className={`text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-7xl ${ui.h1}`}>
               {doctor.name}
             </RevealItem>
+            <EcgLine className="mt-5 w-full" />
             <RevealItem as="p" distance={12} className="mt-4 font-semibold text-lotus-accent-hover sm:text-lg">
               {doctor.degree}
             </RevealItem>
@@ -186,11 +214,11 @@ export function LotusHome({ nav }: { nav: Nav }) {
               {doctor.positioning}
             </RevealItem>
             <RevealItem distance={12} className="mt-9 flex flex-wrap gap-3">
-              <LotusButton href={nav.href("book")}>
+              <LotusButton href={nav.href("book")} magnetic>
                 <CalendarCheck aria-hidden strokeWidth={1.75} className="size-5" />
                 Book an Appointment
               </LotusButton>
-              <LotusButton href={`${nav.href("book")}?type=online`} variant="arrow">
+              <LotusButton href={`${nav.href("book")}?type=online`} variant="arrow" magnetic>
                 <MessageCircle aria-hidden strokeWidth={1.75} className="size-5" />
                 Consult Online
               </LotusButton>
@@ -249,7 +277,17 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="services-heading" data-band="" className="bg-lotus-tint">
+      <section aria-labelledby="journey-heading" data-band="" className="bg-lotus-tint">
+        <LotusContainer className={ui.section}>
+          <SectionTitle id="journey-heading" title="How a Visit Works" line="From booking to follow-up, every step reaches you on WhatsApp." />
+          <div className="mt-10 grid items-center gap-12 lg:mt-12 lg:grid-cols-[1fr_17rem] lg:gap-16">
+            <JourneySteps />
+            <PhoneMock className="hidden lg:block" />
+          </div>
+        </LotusContainer>
+      </section>
+
+      <section aria-labelledby="services-heading">
         <LotusContainer className={ui.section}>
           <SectionTitle
             id="services-heading"
@@ -259,10 +297,11 @@ export function LotusHome({ nav }: { nav: Nav }) {
           />
           <RevealGroup as="ul" className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:gap-8">
             {services.map((s) => (
-              <RevealItem as="li" lift key={s.slug} className={`flex flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
+              <RevealItem as="li" lift tilt={3} key={s.slug} className={`group flex flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
                 <ServiceIcon name={s.icon} />
                 <h3 className="mt-6 text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h3>
                 <p className="mt-3 leading-relaxed">{s.short}</p>
+                <Expect text={s.expect} />
                 <div className="mt-auto pt-7">
                   <PillLink href={`${nav.href("services")}#${s.slug}`} className={ui.secondaryArrow} arrow>
                     <span>
@@ -276,7 +315,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="why-heading">
+      <section aria-labelledby="why-heading" data-band="" className="bg-lotus-tint">
         <LotusContainer className={ui.section}>
           <SectionTitle id="why-heading" title={`Why Choose ${clinic.name}`} line="Careful, personal care, based on clinical evidence." />
           <RevealGroup as="ul" className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:grid-cols-4 lg:gap-8">
@@ -294,7 +333,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
       </section>
 
       {/* overflow-x-clip: the cards slide in from 24px outside their column, which must never widen the page on phones. */}
-      <section aria-labelledby="stories-heading" data-band="" className="overflow-x-clip bg-lotus-tint">
+      <section aria-labelledby="stories-heading" className="overflow-x-clip">
         <LotusContainer className={ui.section}>
           <SectionTitle id="stories-heading" title="What Our Patients Say" line="Experiences shared by women who visit the clinic." />
           <RevealGroup as="ul" stagger={0.12} className="mt-10 grid gap-6 md:grid-cols-2 lg:mt-12 lg:gap-8">
@@ -330,7 +369,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="visit-heading">
+      <section aria-labelledby="visit-heading" data-band="" className="bg-lotus-tint">
         <LotusContainer className={ui.section}>
           <SectionTitle id="visit-heading" title="Visit Us" line="Near Siripuram Junction, opposite the city park, with parking in the building." />
           <Reveal className="mt-10 lg:mt-12">
@@ -338,6 +377,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
           </Reveal>
         </LotusContainer>
       </section>
+      <SectionDots sections={HOME_SECTIONS} />
     </>
   );
 }
@@ -349,12 +389,13 @@ export function LotusServices({ nav }: { nav: Nav }) {
       <LotusContainer className={ui.section}>
         <RevealGroup as="ul" className="grid gap-6 md:grid-cols-2 lg:gap-8">
           {clinic.services.map((s) => (
-            <RevealItem as="li" lift key={s.slug} id={s.slug} className={`flex scroll-mt-6 flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
+            <RevealItem as="li" lift tilt={3} key={s.slug} id={s.slug} className={`group flex scroll-mt-6 flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
               <div className="flex items-center gap-4">
                 <ServiceIcon name={s.icon} />
                 <h2 className="text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h2>
               </div>
               <p className="mt-5 leading-relaxed">{s.short}</p>
+              <Expect text={s.expect} />
               <ul className="mt-5 space-y-2.5">
                 {s.details.map((d) => (
                   <li key={d} className="flex items-start gap-2.5 text-lotus-text">
