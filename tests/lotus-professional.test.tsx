@@ -42,9 +42,9 @@ describe("Lotus professional copy", () => {
   it("titles each home section in Title Case with a one-line sub-heading", () => {
     const { container } = renderPage("");
     const titles: Record<string, string> = {
-      "stories-heading": "What Our Patients Say",
-      "why-heading": "Why Choose Lotus Women's Clinic",
       "services-heading": "Our Specialities",
+      "why-heading": "Why Choose Lotus Women's Clinic",
+      "stories-heading": "What Our Patients Say",
       "visit-heading": "Visit Us",
     };
     for (const [id, title] of Object.entries(titles)) {
@@ -178,7 +178,7 @@ describe("Lotus airy layout and Krest touches", () => {
     const { container } = renderPage("");
     const hero = container.querySelector("main section > div")!;
     expect(hero.className).toContain("lg:min-h-[80vh]");
-    for (const id of ["numbers-heading", "stories-heading", "why-heading", "services-heading", "visit-heading"]) {
+    for (const id of ["numbers-heading", "services-heading", "why-heading", "stories-heading", "visit-heading"]) {
       const inner = section(container, id).firstElementChild!;
       expect(inner.className, id).toContain("py-14");
       expect(inner.className, id).toContain("lg:py-24");

@@ -66,7 +66,7 @@ describe("Lotus signature and trust visuals", () => {
     const hero = container.querySelector("main section") as HTMLElement;
     expect(hero.style.backgroundColor).toBe("var(--color-lotus-tint)");
     const tinted = (id: string) => container.querySelector(`[aria-labelledby="${id}"]`)!.className.includes("bg-lotus-tint");
-    expect(["numbers-heading", "stories-heading", "why-heading", "services-heading", "visit-heading"].map(tinted)).toEqual([false, true, false, true, false]);
+    expect(["numbers-heading", "services-heading", "why-heading", "stories-heading", "visit-heading"].map(tinted)).toEqual([false, true, false, true, false]);
     for (const id of ["stories-heading", "services-heading"]) {
       for (const card of container.querySelectorAll(`[aria-labelledby="${id}"] ul > li`)) expect(card.className).toContain("bg-white");
     }

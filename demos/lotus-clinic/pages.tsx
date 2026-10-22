@@ -240,6 +240,51 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
+      <section aria-labelledby="services-heading" data-band="" className="bg-lotus-tint">
+        <LotusContainer className={ui.section}>
+          <SectionTitle
+            id="services-heading"
+            title="Our Specialities"
+            line="Comprehensive women's healthcare under one roof."
+            link={{ href: nav.href("services"), label: "All Services" }}
+          />
+          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:gap-8">
+            {services.map((s) => (
+              <li key={s.slug} className={`flex flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
+                <ServiceIcon name={s.icon} />
+                <h3 className="mt-6 text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h3>
+                <p className="mt-3 leading-relaxed">{s.short}</p>
+                <div className="mt-auto pt-7">
+                  <Link href={`${nav.href("services")}#${s.slug}`} className={ui.secondaryArrow}>
+                    <span>
+                      Know More <span className="sr-only">about {s.name}</span>
+                    </span>
+                    <ArrowCircle />
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </LotusContainer>
+      </section>
+
+      <section aria-labelledby="why-heading">
+        <LotusContainer className={ui.section}>
+          <SectionTitle id="why-heading" title={`Why Choose ${clinic.name}`} line="Careful, personal care, based on clinical evidence." />
+          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:grid-cols-4 lg:gap-8">
+            {clinic.why.map((w) => (
+              <li key={w.title} className={`flex flex-col p-6 sm:p-7 ${ui.card} ${ui.lift}`}>
+                <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lotus-avatar">
+                  <Check strokeWidth={2} className="size-5 text-lotus-accent" />
+                </span>
+                <h3 className="mt-5 text-lg font-semibold tracking-tight text-lotus-text">{w.title}</h3>
+                <p className="mt-2">{w.text}</p>
+              </li>
+            ))}
+          </ul>
+        </LotusContainer>
+      </section>
+
       <section aria-labelledby="stories-heading" data-band="" className="bg-lotus-tint">
         <LotusContainer className={ui.section}>
           <SectionTitle id="stories-heading" title="What Our Patients Say" line="Experiences shared by women who visit the clinic." />
@@ -269,51 +314,6 @@ export function LotusHome({ nav }: { nav: Nav }) {
                     <span className="block font-semibold text-lotus-text">{t.name}</span>
                     {t.area}
                   </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </LotusContainer>
-      </section>
-
-      <section aria-labelledby="why-heading">
-        <LotusContainer className={ui.section}>
-          <SectionTitle id="why-heading" title={`Why Choose ${clinic.name}`} line="Careful, personal care, based on clinical evidence." />
-          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:grid-cols-4 lg:gap-8">
-            {clinic.why.map((w) => (
-              <li key={w.title} className={`flex flex-col p-6 sm:p-7 ${ui.card} ${ui.lift}`}>
-                <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lotus-avatar">
-                  <Check strokeWidth={2} className="size-5 text-lotus-accent" />
-                </span>
-                <h3 className="mt-5 text-lg font-semibold tracking-tight text-lotus-text">{w.title}</h3>
-                <p className="mt-2">{w.text}</p>
-              </li>
-            ))}
-          </ul>
-        </LotusContainer>
-      </section>
-
-      <section aria-labelledby="services-heading" data-band="" className="bg-lotus-tint">
-        <LotusContainer className={ui.section}>
-          <SectionTitle
-            id="services-heading"
-            title="Our Specialities"
-            line="Comprehensive women's healthcare under one roof."
-            link={{ href: nav.href("services"), label: "All Services" }}
-          />
-          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:gap-8">
-            {services.map((s) => (
-              <li key={s.slug} className={`flex flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
-                <ServiceIcon name={s.icon} />
-                <h3 className="mt-6 text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h3>
-                <p className="mt-3 leading-relaxed">{s.short}</p>
-                <div className="mt-auto pt-7">
-                  <Link href={`${nav.href("services")}#${s.slug}`} className={ui.secondaryArrow}>
-                    <span>
-                      Know More <span className="sr-only">about {s.name}</span>
-                    </span>
-                    <ArrowCircle />
-                  </Link>
                 </div>
               </li>
             ))}

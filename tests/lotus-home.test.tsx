@@ -32,11 +32,11 @@ describe("Lotus header", () => {
 });
 
 describe("Lotus home order", () => {
-  it("runs doctor, numbers, stories, why, services, then the map, with no CTA band", () => {
+  it("runs doctor, numbers, services, why, stories, then the map, with no CTA band", () => {
     const { container } = renderHome();
     const main = container.querySelector("main")!;
     const text = main.textContent ?? "";
-    const order = [clinic.doctor.name, "Expert care for women", "Years of Experience", "What Our Patients Say", "Why Choose Lotus Women's Clinic", "Our Specialities", "Visit Us"];
+    const order = [clinic.doctor.name, "Expert care for women", "Years of Experience", "Our Specialities", "Why Choose Lotus Women's Clinic", "What Our Patients Say", "Visit Us"];
     const at = order.map((t) => text.indexOf(t));
     expect(at.every((i) => i >= 0), JSON.stringify(at)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
