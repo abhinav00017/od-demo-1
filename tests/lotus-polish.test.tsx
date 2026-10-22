@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { getService } from "@/lib/catalog";
 import type { DemoPage } from "@/lib/demos";
@@ -75,7 +75,8 @@ describe("Lotus signature and trust visuals", () => {
   it("shows the Google G, five decorative stars and the review count by the rating", () => {
     const { container } = renderPage("");
     const numbers = container.querySelector('[aria-labelledby="numbers-heading"]')!;
-    const rating = within(numbers as HTMLElement).getByText("4.9");
+    // The figure is its own count-up span now, so look for the G in its stat card.
+    const rating = within(numbers as HTMLElement).getByText("4.9").closest("[data-stat]")!;
     expect(rating.querySelector("[data-google-g]")).toBeTruthy();
     const stars = numbers.querySelector("[data-stars]")!;
     expect(stars.getAttribute("aria-hidden")).toBe("true");
@@ -154,12 +155,13 @@ describe("Lotus sticky mobile bar", () => {
     expect(showsMobileBar(page)).toBe(false);
   });
 
-  it("hides while the mobile menu is open and comes back when it closes", () => {
+  it("hides while the mobile menu is open and comes back when it closes", async () => {
     renderPage("");
     expect(bar()).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
     expect(document.getElementById("lotus-menu")).toBeTruthy();
-    expect(bar()).toBeNull();
+    // The bar slides away first, then leaves the page.
+    await waitFor(() => expect(bar()).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(bar()).toBeTruthy();
   });
@@ -177,8 +179,10 @@ describe("Lotus micro-detail", () => {
     const { container } = renderPage("");
     for (const id of ["stories-heading", "why-heading", "services-heading"]) {
       for (const li of container.querySelectorAll(`[aria-labelledby="${id}"] ul > li`)) {
-        expect(li.className).toContain("hover:-translate-y-0.5");
+        // The 3px lift is a motion whileHover; the shadow stays CSS. CSS never transitions the card's transform.
+        expect(li.hasAttribute("data-lift")).toBe(true);
         expect(li.className).toContain("hover:shadow-lotus-lift");
+        expect(li.className).not.toMatch(/(^|\s)transition(\s|$)/);
       }
     }
   });
