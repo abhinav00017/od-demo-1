@@ -264,3 +264,7 @@ Append only. Newest at the bottom.
 - 22 Oct 2026: section swap deployed and verified live: hero → stats → Our Specialities → Why Choose → What Our Patients Say → Visit Us.
 - 22 Oct 2026: Twilio Auth Token rotated by Abhinav and re-added on Vercel (sensitive); redeployed. The token exposed in chat on 21 Oct is dead. Note: between the `env rm` and the `env add` one deploy went out without the token; fixed by this redeploy.
 - Next, agreed in principle: WhatsApp quick-reply buttons (Confirm / Change time) via a Twilio Quick Reply content template that Abhinav creates, plus an inbound webhook that marks the booking confirmed on "Confirm", flags "wants a new time" on "Change time", and replies to the patient. Not built yet; waiting on Abhinav's go.
+
+## 2026-10-22 (WhatsApp buttons, inbound webhook)
+
+- Abhinav said go. Build: POST /api/whatsapp/twilio-inbound (form-encoded, X-Twilio-Signature verified) that matches the sender's number to the most recent open booking; a "Confirm" quick-reply tap (ButtonPayload/ButtonText or text C/confirm) sets status confirmed and replies "Thank you, see you on <date> at <slot>"; a "Change time" tap (or R/change) sets a new flag `wants_new_time` and replies with the booking link; any other text gets one polite auto-reply with the clinic number. Dashboard shows a "Wants a new time" chip. Abhinav creates the Quick Reply content template in Twilio (body as docs + buttons Confirm / Change time) and pastes the inbound URL in Twilio's "Receive a message" webhook (HTTP POST).
