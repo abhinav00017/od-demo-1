@@ -1,12 +1,14 @@
 "use client";
 
 import { CheckCircle2, MessageCircle } from "lucide-react";
+import { AnimatePresence, m } from "motion/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Bubble } from "@/components/mocks/ChatMock";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
+import { EASE, PillButton, useCalmMotion } from "./Motion";
 import { ui } from "./ui";
 
 const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
@@ -27,7 +29,13 @@ const inputClass = ui.input;
 
 const labelClass = "font-medium text-lotus-text";
 
+/** The quick-reply buttons under the WhatsApp preview, as the patient sees them. */
+const PREVIEW_BUTTONS = ["Confirm", "Change time"];
+
 function Field({ name, errors, children, hint }: { name: FieldName; errors: FieldErrors; children: ReactNode; hint?: string }) {
+  const calm = useCalmMotion();
+  // The error opens its own height and fades in; under reduced motion it only fades.
+  const closed = calm ? { opacity: 0 } : { opacity: 0, height: 0 };
   return (
     <div>
       {children}
@@ -36,11 +44,22 @@ function Field({ name, errors, children, hint }: { name: FieldName; errors: Fiel
           {hint}
         </p>
       ) : null}
-      {errors[name] ? (
-        <p id={`${name}-error`} className="mt-1.5 text-sm font-semibold text-lotus-error">
-          {errors[name]}
-        </p>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {errors[name] ? (
+          <m.div
+            key="error"
+            className="overflow-hidden"
+            initial={closed}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={closed}
+            transition={{ duration: 0.2, ease: EASE }}
+          >
+            <p id={`${name}-error`} className="mt-1.5 text-sm font-semibold text-lotus-error">
+              {errors[name]}
+            </p>
+          </m.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -92,6 +111,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
   const doneRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const id = useId();
+  const calm = useCalmMotion();
 
   // Set the earliest date in the browser, so the static page does not depend on build time.
   useEffect(() => {
@@ -152,12 +172,26 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
 
   if (sent) {
     return (
-      <div ref={doneRef} tabIndex={-1} className={`mx-auto max-w-2xl p-6 focus:outline-none sm:p-8 ${ui.card}`}>
+      <m.div
+        ref={doneRef}
+        tabIndex={-1}
+        data-motion=""
+        className={`mx-auto max-w-2xl p-6 focus:outline-none sm:p-8 ${ui.card}`}
+        initial={calm ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ opacity: { duration: 0.3, ease: EASE }, scale: { type: "spring", stiffness: 260, damping: 24 } }}
+      >
         <CheckCircle2 aria-hidden strokeWidth={1.5} className="size-9 text-lotus-accent" />
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-lotus-text sm:text-3xl">Request received</h2>
         <p className="mt-1.5">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
         <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-lotus-hairline">
-          <div className="flex items-center gap-3 bg-lotus-accent px-4 py-3 text-white">
+          <m.div
+            data-motion=""
+            className="flex items-center gap-3 bg-lotus-accent px-4 py-3 text-white"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+          >
             <span aria-hidden className="flex size-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
               L
             </span>
@@ -165,11 +199,33 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
               <span className="block text-sm font-semibold">{clinic.name}</span>
               <span className="block text-[11px] text-white">Business account</span>
             </span>
-          </div>
+          </m.div>
+          {/* The bubble, then its two quick-reply buttons, appear one after another. Same marks as Bubble's own buttons. */}
           <div className="bg-lotus-wash p-4">
-            <Bubble from="business" time="now" buttons={["Confirm", "Change time"]}>
-              {confirmationMessage(sent)}
-            </Bubble>
+            <m.div
+              data-motion=""
+              initial={calm ? { opacity: 0 } : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.3, ease: EASE }}
+            >
+              <Bubble from="business" time="now">
+                {confirmationMessage(sent)}
+              </Bubble>
+            </m.div>
+            <div data-preview-buttons="" className="mt-1 flex w-[85%] flex-col gap-1">
+              {PREVIEW_BUTTONS.map((b, i) => (
+                <m.span
+                  key={b}
+                  data-motion=""
+                  className="rounded-lg bg-wa-in py-2 text-center text-[13px] font-semibold text-wa-header shadow-sm"
+                  initial={calm ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ opacity: { duration: 0.2, delay: 0.55 + i * 0.1 }, scale: { type: "spring", stiffness: 420, damping: 22, delay: 0.55 + i * 0.1 } }}
+                >
+                  {b}
+                </m.span>
+              ))}
+            </div>
           </div>
         </div>
         <p className="mt-5 font-semibold text-lotus-text">Booking saved. The clinic will confirm on WhatsApp.</p>
@@ -180,7 +236,7 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
         <p className="mt-4 text-sm">
           You&rsquo;ll get the real message on WhatsApp once the clinic confirms.{optIn ? " Tap Open WhatsApp above first." : null}
         </p>
-        <button
+        <PillButton
           type="button"
           onClick={() => {
             setSent(null);
@@ -192,8 +248,8 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           className={`mt-5 ${ui.secondary}`}
         >
           Book Another Appointment
-        </button>
-      </div>
+        </PillButton>
+      </m.div>
     );
   }
 
@@ -375,14 +431,14 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
           </p>
         ) : null}
 
-        <button
+        <PillButton
           type="submit"
           disabled={saving}
           aria-busy={saving || undefined}
           className={`mt-6 w-full disabled:cursor-wait disabled:bg-lotus-accent-hover sm:w-auto sm:px-8 ${ui.primary}`}
         >
           {saving ? "Saving your booking…" : "Request appointment"}
-        </button>
+        </PillButton>
       </form>
 
       <aside className={`h-fit p-6 sm:p-7 ${ui.card}`}>
