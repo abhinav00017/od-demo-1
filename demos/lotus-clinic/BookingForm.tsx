@@ -1,14 +1,14 @@
 "use client";
 
-import { CheckCircle2, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { AnimatePresence, m } from "motion/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Bubble } from "@/components/mocks/ChatMock";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
 import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
-import { EASE, PillButton, useCalmMotion } from "./Motion";
+import { DrawnCheck, EASE, LayoutMotion, PillButton, PlainMotion, useCalmMotion } from "./Motion";
 import { ui } from "./ui";
 
 const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
@@ -97,7 +97,31 @@ export function BookingFormFromUrl({ optIn }: Pick<FormProps, "optIn">) {
   return <BookingForm key={type ?? "default"} initialVisitType={type ?? undefined} optIn={optIn} />;
 }
 
-export function BookingForm({ initialVisitType, optIn }: FormProps) {
+/**
+ * The booking form. The visit-type highlight slides between the two cards (a shared layout, loaded in its own
+ * chunk on this page only), and a saved booking folds the form away into the success card.
+ */
+export function BookingForm(props: FormProps) {
+  return (
+    <PlainMotion>
+      <BookingFormView {...props} />
+    </PlainMotion>
+  );
+}
+
+/** The form folds up toward its top edge as it leaves, and the success card unfolds from the same edge. Fades only under reduced motion. */
+function fold(calm: boolean) {
+  const flat = calm ? { opacity: 0 } : { opacity: 0, scaleY: 0.92 };
+  return {
+    initial: flat,
+    animate: { opacity: 1, scaleY: 1 },
+    exit: { ...flat, transition: { duration: 0.25, ease: EASE } },
+    transition: { duration: 0.35, ease: EASE },
+    style: { originY: 0 },
+  };
+}
+
+function BookingFormView({ initialVisitType, optIn }: FormProps) {
   const start = clinic.booking.visitTypes.find((t) => t.id === initialVisitType)?.id ?? EMPTY.visitType;
   const [values, setValues] = useState<BookingInput>({ ...EMPTY, visitType: start });
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -108,7 +132,6 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
   const [trap, setTrap] = useState("");
   const errorRef = useRef<HTMLParagraphElement>(null);
   const dateRef = useRef<HTMLInputElement>(null);
-  const doneRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const id = useId();
   const calm = useCalmMotion();
@@ -120,9 +143,8 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
     dateRef.current.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }, [sent]);
 
-  useEffect(() => {
-    if (sent) doneRef.current?.focus();
-  }, [sent]);
+  // The success card mounts after the form has folded away, so it takes focus as it mounts.
+  const focusDone = useCallback((el: HTMLDivElement | null) => el?.focus(), []);
 
   function update<K extends FieldName>(name: K, value: BookingInput[K]) {
     const next = { ...values, [name]: value };
@@ -170,18 +192,22 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
     if (submitError) errorRef.current?.focus();
   }, [submitError]);
 
-  if (sent) {
+  const errorList = ORDER.filter((f) => errors[f]);
+
+  return <AnimatePresence mode="wait" initial={false}>{sent ? done(sent) : form()}</AnimatePresence>;
+
+  function done(sent: BookingInput & { id: string }) {
     return (
       <m.div
-        ref={doneRef}
+        key="done"
+        ref={focusDone}
         tabIndex={-1}
         data-motion=""
+        data-booking-done=""
         className={`mx-auto max-w-2xl p-6 focus:outline-none sm:p-8 ${ui.card}`}
-        initial={calm ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ opacity: { duration: 0.3, ease: EASE }, scale: { type: "spring", stiffness: 260, damping: 24 } }}
+        {...fold(calm)}
       >
-        <CheckCircle2 aria-hidden strokeWidth={1.5} className="size-9 text-lotus-accent" />
+        <DrawnCheck className="size-9 text-lotus-accent" />
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-lotus-text sm:text-3xl">Request received</h2>
         <p className="mt-1.5">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
         <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-lotus-hairline">
@@ -253,212 +279,222 @@ export function BookingForm({ initialVisitType, optIn }: FormProps) {
     );
   }
 
-  const errorList = ORDER.filter((f) => errors[f]);
+  function form() {
+    return (
+      <m.div key="form" data-booking-form="" className="grid gap-4 sm:gap-6 lg:grid-cols-[1.6fr_1fr]" {...fold(calm)}>
+        <form noValidate onSubmit={onSubmit} className={`relative p-6 sm:p-8 ${ui.card}`} aria-label="Book an Appointment">
+          {errorList.length ? (
+            <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-6 rounded-2xl bg-white p-5 ring-1 ring-lotus-error focus:outline-none">
+              <p className="font-semibold text-lotus-text">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-lotus-text">
+                {errorList.map((f) => (
+                  <li key={f}>
+                    <a href={`#${id}-${f}`} className="font-semibold text-lotus-error underline underline-offset-2">
+                      {LABELS[f]}
+                    </a>
+                    : {errors[f]}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
-  return (
-    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.6fr_1fr]">
-      <form noValidate onSubmit={onSubmit} className={`relative p-6 sm:p-8 ${ui.card}`} aria-label="Book an Appointment">
-        {errorList.length ? (
-          <div ref={summaryRef} tabIndex={-1} role="alert" className="mb-6 rounded-2xl bg-white p-5 ring-1 ring-lotus-error focus:outline-none">
-            <p className="font-semibold text-lotus-text">Please check {errorList.length === 1 ? "1 field" : `${errorList.length} fields`}:</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-lotus-text">
-              {errorList.map((f) => (
-                <li key={f}>
-                  <a href={`#${id}-${f}`} className="font-semibold text-lotus-error underline underline-offset-2">
-                    {LABELS[f]}
-                  </a>
-                  : {errors[f]}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+          <fieldset>
+            <legend className={labelClass}>{LABELS.visitType}</legend>
+            <LayoutMotion>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {clinic.booking.visitTypes.map((t, i) => {
+                  const on = values.visitType === t.id;
+                  return (
+                    <label
+                      key={t.id}
+                      className={`relative flex cursor-pointer gap-3 rounded-2xl bg-white p-4 transition ${on ? "ring-1 ring-transparent" : "ring-1 ring-lotus-field hover:ring-lotus-accent"}`}
+                    >
+                      {/* The selected card's teal ring. One shared element, so it slides to the card that is picked. */}
+                      {on ? (
+                        <m.span
+                          aria-hidden
+                          data-visit-highlight=""
+                          layoutId={calm ? undefined : `${id}-visit-highlight`}
+                          className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-lotus-accent"
+                          transition={{ duration: 0.3, ease: EASE }}
+                        />
+                      ) : null}
+                      <input
+                        id={i === 0 ? `${id}-visitType` : undefined}
+                        type="radio"
+                        name="visitType"
+                        value={t.id}
+                        checked={on}
+                        onChange={() => update("visitType", t.id)}
+                        className="mt-1 size-4 accent-lotus-accent"
+                      />
+                      <span>
+                        <span className="block font-semibold text-lotus-text">{t.label}</span>
+                        <span className="block text-sm">{t.description}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </LayoutMotion>
+          </fieldset>
 
-        <fieldset>
-          <legend className={labelClass}>{LABELS.visitType}</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {clinic.booking.visitTypes.map((t, i) => {
-              const on = values.visitType === t.id;
-              return (
-                <label
-                  key={t.id}
-                  className={`flex cursor-pointer gap-3 rounded-2xl bg-white p-4 transition ${
-                    on ? "ring-2 ring-lotus-accent" : "ring-1 ring-lotus-field hover:ring-lotus-accent"
-                  }`}
-                >
-                  <input
-                    id={i === 0 ? `${id}-visitType` : undefined}
-                    type="radio"
-                    name="visitType"
-                    value={t.id}
-                    checked={on}
-                    onChange={() => update("visitType", t.id)}
-                    className="mt-1 size-4 accent-lotus-accent"
-                  />
-                  <span>
-                    <span className="block font-semibold text-lotus-text">{t.label}</span>
-                    <span className="block text-sm">{t.description}</span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
-          <Field name="name" errors={errors}>
-            <label htmlFor={`${id}-name`} className={labelClass}>
-              {LABELS.name}
-            </label>
-            <input
-              id={`${id}-name`}
-              name="name"
-              autoComplete="name"
-              value={values.name}
-              onChange={(e) => update("name", e.target.value)}
-              aria-invalid={errors.name ? true : undefined}
-              aria-describedby={describedBy("name", errors)}
-              className={inputClass}
-            />
-          </Field>
-          <Field name="phone" errors={errors} hint="We confirm on WhatsApp.">
-            <label htmlFor={`${id}-phone`} className={labelClass}>
-              {LABELS.phone}
-            </label>
-            <input
-              id={`${id}-phone`}
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="98765 43210"
-              value={values.phone}
-              onChange={(e) => update("phone", e.target.value)}
-              aria-invalid={errors.phone ? true : undefined}
-              aria-describedby={describedBy("phone", errors, true)}
-              className={inputClass}
-            />
-          </Field>
-          <Field name="date" errors={errors}>
-            <label htmlFor={`${id}-date`} className={labelClass}>
-              {LABELS.date}
-            </label>
-            <input
-              ref={dateRef}
-              id={`${id}-date`}
-              name="date"
-              type="date"
-              value={values.date}
-              onChange={(e) => update("date", e.target.value)}
-              aria-invalid={errors.date ? true : undefined}
-              aria-describedby={describedBy("date", errors)}
-              className={inputClass}
-            />
-          </Field>
-          <Field name="slot" errors={errors}>
-            <label htmlFor={`${id}-slot`} className={labelClass}>
-              {LABELS.slot}
-            </label>
-            <select
-              id={`${id}-slot`}
-              name="slot"
-              value={values.slot}
-              onChange={(e) => update("slot", e.target.value)}
-              aria-invalid={errors.slot ? true : undefined}
-              aria-describedby={describedBy("slot", errors)}
-              className={inputClass}
-            >
-              <option value="">Choose a time</option>
-              {clinic.booking.slots.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <div className="sm:col-span-2">
-            <Field name="reason" errors={errors}>
-              <label htmlFor={`${id}-reason`} className={labelClass}>
-                {LABELS.reason}
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <Field name="name" errors={errors}>
+              <label htmlFor={`${id}-name`} className={labelClass}>
+                {LABELS.name}
+              </label>
+              <input
+                id={`${id}-name`}
+                name="name"
+                autoComplete="name"
+                value={values.name}
+                onChange={(e) => update("name", e.target.value)}
+                aria-invalid={errors.name ? true : undefined}
+                aria-describedby={describedBy("name", errors)}
+                className={inputClass}
+              />
+            </Field>
+            <Field name="phone" errors={errors} hint="We confirm on WhatsApp.">
+              <label htmlFor={`${id}-phone`} className={labelClass}>
+                {LABELS.phone}
+              </label>
+              <input
+                id={`${id}-phone`}
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="98765 43210"
+                value={values.phone}
+                onChange={(e) => update("phone", e.target.value)}
+                aria-invalid={errors.phone ? true : undefined}
+                aria-describedby={describedBy("phone", errors, true)}
+                className={inputClass}
+              />
+            </Field>
+            <Field name="date" errors={errors}>
+              <label htmlFor={`${id}-date`} className={labelClass}>
+                {LABELS.date}
+              </label>
+              <input
+                ref={dateRef}
+                id={`${id}-date`}
+                name="date"
+                type="date"
+                value={values.date}
+                onChange={(e) => update("date", e.target.value)}
+                aria-invalid={errors.date ? true : undefined}
+                aria-describedby={describedBy("date", errors)}
+                className={inputClass}
+              />
+            </Field>
+            <Field name="slot" errors={errors}>
+              <label htmlFor={`${id}-slot`} className={labelClass}>
+                {LABELS.slot}
               </label>
               <select
-                id={`${id}-reason`}
-                name="reason"
-                value={values.reason}
-                onChange={(e) => update("reason", e.target.value)}
-                aria-invalid={errors.reason ? true : undefined}
-                aria-describedby={describedBy("reason", errors)}
+                id={`${id}-slot`}
+                name="slot"
+                value={values.slot}
+                onChange={(e) => update("slot", e.target.value)}
+                aria-invalid={errors.slot ? true : undefined}
+                aria-describedby={describedBy("slot", errors)}
                 className={inputClass}
               >
-                <option value="">Choose a reason</option>
-                {clinic.booking.reasons.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
+                <option value="">Choose a time</option>
+                {clinic.booking.slots.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
                   </option>
                 ))}
               </select>
             </Field>
+            <div className="sm:col-span-2">
+              <Field name="reason" errors={errors}>
+                <label htmlFor={`${id}-reason`} className={labelClass}>
+                  {LABELS.reason}
+                </label>
+                <select
+                  id={`${id}-reason`}
+                  name="reason"
+                  value={values.reason}
+                  onChange={(e) => update("reason", e.target.value)}
+                  aria-invalid={errors.reason ? true : undefined}
+                  aria-describedby={describedBy("reason", errors)}
+                  className={inputClass}
+                >
+                  <option value="">Choose a reason</option>
+                  {clinic.booking.reasons.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-6">
-          <Field name="consent" errors={errors}>
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                id={`${id}-consent`}
-                type="checkbox"
-                name="consent"
-                checked={values.consent}
-                onChange={(e) => update("consent", e.target.checked)}
-                aria-invalid={errors.consent ? true : undefined}
-                aria-describedby={describedBy("consent", errors)}
-                className="mt-1 size-4 accent-lotus-accent"
-              />
-              <span className="text-lotus-text">The clinic may message me on WhatsApp about this visit.</span>
-            </label>
-          </Field>
-        </div>
+          <div className="mt-6">
+            <Field name="consent" errors={errors}>
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  id={`${id}-consent`}
+                  type="checkbox"
+                  name="consent"
+                  checked={values.consent}
+                  onChange={(e) => update("consent", e.target.checked)}
+                  aria-invalid={errors.consent ? true : undefined}
+                  aria-describedby={describedBy("consent", errors)}
+                  className="mt-1 size-4 accent-lotus-accent"
+                />
+                <span className="text-lotus-text">The clinic may message me on WhatsApp about this visit.</span>
+              </label>
+            </Field>
+          </div>
 
-        {/* Bots fill every field. People never see this one. */}
-        <div aria-hidden className="absolute -left-[9999px] size-px overflow-hidden">
-          <label htmlFor={`${id}-trap`}>Leave this empty</label>
-          <input id={`${id}-trap`} name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} />
-        </div>
+          {/* Bots fill every field. People never see this one. */}
+          <div aria-hidden className="absolute -left-[9999px] size-px overflow-hidden">
+            <label htmlFor={`${id}-trap`}>Leave this empty</label>
+            <input id={`${id}-trap`} name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} />
+          </div>
 
-        {submitError ? (
-          <p ref={errorRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-white p-4 font-semibold text-lotus-error ring-1 ring-lotus-error focus:outline-none">
-            {submitError}
+          {submitError ? (
+            <p ref={errorRef} tabIndex={-1} role="alert" className="mt-6 rounded-2xl bg-white p-4 font-semibold text-lotus-error ring-1 ring-lotus-error focus:outline-none">
+              {submitError}
+            </p>
+          ) : null}
+
+          <PillButton
+            type="submit"
+            disabled={saving}
+            aria-busy={saving || undefined}
+            className={`mt-6 w-full disabled:cursor-wait disabled:bg-lotus-accent-hover sm:w-auto sm:px-8 ${ui.primary}`}
+          >
+            {saving ? "Saving your booking…" : "Request appointment"}
+          </PillButton>
+        </form>
+
+        <aside className={`h-fit p-6 sm:p-7 ${ui.card}`}>
+          <h2 className="text-lg font-semibold tracking-tight text-lotus-text">What happens next</h2>
+          <ol className="mt-4 space-y-3.5">
+            {[
+              "We get your request at once.",
+              "We confirm the exact time on WhatsApp within 2 hours.",
+              "You get a reminder the day before, with directions or the call link.",
+            ].map((s, i) => (
+              <li key={s} className="flex gap-3">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-lotus-accent ring-1 ring-lotus-hairline">{i + 1}</span>
+                <span className="text-lotus-text">{s}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-5 border-t border-lotus-hairline pt-4 text-sm">
+            Clinic: {clinic.hours[0].days}, {clinic.hours[0].time}. Sundays: online only.
           </p>
-        ) : null}
-
-        <PillButton
-          type="submit"
-          disabled={saving}
-          aria-busy={saving || undefined}
-          className={`mt-6 w-full disabled:cursor-wait disabled:bg-lotus-accent-hover sm:w-auto sm:px-8 ${ui.primary}`}
-        >
-          {saving ? "Saving your booking…" : "Request appointment"}
-        </PillButton>
-      </form>
-
-      <aside className={`h-fit p-6 sm:p-7 ${ui.card}`}>
-        <h2 className="text-lg font-semibold tracking-tight text-lotus-text">What happens next</h2>
-        <ol className="mt-4 space-y-3.5">
-          {[
-            "We get your request at once.",
-            "We confirm the exact time on WhatsApp within 2 hours.",
-            "You get a reminder the day before, with directions or the call link.",
-          ].map((s, i) => (
-            <li key={s} className="flex gap-3">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-lotus-accent ring-1 ring-lotus-hairline">{i + 1}</span>
-              <span className="text-lotus-text">{s}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-5 border-t border-lotus-hairline pt-4 text-sm">
-          Clinic: {clinic.hours[0].days}, {clinic.hours[0].time}. Sundays: online only.
-        </p>
-      </aside>
-    </div>
-  );
+        </aside>
+      </m.div>
+    );
+  }
 }
