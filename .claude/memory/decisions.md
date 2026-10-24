@@ -323,3 +323,16 @@ Append only. Newest at the bottom.
 
 - Abhinav supplied a Google AI Studio export: "Solstice Roastery & Bakehouse — Jubilee Hills", a single-page Next 15 cafe site (hero, menu, vibe, location, reservation form, WhatsApp order flow, 17 photos, motion + lucide). Extracted at the session scratchpad `cafe-zip/`; the zip is in ~/Downloads.
 - Decision: port it into the hub as the Cafe → Website LIVE demo at /cafe/website under demos/solstice-cafe/, keeping its look and animations; add the onlydevs demo bar; WhatsApp links use the demo number +91 73821 30063; drop Gemini/firebase deps. Cafe reservations stay a WhatsApp message for now (no DB). Flip the Cafe "Website" card to Live demo.
+
+## 2026-10-24 (cafe demo build)
+
+- Built the Solstice port in `demos/solstice-cafe/`: SolsticeSite (server; demo bar, header, ticker, hero, vibe, location, footer), Order (cart context, drawer), Menu (filters, grid), Reservation, CafeArtVisuals (next/image + SVG fallbacks), MagneticButton, Motion, data.ts. 17 photos in `public/demos/solstice/`.
+- Tailwind's default palette is off here, so the export's stone/gray/hex colours became `sol-*` tokens in `app/globals.css` (same hex values). Fonts: Fraunces (existing) for headings, new JetBrains Mono (`--font-jetbrains`, not preloaded) for prices and the ticker, Jakarta for body.
+- Motion: LazyMotion + domAnimation + `m.*`, like Lotus; the menu's layout animations load domMax in their own chunk. `reducedMotion="user"`; the ticker stops under reduced motion.
+- Every wa.me link comes from `WHATSAPP_NUMBER` (917382130063) in data.ts. The old numbers in the export (+91 98490 45284, +91 40 2355 8490) are gone.
+- Reservation: client checks (date not in the past, 10-digit Indian mobile), then `window.open` to WhatsApp with the request. The success card now says the request is typed into WhatsApp, not "SMS pass dispatched". No API, no DB.
+- Small changes from the export: header button reads "Order (2)" below 640px (it overflowed at 375); Escape closes the order tray; sections get scroll-margin under the sticky header; icons are aria-hidden; drawer +/- buttons have labels; footer says the cafe is made up. `use-mobile` and `lib/utils` were unused in the export and were not ported.
+- Cafe "Website" is now `status: "live", demo: "solstice-cafe"`; the Bean Street browser mock content for it was removed. The clinic entry is unchanged. `/cafe/website` has no inner pages (`/cafe/website/about` is 404 on `next start`).
+- Title and description on /cafe/website come from `liveDemoTitle`/`liveDemoDescription` in demos/render.tsx. Lotus keeps its titles and the hub description.
+- Gates: lint clean, typecheck clean, 344 tests (331 + 13), build: /cafe/website fully static (no postponed state in its .meta). Initial JS gzip on /cafe/website: 271,150 B, same bundle as /clinic/website (both demos share the [service] route); baseline before this change was 262,379 B.
+- Not checked against AA (kept as the export had them): terracotta kickers 3.6:1 on paper, stone-400 category labels 2.52:1 on white.
