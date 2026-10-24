@@ -348,3 +348,10 @@ Append only. Newest at the bottom.
 
 - Abhinav supplied "ticketwings-luxury-event-discovery-ticketing…zip" (extracted at the session scratchpad `ticketing-zip/`): a Google AI Studio Next 15 single-page app "TicketWings — Luxury Event Discovery & Ticketing" (event cards, detail drawer, QR ticket checkout, list-your-event modal, partner banner; ~3,300 lines; Unsplash hotlinked images; no backend, no AI calls; a phone +91 98201 44510 in the copy).
 - Decision: add a fourth hub industry named exactly "Ticketing platform" (slug ticketing-platform), audience organisers, venues and promoters. Services: ticketing-platform (live demo "ticketwings"), event-page, whatsapp-tickets-reminders, google-business-profile, early-bird-offers, organiser-dashboard. Port TicketWings as the live demo at /ticketing-platform/ticketing-platform (or /ticketing-platform/website if the schema demands "website"; prefer the former). Download the Unsplash images into the repo; swap the phone to the demo number +91 73821 30063. Build runs AFTER the Sky49 real estate build lands, since both touch content/industries.ts and routes tests.
+
+## 2026-10-24 (real estate demo build)
+
+- Built: hub industry "real-estate" (Real estate, real estate developers) with six services in order: website (live, demo "sky49"), google-business-profile, whatsapp-lead-follow-up, site-visit-booking, digital-brochure, lead-dashboard. New "leads" mock for the lead dashboard preview. Building2 icon.
+- Built: demos/sky49/ rebuilds THE SKY49 landing page, sections in the original index.astro order, sky-* colour tokens, Manrope, hero still image (no video), lite YouTube walkthrough, the original Google Maps embed. 19 images in public/demos/sky49/ via next/image.
+- All real contacts replaced by demo constants in data.ts: +91 73821 30063, wa.me/917382130063, hello@onlydevs.in. Forms check fields, then open WhatsApp. No API, no DB. Footer says "Demo site by onlydevs. Details for illustration."
+- Gates: lint, typecheck, 370 tests, build all pass. /real-estate and /real-estate/website prerender fully static. Built HTML has 0 hits for the real phone or domain. Not pushed.
