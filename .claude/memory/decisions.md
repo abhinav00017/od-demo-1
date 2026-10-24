@@ -338,3 +338,8 @@ Append only. Newest at the bottom.
 - Not checked against AA (kept as the export had them): terracotta kickers 3.6:1 on paper, stone-400 category labels 2.52:1 on white.
 - 24 Oct 2026: Solstice cafe demo deployed and verified live at /cafe/website (lint, typecheck, 344 tests, build; hero, menu grid and the Cafe hub card seen at 1440; no console errors). WhatsApp links use the demo number. Open: two colours below AA kept from the export (terracotta kickers 3.6:1, stone-400 labels 2.5:1); business names in the export's copy unchecked; both demos share one ~271 kB JS bundle because of the shared route (dynamic import split is a possible follow-up).
 - 24 Oct 2026: Abhinav approved the Solstice cafe demo as ported.
+
+## 2026-10-24 (real estate demo from Abhinav's zip)
+
+- Abhinav supplied "Sky-49 real estate.zip" (extracted at the session scratchpad `realestate-zip/Sky-49/`): an Astro 5 + Preact site "THE SKY49" (Hyderabad, RERA mentions), 29 .astro files, data in src/data/site.ts and faq.ts, images in public/, a 14 MB hero video, an Express + MongoDB admin server with a JWT login, and a `.env` containing real secrets (MONGODB_URI, JWT_SECRET, ADMIN_PASSWORD). Secrets are never copied; Abhinav told to rotate them.
+- Decision: rebuild the landing page in our Next stack under demos/sky49/ from its content and assets (same sections, look and type), forms go to WhatsApp on the demo number +91 73821 30063, video compressed to ≤3 MB or replaced by a poster. New hub industry "real-estate" with 6 services; Website is the live demo at /real-estate/website. Assumed Sky49 is Abhinav's own client work; branding kept until he says otherwise.
