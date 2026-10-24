@@ -16,7 +16,21 @@ describe("schema.sql", () => {
       "CREATE UNIQUE INDEX IF NOT EXISTS messages_provider_id_idx ON messages (provider_message_id) WHERE provider_message_id IS NOT NULL",
       "ALTER TABLE messages ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'meta' CHECK (provider IN ('meta', 'twilio', 'fake'))",
       "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS wants_new_time boolean NOT NULL DEFAULT false",
-      "ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed'))",
+      "ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed', 'quote_sent', 'crm_reminder'))",
+      "CREATE TABLE IF NOT EXISTS crm_products (",
+      "CREATE TABLE IF NOT EXISTS crm_leads (",
+      "CREATE TABLE IF NOT EXISTS crm_quotes (",
+      "CREATE INDEX IF NOT EXISTS crm_quotes_lead_idx ON crm_quotes (lead_id, created_at)",
+      "CREATE TABLE IF NOT EXISTS crm_quote_items (",
+      "CREATE INDEX IF NOT EXISTS crm_quote_items_quote_idx ON crm_quote_items (quote_id, position)",
+      "CREATE TABLE IF NOT EXISTS crm_followups (",
+      "CREATE INDEX IF NOT EXISTS crm_followups_shop_open_idx ON crm_followups (shop_slug, due_at) WHERE done_at IS NULL",
+      "CREATE INDEX IF NOT EXISTS crm_followups_lead_idx ON crm_followups (lead_id, created_at)",
+      "ALTER TABLE IF EXISTS messages ALTER COLUMN booking_id DROP NOT NULL",
+      "ALTER TABLE messages ADD COLUMN IF NOT EXISTS crm_lead_id uuid REFERENCES crm_leads (id) ON DELETE CASCADE",
+      "ALTER TABLE messages ADD COLUMN IF NOT EXISTS crm_quote_id uuid REFERENCES crm_quotes (id) ON DELETE SET NULL",
+      "CREATE INDEX IF NOT EXISTS messages_crm_lead_idx ON messages (crm_lead_id, created_at) WHERE crm_lead_id IS NOT NULL",
+      "ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_owner_check, ADD CONSTRAINT messages_owner_check CHECK (booking_id IS NOT NULL OR crm_lead_id IS NOT NULL)",
     ]);
     expect(statements.every((s) => /IF (NOT )?EXISTS/.test(s) && !s.includes(";"))).toBe(true);
   });
@@ -42,10 +56,32 @@ describe("schema.sql", () => {
   it("adds wants_new_time and the inbound kinds, after the tables exist", () => {
     const flag = statements.find((s) => s.includes("wants_new_time"));
     expect(flag).toBe("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS wants_new_time boolean NOT NULL DEFAULT false");
-    const kinds = statements.at(-1)!;
+    const kinds = statements.find((s) => s.includes("messages_kind_check"))!;
     // Drop and add in one statement, so a rerun never leaves the table without a check.
     expect(kinds).toMatch(/^ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK/);
     expect(kinds).toContain("'inbound', 'patient_confirmed'");
     expect(statements[2]).toContain("'clinic_alert', 'inbound', 'patient_confirmed'");
+  });
+
+  it("widens the kind check for the CRM in the same statement, so a rerun never narrows it over CRM rows", () => {
+    const checks = statements.filter((s) => s.includes("ADD CONSTRAINT messages_kind_check"));
+    expect(checks).toHaveLength(1);
+    expect(checks[0]).toContain("'quote_sent', 'crm_reminder'");
+  });
+
+  it("creates the CRM tables with shop_slug, money in paise and the agreed checks", () => {
+    const table = (name: string) => statements.find((s) => s.startsWith(`CREATE TABLE IF NOT EXISTS ${name} (`))!;
+    for (const name of ["crm_products", "crm_leads", "crm_quotes", "crm_followups"]) expect(table(name)).toMatch(/\n\s+shop_slug\s+text\s+NOT NULL DEFAULT 'kalyani-tiles'/);
+    expect(table("crm_products")).toContain("UNIQUE (shop_slug, sku)");
+    expect(table("crm_products")).toContain("'floor', 'wall', 'outdoor', 'bathroom', 'kitchen'");
+    expect(table("crm_leads")).toContain("UNIQUE (shop_slug, phone)");
+    expect(table("crm_leads")).toContain("'lead', 'customer', 'lost'");
+    expect(table("crm_quotes")).toContain("UNIQUE (shop_slug, number)");
+    expect(table("crm_quotes")).toContain("'draft', 'sent', 'sold', 'lost'");
+    expect(table("crm_quote_items")).toMatch(/wastage_pct\s+numeric\(5, 2\) NOT NULL DEFAULT 10/);
+    expect(table("crm_followups")).toContain("'auto_whatsapp', 'call'");
+    // CRM tables come before the messages columns that point at them.
+    const leadsAt = statements.indexOf(table("crm_leads"));
+    expect(statements.findIndex((s) => s.includes("ADD COLUMN IF NOT EXISTS crm_lead_id"))).toBeGreaterThan(leadsAt);
   });
 });

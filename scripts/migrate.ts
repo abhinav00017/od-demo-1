@@ -1,5 +1,5 @@
 /**
- * Creates the bookings and messages tables, their indexes and later columns, from lib/bookings/schema.sql.
+ * Creates the bookings, messages and crm_* tables, their indexes and later columns, from lib/bookings/schema.sql.
  * Safe to run more than once (every statement is IF NOT EXISTS, including ADD COLUMN IF NOT EXISTS).
  * Usage: npm run db:migrate   (reads DATABASE_URL from the shell or .env.local)
  */
@@ -32,7 +32,7 @@ async function main() {
     await sql.query(statement);
     console.log(`ok: ${statement.split("\n")[0]}`);
   }
-  for (const table of ["bookings", "messages"]) {
+  for (const table of ["bookings", "messages", "crm_products", "crm_leads", "crm_quotes", "crm_quote_items", "crm_followups"]) {
     const [{ count }] = (await sql.query(`SELECT count(*)::int AS count FROM ${table}`)) as { count: number }[];
     console.log(`${table} table ready, ${count} rows`);
   }
