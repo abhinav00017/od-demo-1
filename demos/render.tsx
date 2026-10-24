@@ -6,8 +6,8 @@ import { LotusSite, type Nav } from "./lotus-clinic/LotusSite";
 import { LotusAbout, LotusAdmin, LotusBook, LotusContact, LotusHome, LotusServices } from "./lotus-clinic/pages";
 import { cafe } from "./solstice-cafe/data";
 import { SolsticeSite } from "./solstice-cafe/SolsticeSite";
-import { site as sky49 } from "./sky49/data";
-import { Sky49Site } from "./sky49/Sky49Site";
+import { site as verdantCrest } from "./verdant-crest/data";
+import { VerdantCrestSite } from "./verdant-crest/VerdantCrestSite";
 import { site as ticketwings } from "./ticketwings/data";
 import { TicketWingsSite } from "./ticketwings/TicketWingsSite";
 
@@ -29,8 +29,8 @@ export function liveDemoTitle(demo: DemoId, page: string): string {
     }
     case "solstice-cafe":
       return cafe.title;
-    case "sky49":
-      return sky49.title;
+    case "verdant-crest":
+      return verdantCrest.title;
     case "ticketwings":
       return ticketwings.title;
   }
@@ -41,8 +41,8 @@ export function liveDemoDescription(demo: DemoId): string | undefined {
   switch (demo) {
     case "solstice-cafe":
       return cafe.description;
-    case "sky49":
-      return sky49.description;
+    case "verdant-crest":
+      return verdantCrest.description;
     case "ticketwings":
       return ticketwings.description;
     default:
@@ -53,7 +53,7 @@ export function liveDemoDescription(demo: DemoId): string | undefined {
 export function LiveDemo({ industry, service, page }: { industry: Industry; service: Extract<Service, { status: "live" }>; page: DemoPage }) {
   const base = serviceHref(industry, service);
   const nav: Nav = { base, page, hubHref: `/${industry.slug}`, href: (p) => (p ? `${base}/${p}` : base) };
-  // Each live demo has a case here. Lotus has its own page map; Solstice, Sky49 and TicketWings are single pages.
+  // Each live demo has a case here. Lotus has its own page map; Solstice, Verdant Crest and TicketWings are single pages.
   switch (service.demo) {
     case "lotus-clinic": {
       const Page = LOTUS_PAGES[page];
@@ -65,8 +65,8 @@ export function LiveDemo({ industry, service, page }: { industry: Industry; serv
     }
     case "solstice-cafe":
       return <SolsticeSite hubHref={nav.hubHref} />;
-    case "sky49":
-      return <Sky49Site hubHref={nav.hubHref} />;
+    case "verdant-crest":
+      return <VerdantCrestSite hubHref={nav.hubHref} />;
     case "ticketwings":
       return <TicketWingsSite hubHref={nav.hubHref} />;
   }

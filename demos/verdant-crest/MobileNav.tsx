@@ -30,7 +30,7 @@ export function MobileNav() {
         type="button"
         className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-sky-stone/50 bg-white text-sky-charcoal shadow-sm"
         aria-expanded={open}
-        aria-controls="sky49-mobile-menu"
+        aria-controls="verdant-crest-mobile-menu"
         onClick={() => setOpen((o) => !o)}
       >
         <span className="sr-only">Toggle menu</span>
@@ -47,7 +47,7 @@ export function MobileNav() {
         {open ? (
           <m.nav
             key="menu"
-            id="sky49-mobile-menu"
+            id="verdant-crest-mobile-menu"
             aria-label="Mobile"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,14 +1,14 @@
 /**
- * THE SKY49: the Real estate → Website live demo.
- * Rebuilt from the Astro site Abhinav supplied (24 Oct 2026): src/data/site.ts, src/data/faq.ts and the section copy.
- * Every real contact in the original is replaced by the onlydevs demo contacts below.
+ * Verdant Crest by Nilaya Developers: the Real estate → Website live demo.
+ * Both names are made up. The page layout follows a supplied Astro landing page; every name, address, figure, drawing
+ * and contact from that page has been replaced with made-up values or the onlydevs demo contacts below.
  */
 
-/** The onlydevs demo WhatsApp and phone number. Every wa.me and tel: link on the Sky49 demo is built from these. */
+/** The onlydevs demo WhatsApp and phone number. Every wa.me and tel: link on the demo is built from these. */
 export const WHATSAPP_NUMBER = "917382130063";
 export const PHONE_DISPLAY = "+91 73821 30063";
 export const PHONE_TEL = "+917382130063";
-/** The onlydevs demo email. Every mailto: link on the Sky49 demo uses it. */
+/** The onlydevs demo email. Every mailto: link on the demo uses it. */
 export const EMAIL = "hello@onlydevs.in";
 
 /** A wa.me chat with the demo number, with the message typed in when there is one. */
@@ -20,34 +20,28 @@ export const telHref = `tel:${PHONE_TEL}`;
 export const mailHref = `mailto:${EMAIL}`;
 
 export const site = {
-  name: "Sky49",
-  fullName: "The SKY 49 by Ananda Prosper",
+  name: "Verdant Crest",
+  fullName: "Verdant Crest by Nilaya Developers",
   /** Page title on /real-estate/website. */
-  title: "THE SKY49",
-  /** From the supplied metadata.json. */
+  title: "Verdant Crest — Sky residences in Tellapur",
   description: "Ultra-premium aesthetic light-theme real estate experience with editorial luxury storytelling.",
-  builder: "Ananda Prosper",
-  address: {
-    streetAddress: "Osman Nagar, Tellapur",
-    addressLocality: "Hyderabad",
-    addressRegion: "Telangana",
-    postalCode: "502032",
-  },
-  rera: "Telangana RERA — verify registration ID on the official portal",
-  mapEmbedSrc:
-    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.3196016508928!2d78.27522347594073!3d17.44441060115836!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcbed17e91b4b4b%3A0x19787397a2d26a29!2sThe%20SKY%2049%20by%20Ananda%20Prosper!5e0!3m2!1sen!2sin!4v1775729985100!5m2!1sen!2sin",
-  youtubeWalkthroughId: "I5DbiUkT05M",
+  builder: "Nilaya Developers",
+  /** The only location the demo names: a public area, no street, PIN code or coordinates. */
+  area: "Tellapur, Hyderabad",
+  rera: "RERA registered. Details on request.",
+  /** A plain area search, so the pin names no business. */
+  mapEmbedSrc: "https://www.google.com/maps?q=Tellapur%2C%20Hyderabad&output=embed",
 } as const;
 
-const IMG = "/demos/sky49";
+const IMG = "/demos/verdant-crest";
 
 export const images = {
-  hero: { src: `${IMG}/hero-towers.jpg`, alt: "Sky49 Tellapur ultra-luxury 3 and 4 BHK apartment towers in Hyderabad" },
-  about: { src: `${IMG}/about-architecture.jpg`, alt: "Sky49 lifestyle architecture view" },
-  highlights: { src: `${IMG}/hero-towers.jpg`, alt: "Sky49 highlights visual" },
-  walkthroughPoster: { src: `${IMG}/walkthrough-poster.jpg`, alt: "Sky49 towers above the morning mist" },
-  sitePlan: { src: `${IMG}/site-plan.jpg`, alt: "Sky49 site plan layout", width: 1024, height: 724 },
-  faq: { src: `${IMG}/amenities-1.jpg`, alt: "Sky49 tower elevation" },
+  hero: { src: `${IMG}/hero-skyline.jpg`, alt: "High-rise towers rising above the morning mist" },
+  about: { src: `${IMG}/about-architecture.jpg`, alt: "Clubhouse building with landscaped gardens and courts" },
+  highlights: { src: `${IMG}/hero-skyline.jpg`, alt: "Towers above the morning mist" },
+  /** A made-up illustrative site plan. */
+  sitePlan: { src: `${IMG}/site-plan.jpg`, alt: "Illustrative site plan: three towers around a central court, with a clubhouse", width: 1600, height: 1131 },
+  faq: { src: `${IMG}/amenity-clubhouse.jpg`, alt: "Clubhouse elevation with layered terraces" },
 } as const;
 
 /** In-page links in the header and the mobile menu. */
@@ -64,31 +58,31 @@ export const NAV_LINKS = [
 export type NavLink = (typeof NAV_LINKS)[number];
 
 export const stats = [
-  { label: "Floors", value: "G+49" },
-  { label: "Towers", value: "4" },
-  { label: "Amenities", value: "1 lakh+ sq ft" },
-  { label: "Compliance", value: "RERA approved" },
+  { label: "Floors", value: "G+42" },
+  { label: "Towers", value: "3" },
+  { label: "Amenities", value: "85,000 sq ft" },
+  { label: "Compliance", value: "RERA registered" },
 ] as const;
 
 export const aboutFacts = [
   { label: "Configuration", value: "3 & 4 BHK ultra-luxury homes" },
-  { label: "Scale", value: "G+49 towers with skyline presence" },
-  { label: "Amenities", value: "1 lakh+ sq ft lifestyle spaces" },
-  { label: "Address", value: "Osman Nagar, Tellapur" },
+  { label: "Scale", value: "Three G+42 towers with skyline presence" },
+  { label: "Amenities", value: "85,000 sq ft lifestyle spaces" },
+  { label: "Location", value: "Tellapur, Hyderabad" },
 ] as const;
 
 export const highlights = [
   {
     title: "Skyline identity",
-    body: "A vertical G+49 narrative across four towers creates a recognizable Sky49 Hyderabad silhouette—important for luxury buyers who value landmark presence and long-term address prestige in Tellapur.",
+    body: "Three G+42 towers, named Neem, Gulmohar and Ashoka, give Verdant Crest a recognisable silhouette—important for luxury buyers who value landmark presence and long-term address prestige in Tellapur.",
   },
   {
     title: "Amenity depth",
-    body: "With over 1 lakh sq ft of amenities (indicative), Sky49 is designed as a daily-use club, not a checklist—wellness, social, and family zones scale for real weekend traffic, not brochure filler.",
+    body: "With about 85,000 sq ft of amenities (indicative), Verdant Crest is designed as a daily-use club, not a checklist—wellness, social, and family zones scale for real weekend traffic, not brochure filler.",
   },
   {
-    title: "Osman Nagar fit",
-    body: "Osman Nagar’s growth story pairs greenfield calm with improving infrastructure—ideal for CXOs who want quieter evenings yet refuse to compromise on commute logic to Financial District and ORR.",
+    title: "Tellapur fit",
+    body: "Tellapur’s growth story pairs greenfield calm with improving infrastructure—ideal for CXOs who want quieter evenings yet refuse to compromise on commute logic to Financial District and ORR.",
   },
   {
     title: "3 & 4 BHK focus",
@@ -96,44 +90,45 @@ export const highlights = [
   },
 ] as const;
 
-export const currentSiteUpdateImages = [1, 2, 3, 4, 5, 6].map((n) => ({
-  src: `${IMG}/site-update-${n}.jpg`,
-  alt: `Sky49 construction update image ${n}`,
-}));
+/** Made-up construction stage illustrations, not site photos. */
+export const currentSiteUpdateImages = [
+  { src: `${IMG}/progress-1.jpg`, alt: "Illustration of construction stage 1: foundations" },
+  { src: `${IMG}/progress-2.jpg`, alt: "Illustration of construction stage 2: podium levels" },
+  { src: `${IMG}/progress-3.jpg`, alt: "Illustration of construction stage 3: tower floors rising" },
+];
 
+/** Made-up illustrative drawings. */
 export const floorPlanRows = [
   { label: "01/", name: "Master Plan", image: `${IMG}/master-plan.jpg` },
-  { label: "02/", name: "Tower - A Floor Plan", image: `${IMG}/tower-a-floor-plan.jpg` },
-  { label: "03/", name: "Tower - B Floor Plan", image: `${IMG}/tower-b-floor-plan.jpg` },
-  { label: "04/", name: "Tower - C Floor Plan", image: `${IMG}/tower-c-floor-plan.jpg` },
-  { label: "05/", name: "Tower - D Floor Plan", image: `${IMG}/tower-d-floor-plan.jpg` },
+  { label: "02/", name: "Neem Tower Floor Plan", image: `${IMG}/neem-tower-floor-plan.jpg` },
+  { label: "03/", name: "Gulmohar Tower Floor Plan", image: `${IMG}/gulmohar-tower-floor-plan.jpg` },
+  { label: "04/", name: "Ashoka Tower Floor Plan", image: `${IMG}/ashoka-tower-floor-plan.jpg` },
 ] as const;
 
 export const compareRows = [
   {
     title: "Specification honesty",
-    sky49:
-      "Sky49 publishes visible specifications, GEO tables, and FAQ content so “Sky49 price” and “Sky49 floor plans” questions start from facts—not generic ad copy.",
+    ours: "Verdant Crest publishes visible specifications, GEO tables, and FAQ content so price and floor plan questions start from facts—not generic ad copy.",
     typical:
       "Many launches rely on mood boards without comparable tables, making it harder to cite details in AI overviews or personal research notes.",
   },
   {
     title: "Amenity usability",
-    sky49: "Large amenity square footage is framed around daily usability—families can imagine weekends without leaving the gates.",
+    ours: "Large amenity square footage is framed around daily usability—families can imagine weekends without leaving the gates.",
     typical: "Smaller amenity footprints can feel repetitive after move-in when programming does not scale with tower population.",
   },
   {
     title: "West-corridor timing",
-    sky49:
-      "Tellapur / Osman Nagar benefits from disciplined planning narratives; buyers compare ORR, Neopolis, and airport routes with clear-eyed expectations.",
+    ours: "Tellapur benefits from disciplined planning narratives; buyers compare ORR, Neopolis, and airport routes with clear-eyed expectations.",
     typical: "Older micro-markets may trade on nostalgia but can lack comparable growth headroom or modern clubhouse scale.",
   },
 ] as const;
 
-export const projectGalleryImages = [1, 2, 3, 4, 5, 6].map((n) => ({
-  src: `${IMG}/site-update-${n}.jpg`,
-  alt: `Sky49 project gallery image ${n}`,
-}));
+export const projectGalleryImages = [
+  { src: `${IMG}/amenity-courtyard.jpg`, alt: "Landscaped central courtyard at dusk, seen from above" },
+  { src: `${IMG}/about-architecture.jpg`, alt: "Clubhouse and sports courts in the evening light" },
+  { src: `${IMG}/amenity-lobby.jpg`, alt: "Warm-lit residents’ lounge beside the lift lobby" },
+];
 
 /** Icon paths are the original 24×24 strokes. */
 export const specs = [
@@ -162,10 +157,9 @@ export const diligenceChecklist = [
 ] as const;
 
 export const amenityShots = [
-  { src: `${IMG}/amenities-1.jpg`, alt: "Sky49 amenities gallery image 1" },
-  { src: `${IMG}/amenities-2.jpg`, alt: "Sky49 amenities gallery image 2" },
-  { src: `${IMG}/amenities-3.jpg`, alt: "Sky49 amenities gallery image 3" },
-  { src: `${IMG}/amenities-4.jpg`, alt: "Sky49 amenities gallery image 4" },
+  { src: `${IMG}/amenity-lobby.jpg`, alt: "Residents’ lounge with soft evening lighting" },
+  { src: `${IMG}/amenity-clubhouse.jpg`, alt: "Clubhouse with terraced floors above the sports courts" },
+  { src: `${IMG}/amenity-courtyard.jpg`, alt: "Central courtyard with lawns, a deck and play courts" },
 ] as const;
 
 export const proximityRows = [
@@ -179,56 +173,57 @@ export type FaqItem = { question: string; answer: string };
 
 export const faqItems: FaqItem[] = [
   {
-    question: "What is Sky49 Hyderabad?",
+    question: "What is Verdant Crest?",
     answer:
-      "Sky49 (The SKY 49) is an ultra-luxury residential development in Osman Nagar, Tellapur, Hyderabad, offering premium 3 BHK and 4 BHK apartments across multiple towers with extensive lifestyle amenities. The project is positioned for buyers seeking long-term value in Hyderabad’s west corridor with strong connectivity to IT hubs.",
+      "Verdant Crest is an ultra-luxury residential development in Tellapur, Hyderabad, offering premium 3 BHK and 4 BHK apartments across three towers with extensive lifestyle amenities. The project is positioned for buyers seeking long-term value in Hyderabad’s west corridor with strong connectivity to IT hubs.",
   },
   {
-    question: "Where is Sky49 Tellapur located?",
+    question: "Where is Verdant Crest located?",
     answer:
-      "Sky49 is located in Tellapur within the Osman Nagar micro-market, part of Hyderabad’s high-demand western growth belt. The location balances quieter residential living with access to ORR, Financial District, Gachibowli, Neopolis/Kokapet, and airport routes depending on traffic conditions.",
+      "Verdant Crest is in Tellapur, part of Hyderabad’s high-demand western growth belt. The location balances quieter residential living with access to ORR, Financial District, Gachibowli, Neopolis/Kokapet, and airport routes depending on traffic conditions.",
   },
   {
-    question: "What apartment configurations are available at Sky49?",
+    question: "What apartment configurations are available at Verdant Crest?",
     answer:
       "The project is designed around spacious 3 BHK and 4 BHK residences tailored for luxury living, with layouts intended for natural light, privacy, and premium finishes. Exact sizes, floor plans, and availability should be confirmed during a guided site visit or consultation.",
   },
   {
-    question: "Is Sky49 RERA approved?",
+    question: "Is Verdant Crest RERA registered?",
     answer:
-      "The project is marketed as RERA registered. Prospective buyers should verify the latest RERA registration details, approvals, and disclosures on the official Telangana RERA portal and with the sales team before making any booking decision.",
+      "Yes. RERA registered. Details on request. Prospective buyers should verify the latest registration details, approvals, and disclosures on the official Telangana RERA portal and with the sales team before making any booking decision.",
   },
   {
-    question: "What amenities are offered at Sky49?",
+    question: "What amenities are offered at Verdant Crest?",
     answer:
-      "Sky49 emphasizes a large amenities footprint—often described as 1 lakh+ square feet across lifestyle, wellness, and community spaces. Typical luxury stacks include club facilities, landscaped decks, fitness zones, and curated indoor-outdoor experiences; final amenity scope should be confirmed from the official brochure.",
+      "Verdant Crest plans about 85,000 square feet of lifestyle, wellness, and community spaces. Typical luxury stacks include club facilities, landscaped decks, fitness zones, and curated indoor-outdoor experiences; final amenity scope should be confirmed from the brochure.",
   },
   {
-    question: "How tall is the Sky49 development?",
+    question: "How tall are the Verdant Crest towers?",
     answer:
-      "Marketing materials reference a high-rise format with G+49 floors per tower (indicative). Structural heights, floor counts, and unit distribution can evolve during execution; confirm the latest tower-wise specifications with the developer’s official documentation.",
+      "Each of the three towers is planned as G+42 (indicative). Structural heights, floor counts, and unit distribution can evolve during execution; confirm the latest tower-wise specifications with the developer’s documentation.",
   },
   {
-    question: "What is the price range for Sky49 apartments?",
+    question: "What is the price range for Verdant Crest apartments?",
     answer:
-      "Pricing for ultra-luxury inventory depends on floor level, tower, facing, and market cycles. For accurate Sky49 Hyderabad price, payment plan, and limited-time offers, request a private consultation or brochure download through the official channel.",
+      "Pricing for ultra-luxury inventory depends on floor level, tower, facing, and market cycles. For the current price, payment plan, and limited-time offers, request a private consultation or the brochure through the form on this page.",
   },
   {
-    question: "Can I book a site visit for Sky49 Tellapur?",
+    question: "Can I book a site visit for Verdant Crest?",
     answer:
       "Yes. Site visits are typically scheduled through the sales desk. Use the on-page form to request a complimentary visit, share your preferred time window, and a representative will coordinate entry permissions and route guidance for Tellapur.",
   },
   {
-    question: "How does Sky49 compare to other luxury projects in Hyderabad?",
+    question: "How does Verdant Crest compare to other luxury projects in Hyderabad?",
     answer:
-      "Buyers often compare Sky49 with other premium Tellapur and west-Hyderabad projects on parameters like tower height, amenity scale, builder track record, unit efficiency, and long-term liquidity. A side-by-side review of floor plans, specifications, and location fit is the best way to decide.",
+      "Buyers often compare projects across Tellapur and west Hyderabad on parameters like tower height, amenity scale, builder track record, unit efficiency, and long-term liquidity. A side-by-side review of floor plans, specifications, and location fit is the best way to decide.",
   },
   {
-    question: "Is home loan assistance available for Sky49?",
+    question: "Is home loan assistance available for Verdant Crest?",
     answer:
       "Most large luxury projects coordinate with reputed banks and NBFCs for home loan facilitation. Eligibility, interest rates, and disbursal are determined by the lender based on your profile; the sales team can share indicative banking partners and documentation checklists.",
   },
 ];
+
 
 /* Forms: checked in the browser, then sent as a WhatsApp message to the demo number. No API, no database. */
 
@@ -253,7 +248,7 @@ export function eoiErrors(e: Eoi): Partial<Record<keyof Eoi, string>> {
 }
 
 export function eoiMessage(e: Eoi) {
-  return ["Hello Sky49! I would like to register an EOI.", `Name: ${e.name.trim()}`, `Phone: ${e.phone.trim()}`].join("\n");
+  return ["Hello Verdant Crest! I would like to register an EOI.", `Name: ${e.name.trim()}`, `Phone: ${e.phone.trim()}`].join("\n");
 }
 
 export const INTERESTS = [
@@ -287,7 +282,7 @@ export function contactErrors(c: Contact): Partial<Record<keyof Contact, string>
 export function contactMessage(c: Contact) {
   const name = [c.firstName.trim(), c.lastName.trim()].filter(Boolean).join(" ");
   return [
-    "Hello Sky49! I would like to book a site visit.",
+    "Hello Verdant Crest! I would like to book a site visit.",
     `Name: ${name}`,
     `Email: ${c.email.trim()}`,
     `Phone: ${c.phone.trim()}`,
@@ -299,6 +294,6 @@ export function contactMessage(c: Contact) {
     .join("\n");
 }
 
-/** The messages the quick-action buttons type in, as the original site had them. */
-export const SITE_VISIT_TEXT = "Hi, I want to book a Sky49 Hyderabad site visit.";
-export const ENQUIRY_TEXT = "Hello — Sky49 Hyderabad inquiry.";
+/** The messages the quick-action buttons type in. */
+export const SITE_VISIT_TEXT = "Hi, I want to book a Verdant Crest site visit.";
+export const ENQUIRY_TEXT = "Hello — Verdant Crest inquiry.";

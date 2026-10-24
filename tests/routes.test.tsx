@@ -65,19 +65,19 @@ describe("every service route resolves", () => {
     expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/cafe");
   });
 
-  it("/real-estate/website is the Sky49 live demo, a single page with no inner pages", () => {
+  it("/real-estate/website is the Verdant Crest live demo, a single page with no inner pages", () => {
     const found = getService("real-estate", "website");
     expect(found?.service.status).toBe("live");
     if (!found || found.service.status !== "live") return;
-    expect(found.service.demo).toBe("sky49");
+    expect(found.service.demo).toBe("verdant-crest");
     expect(demoPageParams().filter((p) => p.industry === "real-estate")).toEqual([]);
     expect(getDemoPage("real-estate", "website", "about")).toBeUndefined();
-    expect(liveDemoTitle("sky49", "")).toBe("THE SKY49");
-    expect(liveDemoDescription("sky49")).toBe(
+    expect(liveDemoTitle("verdant-crest", "")).toBe("Verdant Crest — Sky residences in Tellapur");
+    expect(liveDemoDescription("verdant-crest")).toBe(
       "Ultra-premium aesthetic light-theme real estate experience with editorial luxury storytelling.",
     );
     render(<LiveDemo industry={found.industry} service={found.service} page="" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Sky49 Tellapur Luxury 3 & 4 BHK Apartments");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Verdant Crest Tellapur Luxury 3 & 4 BHK Apartments");
     expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/real-estate");
   });
 

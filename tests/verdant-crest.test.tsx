@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Sky49Site } from "@/demos/sky49/Sky49Site";
+import { VerdantCrestSite } from "@/demos/verdant-crest/VerdantCrestSite";
 import {
   EMAIL,
   NAV_LINKS,
@@ -14,48 +14,53 @@ import {
   floorPlanRows,
   site,
   whatsAppHref,
-} from "@/demos/sky49/data";
+} from "@/demos/verdant-crest/data";
 
 const DEMO_WA = "https://wa.me/917382130063";
-/** The original site's contacts. None may appear anywhere on the demo. */
-const REAL = /7207456767|72074 56767|thesky49\.com/;
+/**
+ * Guards against the real project this layout came from. The patterns are stored base64-encoded so a repo-wide grep for
+ * the real names stays at zero hits. Decoded, REAL is the original phone and domain; REAL_PROJECT is the project and
+ * builder names, the old YouTube id, the street area, PIN code, coordinates, the old floor count, prices and amenity area.
+ */
+const decode = (b64: string) => new RegExp(Buffer.from(b64, "base64").toString("utf8"), "i");
+const REAL = decode("NzIwNzQ1Njc2N3w3MjA3NCA1Njc2N3x0aGVza3k0OVwuY29t");
+const REAL_PROJECT = decode("c2t5ID80OXxza3ktNDl8YW5hbmRhfHByb3NwZXJ8STVEYmlVa1QwNU18b3NtYW58NTAyMDMyfDE3XC40NDR8NzhcLjI3NXxHXCs0OXw3LDE5OXwxMSwwMDB8MSBsYWto");
 
 function renderSite() {
-  return render(<Sky49Site hubHref="/real-estate" />);
+  return render(<VerdantCrestSite hubHref="/real-estate" />);
 }
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("Sky49 real estate demo", () => {
+describe("Verdant Crest real estate demo", () => {
   it("shows the demo bar and the hero", () => {
     renderSite();
     expect(screen.getByText("onlydevs demo")).toBeTruthy();
-    expect(screen.getByText(/a client site rebuilt to show the website we build/)).toBeTruthy();
+    expect(screen.getByText(/a made-up developer site to show the website we build/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/real-estate");
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Sky49 Tellapur Luxury 3 & 4 BHK Apartments");
-    expect(screen.getByText("Osman Nagar, Hyderabad • G+49 Landmark Towers")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Verdant Crest Tellapur Luxury 3 & 4 BHK Apartments");
+    expect(screen.getByText("Tellapur, Hyderabad • G+42 Landmark Towers")).toBeTruthy();
     expect(screen.getByText("Request a EOI")).toBeTruthy();
   });
 
-  it("renders the sections in the original order", () => {
+  it("renders the sections in order, with no walkthrough video", () => {
     renderSite();
     const h2s = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(h2s).toEqual([
-      "Tellapur — Sky49 Hyderabad",
-      "Sky49 Hyderabad: luxury living with long-term location value",
-      "Why buyers shortlist Sky49 Tellapur",
+      "Verdant Crest: luxury living with long-term location value",
+      "Why buyers shortlist Verdant Crest",
       "See Your Future Home Taking Shape",
       "Enter Before theAddress Appreciates",
       "Built for Investors Evaluating Long-Term Value",
       "Empowering Your Decision for a Refined Dream Living",
       "Site Plan",
-      "Why Sky49",
+      "Why Verdant Crest",
       "Experience the Lifestyle Before You Live It",
-      "Sky49 specifications with practical clarity",
-      "Amenities at Sky49 Hyderabad",
-      "Sky49 location & proximity",
+      "Verdant Crest specifications with practical clarity",
+      "Amenities at Verdant Crest",
+      "Verdant Crest location & proximity",
       "Frequently Asked Questions",
-      "Book a site visit — Sky49 Hyderabad",
+      "Book a site visit — Verdant Crest",
     ]);
   });
 
@@ -63,17 +68,17 @@ describe("Sky49 real estate demo", () => {
     renderSite();
     const stats = screen.getByRole("region", { name: "Project statistics" });
     for (const [value, label] of [
-      ["G+49", "Floors"],
-      ["4", "Towers"],
-      ["1 lakh+ sq ft", "Amenities"],
-      ["RERA approved", "Compliance"],
+      ["G+42", "Floors"],
+      ["3", "Towers"],
+      ["85,000 sq ft", "Amenities"],
+      ["RERA registered", "Compliance"],
     ]) {
       expect(within(stats).getByText(value)).toBeTruthy();
       expect(within(stats).getByText(label)).toBeTruthy();
     }
   });
 
-  it("lists the master plan and the four tower floor plans", () => {
+  it("lists the master plan and the three tower floor plans", () => {
     const { container } = renderSite();
     const section = container.querySelector("#floor-plans")!;
     expect(within(section as HTMLElement).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(
@@ -81,10 +86,9 @@ describe("Sky49 real estate demo", () => {
     );
     expect(floorPlanRows.map((r) => r.name)).toEqual([
       "Master Plan",
-      "Tower - A Floor Plan",
-      "Tower - B Floor Plan",
-      "Tower - C Floor Plan",
-      "Tower - D Floor Plan",
+      "Neem Tower Floor Plan",
+      "Gulmohar Tower Floor Plan",
+      "Ashoka Tower Floor Plan",
     ]);
   });
 
@@ -93,7 +97,7 @@ describe("Sky49 real estate demo", () => {
     const details = [...container.querySelectorAll<HTMLDetailsElement>("#faq details")];
     expect(details).toHaveLength(10);
     expect(details.map((d) => d.querySelector("summary")!.textContent)).toEqual(faqItems.map((f) => f.question));
-    expect(details.every((d) => d.getAttribute("name") === "sky49-faq")).toBe(true);
+    expect(details.every((d) => d.getAttribute("name") === "verdant-crest-faq")).toBe(true);
     expect(details.map((d) => d.open)).toEqual([true, false, false, false, false, false, false, false, false, false]);
   });
 
@@ -127,25 +131,36 @@ describe("Sky49 real estate demo", () => {
   it("every image has alt text and goes through next/image", () => {
     const { container } = renderSite();
     const imgs = [...container.querySelectorAll("img")];
-    expect(imgs.length).toBeGreaterThanOrEqual(25);
+    expect(imgs).toHaveLength(18);
     for (const img of imgs) {
       expect(img.getAttribute("alt")?.trim()).toBeTruthy();
       // next/image rewrites src to its optimizer; a raw <img> would keep the plain public path.
-      expect(img.getAttribute("src")).toMatch(/\/_next\/image\?url=%2Fdemos%2Fsky49%2F[a-z0-9-]+\.jpg/);
+      expect(img.getAttribute("src")).toMatch(/\/_next\/image\?url=%2Fdemos%2Fverdant-crest%2F[a-z0-9-]+\.jpg/);
     }
   });
 
-  it("the walkthrough loads YouTube only after play is pressed", () => {
+  it("has no walkthrough video and maps only the Tellapur area, with no business pin", () => {
     const { container } = renderSite();
-    expect(container.querySelector('iframe[src*="youtube"]')).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Play video/ }));
-    const frame = container.querySelector<HTMLIFrameElement>('iframe[src*="youtube"]');
-    expect(frame?.getAttribute("src")).toContain(`/embed/${site.youtubeWalkthroughId}?autoplay=1`);
+    expect(container.querySelector("#walkthrough")).toBeNull();
+    expect(container.querySelector('iframe[src*="youtube"], a[href*="youtube"], a[href*="youtu.be"]')).toBeNull();
+    const frames = [...container.querySelectorAll("iframe")];
+    expect(frames).toHaveLength(1);
+    expect(frames[0].getAttribute("src")).toBe("https://www.google.com/maps?q=Tellapur%2C%20Hyderabad&output=embed");
+    expect(site.mapEmbedSrc).toBe(frames[0].getAttribute("src"));
   });
 
-  it("keeps the Google Maps embed from the original site", () => {
+  it("names none of the real project, its builder, address, figures or people", () => {
     const { container } = renderSite();
-    expect(container.querySelector("#location iframe")?.getAttribute("src")).toBe(site.mapEmbedSrc);
+    fireEvent.click(screen.getByRole("button", { name: "Toggle menu" }));
+    const html = container.ownerDocument.body.innerHTML;
+    expect(html).not.toMatch(REAL_PROJECT);
+    expect(html).not.toMatch(REAL);
+    // Only the demo's own links leave the page: WhatsApp, the map embed, phone and email.
+    const external = [...container.querySelectorAll<HTMLElement>("[href^='http'], [src^='http']")].map(
+      (el) => el.getAttribute("href") ?? el.getAttribute("src")!,
+    );
+    for (const url of external) expect(url).toMatch(/^https:\/\/(wa\.me\/917382130063|www\.google\.com\/maps\?q=Tellapur)/);
+    expect(container.textContent).toContain("Verdant Crest by Nilaya Developers");
   });
 
   it("the mobile menu opens with every section link and closes on a link tap", () => {
@@ -218,16 +233,19 @@ describe("Sky49 real estate demo", () => {
     expect(screen.getByRole("link", { name: "Open WhatsApp again" }).getAttribute("href")).toBe(href);
   });
 
-  it("the footer keeps the RERA wording and says it is a demo", () => {
+  it("the footer has the generic RERA line and says the demo and its names are made up", () => {
     const { container } = renderSite();
     const footer = container.querySelector("footer")!;
-    expect(footer.textContent).toContain("Telangana RERA — verify registration ID on the official portal");
+    expect(footer.textContent).toContain("RERA registered. Details on request.");
+    expect(footer.textContent).not.toMatch(/P02\d|registration (no|number|id)/i);
     expect(footer.textContent).toContain("Demo site by onlydevs. Details for illustration.");
+    expect(footer.textContent).toContain("Verdant Crest and Nilaya Developers are fictional.");
+    expect(footer.textContent).toContain("Tellapur, Hyderabad");
     expect(footer.querySelector('a[href*="privacy"], a[href*="terms"]')).toBeNull();
   });
 });
 
-describe("Sky49 data", () => {
+describe("Verdant Crest data", () => {
   it("builds every contact link from the demo constants", () => {
     expect(WHATSAPP_NUMBER).toBe("917382130063");
     expect(PHONE_TEL).toBe("+917382130063");
@@ -239,7 +257,7 @@ describe("Sky49 data", () => {
   it("checks the EOI and contact forms", () => {
     expect(eoiErrors({ name: " ", phone: "" })).toEqual({ name: "Enter your name.", phone: "Enter your phone number." });
     expect(eoiErrors({ name: "Meera", phone: "919876543210" })).toEqual({});
-    expect(eoiMessage({ name: " Meera ", phone: "9876543210" })).toBe("Hello Sky49! I would like to register an EOI.\nName: Meera\nPhone: 9876543210");
+    expect(eoiMessage({ name: " Meera ", phone: "9876543210" })).toBe("Hello Verdant Crest! I would like to register an EOI.\nName: Meera\nPhone: 9876543210");
     const ok = {
       firstName: "Ravi",
       lastName: "",
@@ -252,7 +270,7 @@ describe("Sky49 data", () => {
     expect(contactErrors(ok)).toEqual({});
     expect(contactErrors({ ...ok, phone: "5876543210" })).toEqual({ phone: "Enter a 10-digit Indian mobile number." });
     expect(contactMessage(ok)).toBe(
-      "Hello Sky49! I would like to book a site visit.\nName: Ravi\nEmail: ravi@example.com\nPhone: 9876543210\nInterested in: 3 BHK luxury",
+      "Hello Verdant Crest! I would like to book a site visit.\nName: Ravi\nEmail: ravi@example.com\nPhone: 9876543210\nInterested in: 3 BHK luxury",
     );
   });
 });

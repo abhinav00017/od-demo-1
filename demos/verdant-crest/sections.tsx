@@ -22,7 +22,6 @@ import {
   telHref,
 } from "./data";
 import { HeroEoiForm } from "./HeroEoiForm";
-import { LiteYouTube } from "./LiteYouTube";
 import { HeroLeadReveal } from "./Motion";
 import { CTA, KICKER, LIFT_CARD, SHELL } from "./ui";
 
@@ -70,10 +69,10 @@ export function Hero() {
               id="hero-heading"
               className="mb-6 max-w-4xl text-4xl leading-[1.05] font-normal tracking-[-0.02em] text-balance text-sky-charcoal sm:text-5xl md:text-6xl lg:text-[3.5rem]"
             >
-              Sky49 Tellapur Luxury 3 &amp; 4 BHK Apartments
+              Verdant Crest Tellapur Luxury 3 &amp; 4 BHK Apartments
             </h1>
             <p className="inline-flex max-w-2xl bg-[rgb(128_128_128/0.38)] px-3 py-1 text-lg leading-relaxed font-normal text-sky-charcoal backdrop-blur-[1px] sm:text-xl">
-              Osman Nagar, Hyderabad • G+49 Landmark Towers
+              Tellapur, Hyderabad • G+42 Landmark Towers
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <a
@@ -98,32 +97,6 @@ export function Hero() {
   );
 }
 
-export function YouTubeWalkthrough() {
-  return (
-    <section id="walkthrough" className="scroll-mt-24 border-t border-sky-stone/40 bg-sky-beige/40 py-16 md:py-24">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-10">
-        <div className="mb-8 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="h-px w-10 bg-sky-gold" aria-hidden="true" />
-          </div>
-          <p className={KICKER}>Walkthrough</p>
-          <h2 className="mt-3 text-3xl text-sky-charcoal md:text-4xl">Tellapur — Sky49 Hyderabad</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-sky-muted">
-            Tap play to load the video; the page stays lightweight until you opt in—supporting strong mobile performance scores for{" "}
-            <strong>Sky49 Tellapur</strong> discovery traffic.
-          </p>
-        </div>
-        <LiteYouTube
-          videoId={site.youtubeWalkthroughId}
-          title="Sky49 Hyderabad — ultra-luxury project walkthrough video"
-          poster={images.walkthroughPoster}
-        />
-        <EoiCta />
-      </div>
-    </section>
-  );
-}
-
 export function StatsBar() {
   return (
     <section id="stats" className="border-y border-sky-stone/50 bg-sky-beige/50 py-10" aria-label="Project statistics">
@@ -140,19 +113,19 @@ export function StatsBar() {
   );
 }
 
-export function AboutSky49() {
+export function AboutVerdantCrest() {
   return (
     <section id="about" className="scroll-mt-24 bg-linear-to-b from-sky-warm-white to-sky-beige/30 py-16 md:py-24" aria-labelledby="about-heading">
       <div className={SHELL}>
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
           <div className="lg:col-span-5">
             <div className="sticky top-24 rounded-3xl border border-sky-gold/30 bg-white/90 p-6 shadow-sky-soft sm:p-8">
-              <Kicker className="mb-6">About Sky49</Kicker>
+              <Kicker className="mb-6">About Verdant Crest</Kicker>
               <h2 id="about-heading" className="text-4xl leading-tight text-sky-charcoal md:text-5xl">
-                Sky49 Hyderabad: luxury living with long-term location value
+                Verdant Crest: luxury living with long-term location value
               </h2>
               <p className="mt-5 text-sm leading-relaxed text-sky-muted sm:text-base">
-                Sky49 Tellapur is planned as an ultra-luxury residential address for buyers who want strong daily livability today and
+                Verdant Crest is planned as an ultra-luxury residential address for buyers who want strong daily livability today and
                 confident resale relevance tomorrow.
               </p>
               {/* The original page links "quick facts" to a #facts section it does not render; these facts take the anchor. */}
@@ -193,10 +166,10 @@ export function AboutSky49() {
 
               <div className="space-y-6 text-base leading-relaxed text-sky-muted">
                 <p className="text-lg text-sky-charcoal/90">
-                  <strong className="font-medium text-sky-charcoal">Sky49 Hyderabad</strong> rises in
-                  <strong className="font-medium text-sky-charcoal"> Osman Nagar, Tellapur</strong> within the city’s premium western
-                  corridor. It is positioned for buyers comparing <em>Sky49 floor plans</em>,<em> Sky49 location</em>, and{" "}
-                  <em>Sky49 price</em> against long-horizon lifestyle quality.
+                  <strong className="font-medium text-sky-charcoal">Verdant Crest</strong> rises in
+                  <strong className="font-medium text-sky-charcoal"> Tellapur</strong> within the city’s premium western corridor. It is
+                  positioned for buyers comparing <em>floor plans</em>,<em> location</em>, and <em>price</em> against long-horizon lifestyle
+                  quality.
                 </p>
                 <p>
                   The project narrative combines vertical scale with a full-time residence mindset: high-rise towers, curated amenities, and
@@ -254,7 +227,7 @@ export function Highlights() {
           <div className="lg:col-span-4">
             <div className="sticky top-24 rounded-3xl border border-sky-gold/30 bg-white p-6 shadow-sky-soft sm:p-8">
               <Kicker>Highlights</Kicker>
-              <h2 className="text-3xl text-sky-charcoal md:text-4xl">Why buyers shortlist Sky49 Tellapur</h2>
+              <h2 className="text-3xl text-sky-charcoal md:text-4xl">Why buyers shortlist Verdant Crest</h2>
               <p className="mt-4 text-sm leading-relaxed font-light text-sky-muted">
                 Key decision points for premium Hyderabad buyers: skyline value, amenity utility, location logic, and liveability over long
                 holding cycles.
@@ -262,9 +235,9 @@ export function Highlights() {
               <div className="mt-7 rounded-2xl border border-sky-stone/40 bg-sky-warm-white/95 p-4">
                 <p className="text-[10px] font-semibold tracking-[0.22em] text-sky-muted uppercase">At a glance</p>
                 <div className="mt-3 space-y-2 text-sm text-sky-charcoal">
-                  <p>G+49 landmark towers</p>
-                  <p>1 lakh+ sq ft amenities</p>
-                  <p>Osman Nagar, Tellapur</p>
+                  <p>G+42 landmark towers</p>
+                  <p>85,000 sq ft amenities</p>
+                  <p>Tellapur, Hyderabad</p>
                   <p>3 &amp; 4 BHK focus</p>
                 </div>
               </div>
@@ -292,7 +265,7 @@ export function Highlights() {
   );
 }
 
-/** A grid of 1024×682 photos, cropped to the given aspect. Used by the site updates and the project gallery. */
+/** A grid of 3:2 images, cropped to the given aspect. Used by the site updates and the project gallery. */
 function PhotoGrid({ photos, aspect, className }: { photos: { src: string; alt: string }[]; aspect: string; className: string }) {
   return (
     <div className={`grid gap-4 md:grid-cols-3 ${className}`}>
@@ -344,7 +317,7 @@ export function InvestorOpportunity() {
             <article className="border-l-4 border-sky-gold/60 bg-white px-6 py-6 shadow-sm">
               <p className="text-[11px] font-semibold tracking-[0.2em] text-sky-muted uppercase">Current Opportunity</p>
               <p className="mt-3 text-4xl text-sky-charcoal">
-                ₹7,199 <span className="text-base font-medium">/ sft</span>
+                ₹6,850 <span className="text-base font-medium">/ sft</span>
               </p>
               <p className="mt-3 text-sm text-sky-muted">Exclusive pre-launch pricing for early visionaries.</p>
             </article>
@@ -352,7 +325,7 @@ export function InvestorOpportunity() {
             <article className="bg-sky-charcoal px-6 py-6 text-white shadow-sm">
               <p className="text-[11px] font-semibold tracking-[0.2em] text-white/70 uppercase">Projected Value</p>
               <p className="mt-3 text-4xl text-sky-gold">
-                ₹11,000 <span className="text-base font-medium text-white/80">/ sft</span>
+                ₹10,300 <span className="text-base font-medium text-white/80">/ sft</span>
               </p>
               <p className="mt-3 text-sm text-white/70">Estimated future potential based on Tellapur&apos;s growth corridor.</p>
             </article>
@@ -365,7 +338,7 @@ export function InvestorOpportunity() {
                 <p className="mt-1 text-xs tracking-[0.18em] text-sky-muted uppercase">Tellapur Luxury Real Estate Index</p>
               </div>
               <p className="text-right text-sm font-semibold text-sky-emerald">
-                + 52%<span className="block text-[10px] tracking-[0.16em] text-sky-muted uppercase">Expected ROI</span>
+                + 50%<span className="block text-[10px] tracking-[0.16em] text-sky-muted uppercase">Expected ROI</span>
               </p>
             </div>
 
@@ -384,7 +357,7 @@ export function InvestorOpportunity() {
             </div>
 
             <div className="grid gap-2 px-6 py-5 text-center text-[11px] font-medium tracking-[0.16em] text-sky-muted uppercase sm:grid-cols-3">
-              <p>RERA Approved</p>
+              <p>RERA Registered</p>
               <p>On-time Delivery</p>
               <p>High Appreciation</p>
             </div>
@@ -438,7 +411,7 @@ export function FloorPlans() {
           <p className="text-[11px] font-semibold tracking-[0.2em] text-sky-charcoal/80 uppercase">Floor Plan</p>
           <h2 className="mt-3 text-4xl leading-tight text-sky-charcoal sm:text-5xl">Empowering Your Decision for a Refined Dream Living</h2>
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-sky-charcoal/80">
-            Thoughtfully designed 3 &amp; 4 BHK luxury floor plans at SKY49 are crafted to maximize space, privacy, natural light, and
+            Thoughtfully designed 3 &amp; 4 BHK luxury floor plans at Verdant Crest are crafted to maximize space, privacy, natural light, and
             everyday comfort.
           </p>
         </div>
@@ -454,10 +427,10 @@ export function FloorPlans() {
               <Image
                 src={row.image}
                 alt={row.name}
-                width={2560}
-                height={1780}
+                width={1600}
+                height={1112}
                 sizes="(min-width: 768px) 176px, 320px"
-                className="h-60 w-80 max-w-full justify-self-start border border-sky-charcoal/15 object-cover md:h-44 md:w-44"
+                className="h-60 w-80 max-w-full justify-self-start border border-sky-charcoal/15 bg-[#fbfaf7] object-contain md:h-44 md:w-44"
               />
               <a
                 href="#contact"
@@ -501,15 +474,15 @@ export function SitePlan() {
   );
 }
 
-export function WhySky49Compare() {
+export function WhyVerdantCrestCompare() {
   return (
     <section id="comparison" className="scroll-mt-24 bg-sky-warm-white py-16 md:py-24">
       <div className={SHELL}>
         <div className="mb-12 max-w-2xl">
           <Kicker>Comparison</Kicker>
-          <h2 className="text-3xl text-sky-charcoal md:text-4xl">Why Sky49</h2>
+          <h2 className="text-3xl text-sky-charcoal md:text-4xl">Why Verdant Crest</h2>
           <p className="mt-4 text-sky-muted">
-            A transparent, citation-friendly comparison for investors and end-users evaluating <strong>Sky49 Hyderabad</strong> against
+            A transparent, citation-friendly comparison for investors and end-users evaluating <strong>Verdant Crest</strong> against
             typical luxury launches—without naming competitors.
           </p>
         </div>
@@ -517,9 +490,9 @@ export function WhySky49Compare() {
           {compareRows.map((r) => (
             <div key={r.title} className="grid gap-4 rounded-2xl border border-sky-stone/50 bg-white p-6 shadow-sm md:grid-cols-2 md:p-8">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-sky-gold uppercase">Sky49</p>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-sky-gold uppercase">Verdant Crest</p>
                 <h3 className="mt-2 text-xl text-sky-charcoal">{r.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed font-light text-sky-muted">{r.sky49}</p>
+                <p className="mt-3 text-sm leading-relaxed font-light text-sky-muted">{r.ours}</p>
               </div>
               <div className="border-t border-sky-stone/40 pt-4 md:border-t-0 md:border-l md:pt-0 md:pl-8">
                 <p className="text-[10px] font-bold tracking-[0.2em] text-sky-muted uppercase">Typical luxury tower</p>
@@ -534,7 +507,7 @@ export function WhySky49Compare() {
   );
 }
 
-/** The original loaded these from its admin API and fell back to the same six photos. The demo has no API, so it shows them directly. */
+/** The demo has no API, so the gallery shows its images directly. */
 export function ProjectGallery() {
   return (
     <section id="project-gallery" className="scroll-mt-24 bg-sky-mist py-16 md:py-20">
@@ -558,9 +531,9 @@ export function Specifications() {
               <div className="h-px w-10 bg-sky-gold/90" aria-hidden="true" />
               <p className="text-xs font-semibold tracking-[0.25em] text-sky-charcoal/65 uppercase">Specifications</p>
             </div>
-            <h2 className="text-3xl text-sky-charcoal md:text-5xl">Sky49 specifications with practical clarity</h2>
+            <h2 className="text-3xl text-sky-charcoal md:text-5xl">Verdant Crest specifications with practical clarity</h2>
             <p className="mt-4 max-w-3xl text-sky-charcoal/70">
-              Use this section as a quick diligence snapshot for <strong>Sky49 Tellapur</strong>. Final drawings, brands, and compliance
+              Use this section as a quick diligence snapshot for <strong>Verdant Crest</strong>. Final drawings, brands, and compliance
               documents should always be validated during your site visit and official review.
             </p>
           </div>
@@ -615,18 +588,18 @@ export function AmenitiesGallery() {
       <div className={SHELL}>
         <div className="mb-10 max-w-3xl">
           <Kicker>Amenities gallery</Kicker>
-          <h2 className="text-3xl text-sky-charcoal md:text-4xl">Amenities at Sky49 Hyderabad</h2>
+          <h2 className="text-3xl text-sky-charcoal md:text-4xl">Amenities at Verdant Crest</h2>
           <p className="mt-4 text-sky-muted">
-            Editorial references for lifestyle scale—actual Sky49 amenities may vary by tower phase. Confirm the latest amenity list and
+            Editorial references for lifestyle scale—actual Verdant Crest amenities may vary by tower phase. Confirm the latest amenity list and
             opening sequence during your tour.
           </p>
           <p className="mt-4 text-sm leading-relaxed font-light text-sky-muted">
-            A 1 lakh+ sq ft amenity footprint is meaningful only when programming matches real usage: weekday peak hours, children’s
-            schedules, elder accessibility, and weekend guest traffic. Ask how Sky49 sequences club openings, staffing, and maintenance
+            An 85,000 sq ft amenity footprint is meaningful only when programming matches real usage: weekday peak hours, children’s
+            schedules, elder accessibility, and weekend guest traffic. Ask how the developer sequences club openings, staffing, and maintenance
             budgets—premium living is operational, not merely decorative.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-3">
           {amenityShots.map((img) => (
             <figure key={img.src} className="group overflow-hidden rounded-2xl border border-sky-stone/40 bg-white shadow-sm">
               <Image
@@ -634,7 +607,7 @@ export function AmenitiesGallery() {
                 alt={img.alt}
                 width={1024}
                 height={682}
-                sizes="(min-width: 1280px) 290px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                sizes="(min-width: 1280px) 395px, (min-width: 640px) 33vw, 100vw"
                 className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-[1.03]"
               />
             </figure>
@@ -653,20 +626,20 @@ export function LocationProximity() {
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
           <div className="min-w-0">
             <Kicker>Location</Kicker>
-            <h2 className="text-3xl text-sky-charcoal md:text-4xl">Sky49 location &amp; proximity</h2>
+            <h2 className="text-3xl text-sky-charcoal md:text-4xl">Verdant Crest location &amp; proximity</h2>
             <p className="mt-4 text-sky-muted">
-              Sky49 is mapped at <strong>{site.fullName}</strong> in <strong>Osman Nagar, Tellapur, Hyderabad</strong>. Drive times vary by
-              time of day—treat the table as directional, not guaranteed.
+              The map shows the <strong>{site.area}</strong> area. Drive times vary by time of day—treat the table as directional, not
+              guaranteed.
             </p>
             <p className="mt-4 text-sm leading-relaxed font-light text-sky-muted">
-              Buyers comparing <strong>Sky49 Hyderabad</strong> with other west-city projects should test routes during your own peak-hour
+              Buyers comparing <strong>Verdant Crest</strong> with other west-city projects should test routes during your own peak-hour
               windows—especially ORR merges and IT-corridor choke points. The goal is not the shortest map line; it is the most predictable
               weekly rhythm for your household.
             </p>
 
             <div className="mt-8 overflow-hidden rounded-2xl border border-sky-stone/50 bg-white shadow-sm">
               <table className="w-full text-left text-sm">
-                <caption className="sr-only">Sky49 Tellapur proximity drive times to major Hyderabad hubs</caption>
+                <caption className="sr-only">Verdant Crest proximity drive times to major Hyderabad hubs</caption>
                 <thead className="bg-sky-beige/60 text-xs font-semibold tracking-wider text-sky-charcoal uppercase">
                   <tr>
                     <th scope="col" className="px-4 py-3 md:px-5">
@@ -698,7 +671,7 @@ export function LocationProximity() {
           <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/75 p-2 shadow-sky-soft backdrop-blur-md">
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-sky-beige">
               <iframe
-                title={`Google Map — ${site.fullName}, Hyderabad`}
+                title={`Google Map — ${site.area}`}
                 src={site.mapEmbedSrc}
                 className="absolute inset-0 h-full w-full border-0"
                 width="600"
@@ -754,7 +727,7 @@ export function FAQSection() {
               <h2 className="mt-3 text-5xl leading-[0.95] text-white sm:text-6xl">Frequently Asked Questions</h2>
               <div className="mt-8 space-y-2">
                 {faqItems.map((item, i) => (
-                  <details key={item.question} name="sky49-faq" open={i === 0} className="group overflow-hidden rounded-md border border-black/20 bg-white">
+                  <details key={item.question} name="verdant-crest-faq" open={i === 0} className="group overflow-hidden rounded-md border border-black/20 bg-white">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-3 py-2.5 text-sm text-sky-charcoal [&::-webkit-details-marker]:hidden">
                       <span>{item.question}</span>
                       <svg
@@ -788,9 +761,9 @@ export function ContactSection() {
             <Kicker rule="w-8" className="mb-6">
               Contact
             </Kicker>
-            <h2 className="mb-6 text-4xl leading-tight text-balance text-sky-charcoal md:text-5xl">Book a site visit — Sky49 Hyderabad</h2>
+            <h2 className="mb-6 text-4xl leading-tight text-balance text-sky-charcoal md:text-5xl">Book a site visit — Verdant Crest</h2>
             <p className="mb-10 max-w-md text-lg leading-relaxed font-light text-sky-muted">
-              Share your details for <strong>Sky49 Tellapur</strong> pricing, floor plans, and a curated walkthrough. Home loan assistance and
+              Share your details for <strong>Verdant Crest</strong> pricing, floor plans, and a curated walkthrough. Home loan assistance and
               brochure delivery available through the desk.
             </p>
 

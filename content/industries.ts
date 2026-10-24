@@ -431,7 +431,7 @@ export const industries: z.input<typeof catalogSchema> = [
         name: "Website",
         summary: "A fast project landing page with floor plans, pricing and a site-visit form, built for ad traffic and Google.",
         status: "live",
-        demo: "sky49",
+        demo: "verdant-crest",
       },
       {
         slug: "google-business-profile",

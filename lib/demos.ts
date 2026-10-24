@@ -18,8 +18,8 @@ export const LIVE_DEMOS = {
   "solstice-cafe": {
     pages: [{ slug: "", label: "Home" }],
   },
-  /** THE SKY49, a Tellapur real estate project: one landing page with in-page anchors (about, floor plans, faq, contact). */
-  sky49: {
+  /** Verdant Crest by Nilaya Developers, a made-up Tellapur real estate project: one landing page with in-page anchors (about, floor plans, faq, contact). */
+  "verdant-crest": {
     pages: [{ slug: "", label: "Home" }],
   },
   /** TicketWings, a made-up event ticketing platform: one page with drawers for event details, checkout and passes. */

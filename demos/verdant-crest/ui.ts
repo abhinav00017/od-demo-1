@@ -1,4 +1,4 @@
-/** Class strings the Sky49 sections share. */
+/** Class strings the Verdant Crest sections share. */
 
 /** The dark pill under most sections: "Register EOI Now" to #contact. */
 export const CTA =

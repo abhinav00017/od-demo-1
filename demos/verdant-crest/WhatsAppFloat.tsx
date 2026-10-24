@@ -24,7 +24,7 @@ export function WhatsAppFloat() {
       href={whatsAppHref(ENQUIRY_TEXT)}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Chat on WhatsApp about Sky49 Hyderabad"
+      aria-label="Chat on WhatsApp about Verdant Crest"
       aria-hidden={shown ? undefined : true}
       tabIndex={shown ? undefined : -1}
       initial={false}

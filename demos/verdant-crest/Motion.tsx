@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Motion for the Sky49 demo, the same pattern as Lotus and Solstice: LazyMotion + domAnimation + `m.*`.
+ * Motion for the Verdant Crest demo, the same pattern as Lotus and Solstice: LazyMotion + domAnimation + `m.*`.
  * The original site moves very little: the hero lead card fades up 8px 180 ms after load, cards lift on hover (CSS),
  * the WhatsApp button fades in after the first screen. This keeps that feel.
  * `reducedMotion="user"` makes transforms jump instead of move for visitors who ask for less motion.
@@ -10,7 +10,7 @@
 import { domAnimation, LazyMotion, m, MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 
-export function Sky49Motion({ children }: { children: ReactNode }) {
+export function VerdantCrestMotion({ children }: { children: ReactNode }) {
   return (
     <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user">{children}</MotionConfig>

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { manrope } from "@/lib/fonts";
 import { NAV_LINKS, PHONE_DISPLAY, SITE_VISIT_TEXT, site, telHref, whatsAppHref } from "./data";
 import { MobileNav } from "./MobileNav";
-import { Sky49Motion } from "./Motion";
+import { VerdantCrestMotion } from "./Motion";
 import {
-  AboutSky49,
+  AboutVerdantCrest,
   AmenitiesGallery,
   ContactSection,
   CurrentSiteUpdates,
@@ -19,8 +19,7 @@ import {
   SitePlan,
   Specifications,
   StatsBar,
-  WhySky49Compare,
-  YouTubeWalkthrough,
+  WhyVerdantCrestCompare,
 } from "./sections";
 import { SHELL } from "./ui";
 import { WhatsAppFloat } from "./WhatsAppFloat";
@@ -37,7 +36,7 @@ function DemoBar({ hubHref }: { hubHref: string }) {
           <span aria-hidden className="size-2 shrink-0 rounded-full bg-brand-soft" />
           <span className="truncate">
             <span className="font-semibold">onlydevs demo</span>
-            <span className="hidden sm:inline"> · a client site rebuilt to show the website we build</span>
+            <span className="hidden sm:inline"> · a made-up developer site to show the website we build</span>
           </span>
         </p>
         <Link href={hubHref} className="shrink-0 rounded-full px-2 py-1 font-semibold underline-offset-4 hover:underline">
@@ -55,7 +54,7 @@ function StickyNav() {
         <a href="#hero" className="group flex items-center leading-tight">
           <span className="flex flex-col">
             <span className="text-xl tracking-tight text-sky-charcoal transition-colors group-hover:text-sky-gold md:text-2xl">{site.name}</span>
-            <span className="text-[10px] font-medium tracking-[0.25em] text-sky-muted uppercase">Hyderabad</span>
+            <span className="text-[10px] font-medium tracking-[0.25em] text-sky-muted uppercase">Tellapur</span>
           </span>
         </a>
 
@@ -80,7 +79,7 @@ function StickyNav() {
 }
 
 const FOOTER_LINKS = [
-  { href: "#about", label: "About Sky49" },
+  { href: "#about", label: "About Verdant Crest" },
   { href: "#floor-plans", label: "Floor plans" },
   { href: "#location", label: "Location" },
   { href: "#faq", label: "FAQ" },
@@ -88,7 +87,6 @@ const FOOTER_LINKS = [
 ] as const;
 
 function Footer() {
-  const { address } = site;
   return (
     <footer className="border-t border-sky-stone/40 bg-sky-warm-white py-14">
       <div className={SHELL}>
@@ -96,7 +94,7 @@ function Footer() {
           <div>
             <p className="mt-3 text-2xl text-sky-charcoal">{site.fullName}</p>
             <p className="mt-3 text-sm font-light text-sky-muted">
-              {address.streetAddress}, {address.addressLocality}, {address.addressRegion} {address.postalCode}
+              {site.area}
             </p>
             <p className="mt-3 text-sm font-light text-sky-muted">
               <span className="text-[10px] font-semibold tracking-widest text-sky-muted uppercase">Phone</span>
@@ -121,14 +119,16 @@ function Footer() {
           <div>
             <p className="text-[10px] font-semibold tracking-widest text-sky-muted uppercase">Compliance</p>
             <p className="mt-4 text-sm leading-relaxed font-light text-sky-muted">
-              {site.rera}. Marketing collateral is indicative; verify on official portals before purchase.
+              {site.rera} Marketing collateral is indicative; verify on official portals before purchase.
             </p>
           </div>
         </div>
         <p className="mt-12 border-t border-sky-stone/30 pt-8 text-center text-xs text-sky-muted">
-          © 2026 {site.fullName}. Sky49 Hyderabad is a branded residential offering—availability and pricing subject to change.
+          © 2026 {site.fullName}. Availability and pricing subject to change.
         </p>
-        <p className="mt-3 text-center text-xs text-sky-muted">Demo site by onlydevs. Details for illustration.</p>
+        <p className="mt-3 text-center text-xs text-sky-muted">
+          Demo site by onlydevs. Details for illustration. Verdant Crest and Nilaya Developers are fictional.
+        </p>
       </div>
     </footer>
   );
@@ -164,14 +164,14 @@ function MobileStickyCTA() {
 }
 
 /**
- * THE SKY49, the Real estate → Website live demo: one page with in-page anchors, sections in the original's order.
- * The page is server-rendered; the forms, mobile menu, video and WhatsApp button are client parts.
+ * Verdant Crest, the Real estate → Website live demo: one page with in-page anchors. The project and developer are made up.
+ * The page is server-rendered; the forms, mobile menu and WhatsApp button are client parts.
  */
-export function Sky49Site({ hubHref }: { hubHref: string }) {
+export function VerdantCrestSite({ hubHref }: { hubHref: string }) {
   return (
-    <Sky49Motion>
+    <VerdantCrestMotion>
       <div
-        data-site="sky49"
+        data-site="verdant-crest"
         className={`${manrope.variable} min-h-dvh bg-sky-warm-white pb-24 font-sky text-sky-charcoal antialiased selection:bg-sky-gold/30 selection:text-sky-charcoal sm:pb-0`}
       >
         <noscript>
@@ -181,16 +181,15 @@ export function Sky49Site({ hubHref }: { hubHref: string }) {
         <StickyNav />
         <main>
           <Hero />
-          <YouTubeWalkthrough />
           <StatsBar />
-          <AboutSky49 />
+          <AboutVerdantCrest />
           <Highlights />
           <CurrentSiteUpdates />
           <InvestorOpportunity />
           <InvestorsDesk />
           <FloorPlans />
           <SitePlan />
-          <WhySky49Compare />
+          <WhyVerdantCrestCompare />
           <ProjectGallery />
           <Specifications />
           <AmenitiesGallery />
@@ -202,6 +201,6 @@ export function Sky49Site({ hubHref }: { hubHref: string }) {
         <MobileStickyCTA />
         <WhatsAppFloat />
       </div>
-    </Sky49Motion>
+    </VerdantCrestMotion>
   );
 }
