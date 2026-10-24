@@ -71,7 +71,7 @@ describe("Verdant Crest real estate demo", () => {
     const stats = screen.getByRole("region", { name: "Project statistics" });
     for (const [value, label] of [
       ["G+42", "Floors"],
-      ["3", "Towers"],
+      ["4", "Towers"],
       ["85,000 sq ft", "Amenities"],
       ["RERA registered", "Compliance"],
     ]) {
