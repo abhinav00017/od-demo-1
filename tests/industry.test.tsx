@@ -67,3 +67,14 @@ it("ticketing platform page lists its 6 services, with Ticketing platform as the
   expect(within(links[0]).getByText("Open live demo")).toBeTruthy();
   expect(links.slice(1).every((a) => within(a).queryByText("See preview"))).toBe(true);
 });
+
+it("tiles page lists its 6 services, with CRM as the live demo", () => {
+  render(<IndustryView industry={getIndustry("tiles")!} />);
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("What we build for tile and sanitaryware showrooms");
+  const list = screen.getByRole("list", { name: "Tiles & showrooms services" });
+  const links = within(list).getAllByRole("link");
+  expect(links).toHaveLength(6);
+  expect(links[0].getAttribute("href")).toBe("/tiles/crm");
+  expect(within(links[0]).getByText("Open live demo")).toBeTruthy();
+  expect(links.slice(1).every((a) => within(a).queryByText("See preview"))).toBe(true);
+});

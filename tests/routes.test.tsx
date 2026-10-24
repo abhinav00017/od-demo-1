@@ -16,8 +16,8 @@ vi.mock("next/navigation", async (importOriginal) => ({
 vi.stubGlobal("fetch", () => new Promise(() => {}));
 
 describe("every service route resolves", () => {
-  it("generates 24 service routes and 5 inner demo pages", () => {
-    expect(serviceParams()).toHaveLength(24);
+  it("generates 30 service routes and 5 inner demo pages", () => {
+    expect(serviceParams()).toHaveLength(30);
     expect(demoPageParams().map((p) => `/${p.industry}/${p.service}/${p.page}`)).toEqual([
       "/clinic/website/services",
       "/clinic/website/about",
@@ -163,6 +163,57 @@ describe("every service route resolves", () => {
     expect(within(figure).getByText("Sunset Sessions Vol. 4")).toBeTruthy();
     expect(within(figure).getByText("Sold out")).toBeTruthy();
     expect(within(figure).getByText("Book tickets")).toBeTruthy();
+  });
+
+  it("/tiles/crm is the CRM live demo, a single page with no inner pages", () => {
+    const found = getService("tiles", "crm");
+    expect(found?.service.status).toBe("live");
+    if (!found || found.service.status !== "live") return;
+    expect(found.service.demo).toBe("tiles-crm");
+    expect(demoPageParams().filter((p) => p.industry === "tiles")).toEqual([]);
+    expect(getDemoPage("tiles", "crm", "q")).toBeUndefined();
+    expect(liveDemoTitle("tiles-crm", "")).toBe("CRM | Kalyani Tiles & Sanitary");
+    expect(liveDemoDescription("tiles-crm")).toBe("Leads, quotes and follow-ups for Kalyani Tiles & Sanitary, a made-up tile showroom in Visakhapatnam.");
+    render(<LiveDemo industry={found.industry} service={found.service} page="" />);
+    // Fetch never answers here, so the app waits on its session check.
+    expect(screen.getByText("Loading the CRM…")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/tiles");
+  });
+
+  it("/tiles lists 6 services in order, with CRM as the live demo", () => {
+    render(<IndustryView industry={getIndustry("tiles")!} />);
+    const list = screen.getByRole("list", { name: "Tiles & showrooms services" });
+    expect(within(list).getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "CRM",
+      "Website",
+      "Google Business Profile",
+      "WhatsApp quotes",
+      "Digital catalogue",
+      "Sales dashboard",
+    ]);
+    const links = within(list).getAllByRole("link");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/tiles/crm",
+      "/tiles/website",
+      "/tiles/google-business-profile",
+      "/tiles/whatsapp-quotes",
+      "/tiles/digital-catalogue",
+      "/tiles/sales-dashboard",
+    ]);
+    expect(within(links[0]).getByText("Live demo")).toBeTruthy();
+    expect(links.slice(1).every((a) => within(a).queryByText("Preview"))).toBe(true);
+  });
+
+  it.each([
+    ["website", "Floor"],
+    ["digital-catalogue", "600x600"],
+  ])("the tiles %s preview draws the catalogue mock, filtered by %s first", (slug, firstFilter) => {
+    const found = getService("tiles", slug);
+    if (!found || found.service.status !== "preview") throw new Error(`${slug} should be a preview`);
+    render(<ServicePreview industry={found.industry} service={found.service} />);
+    const figure = screen.getByRole("figure");
+    expect(within(figure).getAllByText(/\/box$/).length).toBeGreaterThanOrEqual(4);
+    expect(within(figure).getByText(firstFilter)).toBeTruthy();
   });
 
   it("the clinic demo keeps its own titles", () => {

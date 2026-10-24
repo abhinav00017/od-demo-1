@@ -113,6 +113,19 @@ export const mockSchema = z.discriminatedUnion("kind", [
       .max(6),
   }),
   z.object({
+    kind: z.literal("catalogue"),
+    url: z.string(),
+    name: z.string(),
+    headline: z.string(),
+    sub: z.string(),
+    filters: z.array(z.string()).min(2).max(5),
+    cta: z.string(),
+    tiles: z
+      .array(z.object({ name: z.string(), detail: z.string(), price: z.string(), swatch: z.enum(["marble", "oak", "slate", "sage", "terracotta", "ivory"]) }))
+      .min(4)
+      .max(6),
+  }),
+  z.object({
     kind: z.literal("event-page"),
     url: z.string(),
     organiser: z.string(),
@@ -152,7 +165,7 @@ export const industrySchema = z.object({
   audience: line,
   /** One line on the industry page: what onlydevs does for this industry. */
   pitch: line,
-  icon: z.enum(["clinic", "cafe", "real-estate", "ticketing"]),
+  icon: z.enum(["clinic", "cafe", "real-estate", "ticketing", "tiles"]),
   services: z.array(serviceSchema).min(1),
 });
 

@@ -10,6 +10,8 @@ import { site as verdantCrest } from "./verdant-crest/data";
 import { VerdantCrestSite } from "./verdant-crest/VerdantCrestSite";
 import { site as ticketwings } from "./ticketwings/data";
 import { TicketWingsSite } from "./ticketwings/TicketWingsSite";
+import { CrmSite } from "./tiles-crm/CrmSite";
+import { KALYANI } from "@/lib/crm/shop";
 
 const LOTUS_PAGES: Record<DemoPage, (props: { nav: Nav }) => React.ReactNode> = {
   "": LotusHome,
@@ -33,6 +35,8 @@ export function liveDemoTitle(demo: DemoId, page: string): string {
       return verdantCrest.title;
     case "ticketwings":
       return ticketwings.title;
+    case "tiles-crm":
+      return `CRM | ${KALYANI.name}`;
   }
 }
 
@@ -45,6 +49,8 @@ export function liveDemoDescription(demo: DemoId): string | undefined {
       return verdantCrest.description;
     case "ticketwings":
       return ticketwings.description;
+    case "tiles-crm":
+      return `Leads, quotes and follow-ups for ${KALYANI.name}, a made-up tile showroom in ${KALYANI.city}.`;
     default:
       return undefined;
   }
@@ -53,7 +59,7 @@ export function liveDemoDescription(demo: DemoId): string | undefined {
 export function LiveDemo({ industry, service, page }: { industry: Industry; service: Extract<Service, { status: "live" }>; page: DemoPage }) {
   const base = serviceHref(industry, service);
   const nav: Nav = { base, page, hubHref: `/${industry.slug}`, href: (p) => (p ? `${base}/${p}` : base) };
-  // Each live demo has a case here. Lotus has its own page map; Solstice, Verdant Crest and TicketWings are single pages.
+  // Each live demo has a case here. Lotus has its own page map; Solstice, Verdant Crest, TicketWings and the tiles CRM are single pages.
   switch (service.demo) {
     case "lotus-clinic": {
       const Page = LOTUS_PAGES[page];
@@ -69,5 +75,7 @@ export function LiveDemo({ industry, service, page }: { industry: Industry; serv
       return <VerdantCrestSite hubHref={nav.hubHref} />;
     case "ticketwings":
       return <TicketWingsSite hubHref={nav.hubHref} />;
+    case "tiles-crm":
+      return <CrmSite hubHref={nav.hubHref} />;
   }
 }

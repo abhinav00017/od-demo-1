@@ -1,5 +1,6 @@
 import type { Mock } from "@/lib/schema";
 import { BrowserMock } from "./BrowserMock";
+import { CatalogueMock } from "./CatalogueMock";
 import { ChatMock } from "./ChatMock";
 import { EventPageMock } from "./EventPageMock";
 import { LeadsMock } from "./LeadsMock";
@@ -35,5 +36,7 @@ export function MockView({ mock }: { mock: Mock }) {
       return <LeadsMock mock={mock} />;
     case "event-page":
       return <EventPageMock mock={mock} />;
+    case "catalogue":
+      return <CatalogueMock mock={mock} />;
   }
 }

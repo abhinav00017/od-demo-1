@@ -26,6 +26,10 @@ export const LIVE_DEMOS = {
   ticketwings: {
     pages: [{ slug: "", label: "Home" }],
   },
+  /** Kalyani Tiles & Sanitary, a made-up showroom: the CRM, one client app behind a login. Screens live in the query string. */
+  "tiles-crm": {
+    pages: [{ slug: "", label: "CRM" }],
+  },
 } as const;
 
 export type DemoId = keyof typeof LIVE_DEMOS;
