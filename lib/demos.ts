@@ -14,6 +14,10 @@ export const LIVE_DEMOS = {
       { slug: "admin", label: "Clinic dashboard" },
     ],
   },
+  /** Solstice Roastery & Bakehouse: one page with in-page anchors (menu, vibe, location, reserve). */
+  "solstice-cafe": {
+    pages: [{ slug: "", label: "Home" }],
+  },
 } as const;
 
 export type DemoId = keyof typeof LIVE_DEMOS;

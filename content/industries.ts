@@ -220,35 +220,8 @@ export const industries: z.input<typeof catalogSchema> = [
         slug: "website",
         name: "Website",
         summary: "A menu-first site that loads fast on phones and turns searches into walk-ins and orders.",
-        status: "preview",
-        preview: {
-          intro: "People decide where to eat in a few seconds. Your menu, photos and location should be one tap away.",
-          gets: [
-            "A fast, mobile-first site with your menu and photos.",
-            "Order on WhatsApp and Call buttons on every page.",
-            "Your location, hours and parking details.",
-            "Built to show up when people search for cafes nearby.",
-          ],
-          steps: [
-            { title: "Share your menu", text: "Send us your menu and a few photos. We can shoot photos too." },
-            { title: "We build it", text: "We design and build the site in about a week." },
-            { title: "Go live", text: "We put it on your domain and link it to your Google profile." },
-          ],
-          mock: {
-            kind: "browser",
-            url: "beanstreetcafe.in",
-            name: "Bean Street Cafe",
-            headline: "Fresh coffee and all-day breakfast on Beach Road.",
-            sub: "Open 7 am to 11 pm, every day.",
-            cta: "Order on WhatsApp",
-            items: [
-              { name: "Filter coffee", price: "₹60" },
-              { name: "Cold brew", price: "₹180" },
-              { name: "Masala omelette", price: "₹150" },
-              { name: "Banana bread", price: "₹120" },
-            ],
-          },
-        },
+        status: "live",
+        demo: "solstice-cafe",
       },
       {
         slug: "google-business-profile",

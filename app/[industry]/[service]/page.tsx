@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getService, serviceParams } from "@/lib/catalog";
 import { ServicePreview } from "@/components/sections/ServicePreview";
-import { LiveDemo, liveDemoTitle } from "@/demos/render";
+import { LiveDemo, liveDemoDescription, liveDemoTitle } from "@/demos/render";
 
 export function generateStaticParams() {
   return serviceParams();
@@ -13,7 +13,10 @@ export async function generateMetadata({ params }: PageProps<"/[industry]/[servi
   const { industry, service } = await params;
   const found = getService(industry, service);
   if (!found) return {};
-  if (found.service.status === "live") return { title: { absolute: liveDemoTitle(found.service.demo, "") } };
+  if (found.service.status === "live") {
+    const description = liveDemoDescription(found.service.demo);
+    return { title: { absolute: liveDemoTitle(found.service.demo, "") }, ...(description ? { description } : {}) };
+  }
   return { title: `${found.service.name} for ${found.industry.plural}`, description: found.service.summary };
 }
 
