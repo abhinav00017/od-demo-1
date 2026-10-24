@@ -18,6 +18,10 @@ export const LIVE_DEMOS = {
   "solstice-cafe": {
     pages: [{ slug: "", label: "Home" }],
   },
+  /** THE SKY49, a Tellapur real estate project: one landing page with in-page anchors (about, floor plans, faq, contact). */
+  sky49: {
+    pages: [{ slug: "", label: "Home" }],
+  },
 } as const;
 
 export type DemoId = keyof typeof LIVE_DEMOS;

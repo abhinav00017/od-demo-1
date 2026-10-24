@@ -105,12 +105,38 @@
   --color-sol-stone-700: #44403c;
   --color-sol-stone-800: #292524;
 
+  /*
+   * THE SKY49 demo site (Real estate → Website). Ported from the supplied Astro site's global.css:
+   * warm white, one gold accent, charcoal type. The section washes were inline hex values there.
+   */
+  --color-sky-warm-white: #faf8f4;
+  --color-sky-gold: #c9a86a;
+  --color-sky-stone: #e9e4db;
+  --color-sky-beige: #efece5;
+  --color-sky-charcoal: #1f1f1f;
+  --color-sky-muted: #6b6b6b;
+  --color-sky-mist: #efefef;
+  --color-sky-linen: #f6f4ef;
+  --color-sky-wheat: #e9d8a8;
+  --color-sky-fog: #eeece8;
+  --color-sky-cream: #f6f3ed;
+  --color-sky-gold-wash: #f4ecda;
+  --color-sky-gold-line: #c1a267;
+  --color-sky-gold-ring: #b69558;
+  --color-sky-emerald: #047857;
+  --color-sky-success: #15803d;
+  --color-sky-success-soft: #dcfce7;
+  --color-sky-error: #b42318;
+
   --radius-card: 1.5rem;
 
   /* Lotus cards: a soft lift under the hairline. */
   --shadow-lotus: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
   /* Lotus cards on hover: a touch deeper than shadow-lotus, with the lift. */
   --shadow-lotus-lift: 0 2px 4px rgba(15, 23, 42, 0.05), 0 14px 32px rgba(15, 23, 42, 0.1);
+  /* Sky49 panels and cards, as the original's --shadow-soft and --shadow-card. */
+  --shadow-sky-soft: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --shadow-sky-card: 0 4px 24px rgba(0, 0, 0, 0.05);
 }
 
 @theme inline {
@@ -120,6 +146,8 @@
   /* The Solstice cafe demo: Fraunces headings, JetBrains Mono for prices, times and the ticker. */
   --font-sol-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-sol-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The Sky49 real estate demo: Manrope for headings and body, as the original set both its sans and serif to it. */
+  --font-sky: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -164,9 +192,15 @@
     outline-color: var(--color-sol-sage);
   }
 
+  /* Gold on warm white is under 3:1, so Sky49 focus rings are charcoal. */
+  [data-site="sky49"] :focus-visible {
+    outline-color: var(--color-sky-charcoal);
+  }
+
   /* The Solstice demo is one page with in-page anchors, so its links glide, as the original site did. */
   @media (prefers-reduced-motion: no-preference) {
-    html:has([data-site="solstice"]) {
+    html:has([data-site="solstice"]),
+    html:has([data-site="sky49"]) {
       scroll-behavior: smooth;
     }
   }
