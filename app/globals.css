@@ -81,6 +81,30 @@
   --color-cafe-clay: #a24d22;
   --color-cafe-body: #5a4335;
 
+  /*
+   * Solstice Roastery & Bakehouse demo site (fictional client, Cafe → Website). Ported from Abhinav's AI Studio export:
+   * paper white, one sage accent, terracotta kickers. The stone and gray steps are Tailwind's, in hex.
+   */
+  --color-sol-paper: #fafafa;
+  --color-sol-oat: #f5f4f0;
+  --color-sol-sand: #f3efe6;
+  --color-sol-linen: #f2ece1;
+  --color-sol-wheat: #e6dec8;
+  --color-sol-sage: #3f624d;
+  --color-sol-sage-deep: #33503e;
+  --color-sol-terra: #c26d4f;
+  --color-sol-ink: #111827;
+  --color-sol-ink-soft: #374151;
+  --color-sol-error: #b42318;
+  --color-sol-stone-100: #f5f5f4;
+  --color-sol-stone-200: #e7e5e4;
+  --color-sol-stone-300: #d6d3d1;
+  --color-sol-stone-400: #a8a29e;
+  --color-sol-stone-500: #78716c;
+  --color-sol-stone-600: #57534e;
+  --color-sol-stone-700: #44403c;
+  --color-sol-stone-800: #292524;
+
   --radius-card: 1.5rem;
 
   /* Lotus cards: a soft lift under the hairline. */
@@ -93,6 +117,9 @@
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   /* Fraunces for the hub's Offers mock only. The Lotus site uses font-sans (Plus Jakarta Sans), like onlydevs. */
   --font-lotus: var(--font-fraunces), ui-serif, Georgia, serif;
+  /* The Solstice cafe demo: Fraunces headings, JetBrains Mono for prices, times and the ticker. */
+  --font-sol-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sol-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
@@ -131,5 +158,43 @@
 
   [data-site="lotus"] :focus-visible {
     outline-color: var(--color-lotus-accent);
+  }
+
+  [data-site="solstice"] :focus-visible {
+    outline-color: var(--color-sol-sage);
+  }
+
+  /* The Solstice demo is one page with in-page anchors, so its links glide, as the original site did. */
+  @media (prefers-reduced-motion: no-preference) {
+    html:has([data-site="solstice"]) {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/* The Solstice announcement ticker: two copies side by side, sliding left forever. Hover pauses it. */
+@keyframes sol-marquee {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-strip {
+  display: flex;
+  width: max-content;
+  animation: sol-marquee 34s linear infinite;
+}
+
+.animate-marquee-strip:hover {
+  animation-play-state: paused;
+}
+
+/* Reduced motion: the ticker stands still instead of flickering through a 0.01ms loop. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-strip {
+    animation: none;
   }
 }
