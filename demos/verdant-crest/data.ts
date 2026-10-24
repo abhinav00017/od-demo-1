@@ -1,7 +1,8 @@
 /**
  * Verdant Crest by Nilaya Developers: the Real estate → Website live demo.
- * Both names are made up. The page layout follows a supplied Astro landing page; every name, address, figure, image
- * and contact from that page has been replaced with made-up values, generated illustrations or the onlydevs demo contacts.
+ * Both names are made up. The page layout follows a supplied Astro landing page; every name, address, figure and
+ * contact from that page has been replaced with made-up values or the onlydevs demo contacts. The images are that
+ * page's originals, put back on Abhinav's call (24 Oct 2026).
  */
 
 /** The onlydevs demo WhatsApp and phone number. Every wa.me and tel: link on the demo is built from these. */
@@ -36,12 +37,11 @@ export const site = {
 const IMG = "/demos/verdant-crest";
 
 export const images = {
-  hero: { src: `${IMG}/skyline-dusk.jpg`, alt: "Illustration of three residential towers at dusk above a treeline" },
-  about: { src: `${IMG}/clubhouse-gardens.jpg`, alt: "Illustration of the clubhouse with terraced floors, gardens and a court" },
-  highlights: { src: `${IMG}/skyline-dusk.jpg`, alt: "Illustration of the three towers at dusk" },
-  /** A made-up illustrative site plan. */
-  sitePlan: { src: `${IMG}/site-plan.jpg`, alt: "Illustrative site plan: three towers around a central court, with a clubhouse", width: 1600, height: 1131 },
-  faq: { src: `${IMG}/clubhouse-front.jpg`, alt: "Illustration of the clubhouse elevation with layered terraces" },
+  hero: { src: `${IMG}/hero-towers.jpg`, alt: "Covered drop-off canopy with landscaped planters at the foot of the residential towers" },
+  about: { src: `${IMG}/about-architecture.jpg`, alt: "Clubhouse with curved, terraced floors beside landscaped gardens and a seating deck" },
+  highlights: { src: `${IMG}/walkthrough-poster.jpg`, alt: "High-rise towers rising above the morning mist at sunrise" },
+  sitePlan: { src: `${IMG}/site-plan.jpg`, alt: "Site plan: four tower blocks around a landscaped central court, bounded by two roads", width: 1024, height: 724 },
+  faq: { src: `${IMG}/amenities-1.jpg`, alt: "Twin residential towers joined by sky bridges against a clear blue sky" },
 } as const;
 
 /** In-page links in the header and the mobile menu. */
@@ -90,19 +90,21 @@ export const highlights = [
   },
 ] as const;
 
-/** Made-up construction stage illustrations, not site photos. */
 export const currentSiteUpdateImages = [
-  { src: `${IMG}/progress-1.jpg`, alt: "Illustration of construction stage 1: foundations" },
-  { src: `${IMG}/progress-2.jpg`, alt: "Illustration of construction stage 2: podium levels" },
-  { src: `${IMG}/progress-3.jpg`, alt: "Illustration of construction stage 3: tower floors rising" },
+  { src: `${IMG}/site-update-1.jpg`, alt: "Aerial view of the excavated site with foundation work and a tower crane" },
+  { src: `${IMG}/site-update-2.jpg`, alt: "Reinforcement cages and retaining walls at ground level on the site" },
+  { src: `${IMG}/site-update-3.jpg`, alt: "Aerial view of the site beside the main road, with foundations under way" },
+  { src: `${IMG}/site-update-4.jpg`, alt: "Wide view of the site and the neighbouring high-rises along the road" },
+  { src: `${IMG}/site-update-5.jpg`, alt: "Aerial view of the foundation grid with a crane at the centre of the site" },
+  { src: `${IMG}/site-update-6.jpg`, alt: "Aerial view of the foundation grid from the opposite corner of the site" },
 ];
 
-/** Made-up illustrative drawings. */
 export const floorPlanRows = [
   { label: "01/", name: "Master Plan", image: `${IMG}/master-plan.jpg` },
-  { label: "02/", name: "Neem Tower Floor Plan", image: `${IMG}/neem-tower-floor-plan.jpg` },
-  { label: "03/", name: "Gulmohar Tower Floor Plan", image: `${IMG}/gulmohar-tower-floor-plan.jpg` },
-  { label: "04/", name: "Ashoka Tower Floor Plan", image: `${IMG}/ashoka-tower-floor-plan.jpg` },
+  { label: "02/", name: "Neem Tower Floor Plan", image: `${IMG}/tower-a-floor-plan.jpg` },
+  { label: "03/", name: "Gulmohar Tower Floor Plan", image: `${IMG}/tower-b-floor-plan.jpg` },
+  { label: "04/", name: "Ashoka Tower Floor Plan", image: `${IMG}/tower-c-floor-plan.jpg` },
+  { label: "05/", name: "Banyan Tower Floor Plan", image: `${IMG}/tower-d-floor-plan.jpg` },
 ] as const;
 
 export const compareRows = [
@@ -125,9 +127,9 @@ export const compareRows = [
 ] as const;
 
 export const projectGalleryImages = [
-  { src: `${IMG}/courtyard-above.jpg`, alt: "Illustration of the central courtyard from above, with lawns, a deck and courts" },
-  { src: `${IMG}/clubhouse-gardens.jpg`, alt: "Illustration of the clubhouse, pergola and gardens" },
-  { src: `${IMG}/residents-lounge.jpg`, alt: "Illustration of the warm-lit residents’ lounge beside the lift lobby" },
+  { src: `${IMG}/amenities-4.jpg`, alt: "Central courtyard seen from above between the towers, with lawns, play courts and lit paths" },
+  { src: `${IMG}/about-architecture.jpg`, alt: "Clubhouse, pergola and landscaped gardens" },
+  { src: `${IMG}/amenities-2.jpg`, alt: "Warm-lit residents’ lounge beside the lift lobby" },
 ];
 
 /** Icon paths are the original 24×24 strokes. */
@@ -157,9 +159,10 @@ export const diligenceChecklist = [
 ] as const;
 
 export const amenityShots = [
-  { src: `${IMG}/residents-lounge.jpg`, alt: "Illustration of the residents’ lounge with soft lamp light" },
-  { src: `${IMG}/clubhouse-front.jpg`, alt: "Illustration of the clubhouse front with louvres and courts" },
-  { src: `${IMG}/courtyard-above.jpg`, alt: "Illustration of the courtyard with lawns, a timber deck and play courts" },
+  { src: `${IMG}/amenities-1.jpg`, alt: "Tower elevation with sky bridges linking the two towers" },
+  { src: `${IMG}/amenities-2.jpg`, alt: "Residents’ lounge with sofas, soft lamp light and a lift lobby" },
+  { src: `${IMG}/amenities-3.jpg`, alt: "Clubhouse front with curved terraces, louvres and play courts" },
+  { src: `${IMG}/amenities-4.jpg`, alt: "Courtyard from above with lawns, a timber deck and play courts" },
 ] as const;
 
 export const proximityRows = [

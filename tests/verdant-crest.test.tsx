@@ -1,3 +1,5 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { VerdantCrestSite } from "@/demos/verdant-crest/VerdantCrestSite";
@@ -78,7 +80,7 @@ describe("Verdant Crest real estate demo", () => {
     }
   });
 
-  it("lists the master plan and the three tower floor plans", () => {
+  it("lists the master plan and the four tower floor plans, each on its original drawing", () => {
     const { container } = renderSite();
     const section = container.querySelector("#floor-plans")!;
     expect(within(section as HTMLElement).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(
@@ -89,6 +91,14 @@ describe("Verdant Crest real estate demo", () => {
       "Neem Tower Floor Plan",
       "Gulmohar Tower Floor Plan",
       "Ashoka Tower Floor Plan",
+      "Banyan Tower Floor Plan",
+    ]);
+    expect(floorPlanRows.map((r) => r.image)).toEqual([
+      "/demos/verdant-crest/master-plan.jpg",
+      "/demos/verdant-crest/tower-a-floor-plan.jpg",
+      "/demos/verdant-crest/tower-b-floor-plan.jpg",
+      "/demos/verdant-crest/tower-c-floor-plan.jpg",
+      "/demos/verdant-crest/tower-d-floor-plan.jpg",
     ]);
   });
 
@@ -131,12 +141,17 @@ describe("Verdant Crest real estate demo", () => {
   it("every image has alt text and goes through next/image", () => {
     const { container } = renderSite();
     const imgs = [...container.querySelectorAll("img")];
-    expect(imgs).toHaveLength(18);
+    expect(imgs).toHaveLength(23);
     for (const img of imgs) {
       expect(img.getAttribute("alt")?.trim()).toBeTruthy();
       // next/image rewrites src to its optimizer; a raw <img> would keep the plain public path.
       expect(img.getAttribute("src")).toMatch(/\/_next\/image\?url=%2Fdemos%2Fverdant-crest%2F[a-z0-9-]+\.jpg/);
     }
+    // Every file in the folder is shown somewhere, and every image shown is a file in the folder.
+    const shown = new Set(imgs.map((img) => decodeURIComponent(img.getAttribute("src")!.match(/url=([^&]+)/)![1]).split("/").pop()));
+    const onDisk = readdirSync(join(process.cwd(), "public/demos/verdant-crest")).filter((f) => f.endsWith(".jpg"));
+    expect(onDisk).toHaveLength(19);
+    expect([...shown].sort()).toEqual([...onDisk].sort());
   });
 
   it("has no walkthrough video and maps only the Tellapur area, with no business pin", () => {

@@ -427,8 +427,8 @@ export function FloorPlans() {
               <Image
                 src={row.image}
                 alt={row.name}
-                width={1600}
-                height={1112}
+                width={2560}
+                height={1780}
                 sizes="(min-width: 768px) 176px, 320px"
                 className="h-60 w-80 max-w-full justify-self-start border border-sky-charcoal/15 bg-[#fbfaf7] object-contain md:h-44 md:w-44"
               />
@@ -599,7 +599,7 @@ export function AmenitiesGallery() {
             budgets—premium living is operational, not merely decorative.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {amenityShots.map((img) => (
             <figure key={img.src} className="group overflow-hidden rounded-2xl border border-sky-stone/40 bg-white shadow-sm">
               <Image
@@ -607,7 +607,7 @@ export function AmenitiesGallery() {
                 alt={img.alt}
                 width={1024}
                 height={682}
-                sizes="(min-width: 1280px) 395px, (min-width: 640px) 33vw, 100vw"
+                sizes="(min-width: 1280px) 290px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                 className="aspect-[4/3] w-full object-cover transition duration-700 group-hover:scale-[1.03]"
               />
             </figure>
