@@ -59,14 +59,14 @@ export type NavLink = (typeof NAV_LINKS)[number];
 
 export const stats = [
   { label: "Floors", value: "G+42" },
-  { label: "Towers", value: "3" },
+  { label: "Towers", value: "4" },
   { label: "Amenities", value: "85,000 sq ft" },
   { label: "Compliance", value: "RERA registered" },
 ] as const;
 
 export const aboutFacts = [
   { label: "Configuration", value: "3 & 4 BHK ultra-luxury homes" },
-  { label: "Scale", value: "Three G+42 towers with skyline presence" },
+  { label: "Scale", value: "Four G+42 towers with skyline presence" },
   { label: "Amenities", value: "85,000 sq ft lifestyle spaces" },
   { label: "Location", value: "Tellapur, Hyderabad" },
 ] as const;
@@ -74,7 +74,7 @@ export const aboutFacts = [
 export const highlights = [
   {
     title: "Skyline identity",
-    body: "Three G+42 towers, named Neem, Gulmohar and Ashoka, give Verdant Crest a recognisable silhouette—important for luxury buyers who value landmark presence and long-term address prestige in Tellapur.",
+    body: "Four G+42 towers, named Neem, Gulmohar, Ashoka and Banyan, give Verdant Crest a recognisable silhouette—important for luxury buyers who value landmark presence and long-term address prestige in Tellapur.",
   },
   {
     title: "Amenity depth",
@@ -178,7 +178,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "What is Verdant Crest?",
     answer:
-      "Verdant Crest is an ultra-luxury residential development in Tellapur, Hyderabad, offering premium 3 BHK and 4 BHK apartments across three towers with extensive lifestyle amenities. The project is positioned for buyers seeking long-term value in Hyderabad’s west corridor with strong connectivity to IT hubs.",
+      "Verdant Crest is an ultra-luxury residential development in Tellapur, Hyderabad, offering premium 3 BHK and 4 BHK apartments across four towers with extensive lifestyle amenities. The project is positioned for buyers seeking long-term value in Hyderabad’s west corridor with strong connectivity to IT hubs.",
   },
   {
     question: "Where is Verdant Crest located?",
@@ -203,7 +203,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "How tall are the Verdant Crest towers?",
     answer:
-      "Each of the three towers is planned as G+42 (indicative). Structural heights, floor counts, and unit distribution can evolve during execution; confirm the latest tower-wise specifications with the developer’s documentation.",
+      "Each of the four towers is planned as G+42 (indicative). Structural heights, floor counts, and unit distribution can evolve during execution; confirm the latest tower-wise specifications with the developer’s documentation.",
   },
   {
     question: "What is the price range for Verdant Crest apartments?",
