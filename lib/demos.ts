@@ -22,6 +22,10 @@ export const LIVE_DEMOS = {
   sky49: {
     pages: [{ slug: "", label: "Home" }],
   },
+  /** TicketWings, a made-up event ticketing platform: one page with drawers for event details, checkout and passes. */
+  ticketwings: {
+    pages: [{ slug: "", label: "Home" }],
+  },
 } as const;
 
 export type DemoId = keyof typeof LIVE_DEMOS;

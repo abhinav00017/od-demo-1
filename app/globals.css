@@ -128,6 +128,37 @@
   --color-sky-success-soft: #dcfce7;
   --color-sky-error: #b42318;
 
+  /*
+   * TicketWings demo site (Ticketing platform → live demo). Ported from Abhinav's AI Studio export: near-black night,
+   * rose and violet accents, amber prices. The zinc, emerald and amber steps are Tailwind's, in hex.
+   */
+  --color-wing-night: #0a0a0c;
+  --color-wing-night-deep: #08080a;
+  --color-wing-panel: #121316;
+  --color-wing-panel-raised: #181920;
+  --color-wing-search: #16171d;
+  --color-wing-partner-from: #14151b;
+  --color-wing-partner-to: #1a101d;
+  --color-wing-text: #f4f4f6;
+  --color-wing-rose: #e11d48;
+  --color-wing-rose-light: #f43f5e;
+  --color-wing-rose-deep: #be123c;
+  --color-wing-rose-soft: #fb7185;
+  --color-wing-violet: #7c3aed;
+  --color-wing-violet-light: #8b5cf6;
+  --color-wing-purple: #9333ea;
+  --color-wing-orchid: #a855f7;
+  --color-wing-amber: #f59e0b;
+  --color-wing-amber-300: #fcd34d;
+  --color-wing-amber-400: #fbbf24;
+  --color-wing-zinc-200: #e4e4e7;
+  --color-wing-zinc-300: #d4d4d8;
+  --color-wing-zinc-400: #a1a1aa;
+  --color-wing-zinc-500: #71717a;
+  --color-wing-emerald-400: #34d399;
+  --color-wing-emerald-500: #10b981;
+  --color-wing-emerald-950: #022c22;
+
   --radius-card: 1.5rem;
 
   /* Lotus cards: a soft lift under the hairline. */
@@ -148,6 +179,8 @@
   --font-sol-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
   /* The Sky49 real estate demo: Manrope for headings and body, as the original set both its sans and serif to it. */
   --font-sky: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  /* The TicketWings ticketing demo: Outfit headings over the shared Plus Jakarta Sans body. */
+  --font-wing-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -197,6 +230,24 @@
     outline-color: var(--color-sky-charcoal);
   }
 
+  /* Rose on the near-black TicketWings page; the hub's violet ring is too dark there. */
+  [data-site="ticketwings"] :focus-visible {
+    outline-color: var(--color-wing-rose-light);
+  }
+
+  /* TicketWings headings use Outfit, as the export's base layer set h1–h3. */
+  [data-site="ticketwings"] :is(h1, h2, h3) {
+    font-family: var(--font-wing-display);
+  }
+
+  /* The TicketWings page is dark end to end: no light canvas on overscroll, and a dark, slim page scrollbar. */
+  html:has([data-site="ticketwings"]) {
+    scrollbar-color: rgb(255 255 255 / 0.14) var(--color-wing-night);
+  }
+  html:has([data-site="ticketwings"]) body {
+    background-color: var(--color-wing-night);
+  }
+
   /* The Solstice demo is one page with in-page anchors, so its links glide, as the original site did. */
   @media (prefers-reduced-motion: no-preference) {
     html:has([data-site="solstice"]),
@@ -230,5 +281,13 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee-strip {
     animation: none;
+  }
+}
+
+/* TicketWings category chips: the row scrolls sideways without showing a scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -1,5 +1,5 @@
 // next/font needs literal options at module scope. Fonts are self-hosted at build time.
-import { Fraunces, JetBrains_Mono, Manrope, Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, JetBrains_Mono, Manrope, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 
 /** onlydevs hub, the Lotus demo site and the Solstice cafe demo: headings and body. */
 export const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
@@ -12,3 +12,6 @@ export const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--f
 
 /** The Sky49 real estate demo only (font-sky): headings and body, as the original site set both to Manrope. Applied on the Sky49 root. Not preloaded. */
 export const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap", preload: false });
+
+/** The TicketWings ticketing demo only (font-wing-display): headings, as the export set them. Body stays Plus Jakarta Sans. Not preloaded. */
+export const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", weight: ["500", "600", "700", "800"], display: "swap", preload: false });
