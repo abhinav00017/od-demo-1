@@ -56,3 +56,14 @@ it("real estate page lists its 6 services, with Website as the live demo", () =>
   expect(within(links[0]).getByText("Open live demo")).toBeTruthy();
   expect(links.slice(1).every((a) => within(a).queryByText("See preview"))).toBe(true);
 });
+
+it("ticketing platform page lists its 6 services, with Ticketing platform as the live demo", () => {
+  render(<IndustryView industry={getIndustry("ticketing-platform")!} />);
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("What we build for event organisers and venues");
+  const list = screen.getByRole("list", { name: "Ticketing platform services" });
+  const links = within(list).getAllByRole("link");
+  expect(links).toHaveLength(6);
+  expect(links[0].getAttribute("href")).toBe("/ticketing-platform/ticketing-platform");
+  expect(within(links[0]).getByText("Open live demo")).toBeTruthy();
+  expect(links.slice(1).every((a) => within(a).queryByText("See preview"))).toBe(true);
+});

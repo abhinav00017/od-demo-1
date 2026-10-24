@@ -16,8 +16,8 @@ vi.mock("next/navigation", async (importOriginal) => ({
 vi.stubGlobal("fetch", () => new Promise(() => {}));
 
 describe("every service route resolves", () => {
-  it("generates 18 service routes and 5 inner demo pages", () => {
-    expect(serviceParams()).toHaveLength(18);
+  it("generates 24 service routes and 5 inner demo pages", () => {
+    expect(serviceParams()).toHaveLength(24);
     expect(demoPageParams().map((p) => `/${p.industry}/${p.service}/${p.page}`)).toEqual([
       "/clinic/website/services",
       "/clinic/website/about",
@@ -112,6 +112,57 @@ describe("every service route resolves", () => {
     const figure = screen.getByRole("figure");
     expect(within(figure).getByText("Lead dashboard · Banyan Heights")).toBeTruthy();
     expect(within(figure).getAllByText("Site visit booked").length).toBeGreaterThan(0);
+  });
+
+  it("/ticketing-platform/ticketing-platform is the TicketWings live demo, a single page with no inner pages", () => {
+    const found = getService("ticketing-platform", "ticketing-platform");
+    expect(found?.service.status).toBe("live");
+    if (!found || found.service.status !== "live") return;
+    expect(found.service.demo).toBe("ticketwings");
+    expect(demoPageParams().filter((p) => p.industry === "ticketing-platform")).toEqual([]);
+    expect(getDemoPage("ticketing-platform", "ticketing-platform", "about")).toBeUndefined();
+    expect(getService("ticketing-platform", "website")).toBeUndefined();
+    expect(liveDemoTitle("ticketwings", "")).toBe("TicketWings");
+    expect(liveDemoDescription("ticketwings")).toBe(
+      "Discover flagship concerts, underground techno nights, stand-up comedy specials, and curated cultural festivals across India with instant QR ticketing.",
+    );
+    render(<LiveDemo industry={found.industry} service={found.service} page="" />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("DJ Kairav Live at Tidal Goa");
+    expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/ticketing-platform");
+  });
+
+  it("/ticketing-platform lists 6 services in order, with Ticketing platform as the live demo", () => {
+    render(<IndustryView industry={getIndustry("ticketing-platform")!} />);
+    const list = screen.getByRole("list", { name: "Ticketing platform services" });
+    expect(within(list).getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "Ticketing platform",
+      "Event page",
+      "WhatsApp tickets and reminders",
+      "Google Business Profile",
+      "Early bird offers",
+      "Organiser dashboard",
+    ]);
+    const links = within(list).getAllByRole("link");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/ticketing-platform/ticketing-platform",
+      "/ticketing-platform/event-page",
+      "/ticketing-platform/whatsapp-tickets-reminders",
+      "/ticketing-platform/google-business-profile",
+      "/ticketing-platform/early-bird-offers",
+      "/ticketing-platform/organiser-dashboard",
+    ]);
+    expect(within(links[0]).getByText("Live demo")).toBeTruthy();
+    expect(links.slice(1).every((a) => within(a).queryByText("Preview"))).toBe(true);
+  });
+
+  it("the event page preview draws the event page mock, with the sold-out tier marked", () => {
+    const found = getService("ticketing-platform", "event-page");
+    if (!found || found.service.status !== "preview") throw new Error("event-page should be a preview");
+    render(<ServicePreview industry={found.industry} service={found.service} />);
+    const figure = screen.getByRole("figure");
+    expect(within(figure).getByText("Sunset Sessions Vol. 4")).toBeTruthy();
+    expect(within(figure).getByText("Sold out")).toBeTruthy();
+    expect(within(figure).getByText("Book tickets")).toBeTruthy();
   });
 
   it("the clinic demo keeps its own titles", () => {

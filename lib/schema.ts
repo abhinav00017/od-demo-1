@@ -112,6 +112,19 @@ export const mockSchema = z.discriminatedUnion("kind", [
       .min(3)
       .max(6),
   }),
+  z.object({
+    kind: z.literal("event-page"),
+    url: z.string(),
+    organiser: z.string(),
+    title: z.string(),
+    when: z.string(),
+    venue: z.string(),
+    cta: z.string(),
+    tiers: z
+      .array(z.object({ name: z.string(), price: z.string(), note: z.string().optional(), soldOut: z.boolean().optional() }))
+      .min(2)
+      .max(4),
+  }),
 ]);
 
 const step = z.object({ title: z.string().min(1).max(60), text: line });
@@ -139,7 +152,7 @@ export const industrySchema = z.object({
   audience: line,
   /** One line on the industry page: what onlydevs does for this industry. */
   pitch: line,
-  icon: z.enum(["clinic", "cafe", "real-estate"]),
+  icon: z.enum(["clinic", "cafe", "real-estate", "ticketing"]),
   services: z.array(serviceSchema).min(1),
 });
 
