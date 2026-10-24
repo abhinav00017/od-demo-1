@@ -356,3 +356,8 @@ Append only. Newest at the bottom.
 - All real contacts replaced by demo constants in data.ts: +91 73821 30063, wa.me/917382130063, hello@onlydevs.in. Forms check fields, then open WhatsApp. No API, no DB. Footer says "Demo site by onlydevs. Details for illustration."
 - Gates: lint, typecheck, 370 tests, build all pass. /real-estate and /real-estate/website prerender fully static. Built HTML has 0 hits for the real phone or domain. Not pushed.
 - 24 Oct 2026: real estate demo deployed and verified live (lint, typecheck, 370 tests, build; no real Sky49 contacts in the build; /, /real-estate, /real-estate/website answer 200). Live site: https://od-demo-lyart.vercel.app/real-estate/website. Sky49 branding kept; Abhinav has not yet confirmed it is his own client work.
+
+## 2026-10-24 (anonymise Sky49)
+
+- Abhinav: "THE SKY49 by Ananda Prosper" is a real company's holding; the demo must not use it. Rename to the fictional "Verdant Crest by Nilaya Developers" (Abhinav may override the name). Replace every trace: copy, data.ts, titles, demo bar, hub card, wordmark (text), Google Maps embed (generic Tellapur area pin, no business name), drop the real YouTube walkthrough id, generic RERA line. Inspect each image under public/demos/sky49 for printed branding (site plan, master plan, floor plans, site updates) and swap branded ones for neutral placeholders. Queue after the ticketing build (shared hub files).
+- Database check done 24 Oct: no Mongo/JWT/Express code, secrets or real contacts in the repo; demo forms only open WhatsApp on the demo number. The real secrets remain only in the zip's .env in ~/Downloads; Abhinav told to rotate them on the client's side.
