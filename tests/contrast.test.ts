@@ -49,6 +49,11 @@ const NORMAL: [string, string][] = [
   // Cafe mock
   ["cafe-crema", "cafe-espresso"], ["cafe-espresso", "cafe-crema"], ["cafe-espresso", "white"],
   ["cafe-body", "cafe-crema"], ["cafe-clay", "white"],
+  // Kalyani Tiles CRM: hub ink and muted, one terracotta accent, status chips
+  ["crm-accent", "white"], ["crm-accent", "canvas"], ["crm-accent", "crm-soft"], ["crm-accent-strong", "white"],
+  ["white", "crm-accent"], ["white", "crm-accent-strong"],
+  ["ink", "crm-soft"], ["muted", "crm-soft"], ["ink", "crm-warn-soft"],
+  ["crm-ok", "crm-ok-soft"], ["crm-ok", "white"], ["crm-warn", "crm-warn-soft"], ["crm-error", "white"],
 ];
 
 // Large text only (24px+, or 18.66px+ bold): 3:1.
@@ -68,6 +73,8 @@ const NON_TEXT: [string, string][] = [
   ["lotus-accent", "lotus-avatar"],
   // Sticky bar WhatsApp button edge, on the white bar
   ["lotus-field", "white"],
+  // CRM fields, focus ring, invalid ring and the off switch, on white
+  ["crm-field", "white"], ["crm-accent", "white"], ["crm-error", "white"],
 ];
 
 describe("Lotus grey text", () => {

@@ -54,6 +54,24 @@
   /* 10% accent over white: initials, service icon circles, the years chip and the stat cards. Text on it: lotus-text, lotus-muted, lotus-accent-hover. */
   --color-lotus-avatar: #e7f1f1;
 
+  /*
+   * Kalyani Tiles CRM demo (made-up showroom): white, Plus Jakarta Sans, one warm terracotta accent so it reads
+   * apart from the clinic teal. Body text stays hub ink and muted.
+   */
+  --color-crm-accent: #a84a25;
+  --color-crm-accent-strong: #8a3a1c;
+  /* Terracotta tint: selected chips, the lead badge, the active tab. Text on it: ink, muted, crm-accent. */
+  --color-crm-soft: #fbf1ec;
+  /* Sold and customer. */
+  --color-crm-ok: #166534;
+  --color-crm-ok-soft: #e8f5ec;
+  /* Due and overdue follow-ups. */
+  --color-crm-warn: #92400e;
+  --color-crm-warn-soft: #fdf3e3;
+  --color-crm-error: #b42318;
+  /* Form field edges: 3:1 on white (WCAG 1.4.11). */
+  --color-crm-field: #868f9e;
+
   /* Mock UI: WhatsApp */
   --color-wa-header: #075e54;
   --color-wa-green: #25d366;
