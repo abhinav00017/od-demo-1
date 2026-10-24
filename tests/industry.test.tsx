@@ -28,9 +28,14 @@ it("clinic page lists its 6 services in the pitch order, each linked to its demo
   expect(links.slice(1).every((a) => within(a).queryByText("Preview"))).toBe(true);
 });
 
-it("cafe page lists its 6 services in order", () => {
+it("cafe page lists its 6 services in order, with Website as the live demo", () => {
   render(<IndustryView industry={getIndustry("cafe")!} />);
   const list = screen.getByRole("list", { name: "Cafe services" });
+  const links = within(list).getAllByRole("link");
+  expect(links[0].getAttribute("href")).toBe("/cafe/website");
+  expect(within(links[0]).getByText("Live demo")).toBeTruthy();
+  expect(within(links[0]).getByText("Open live demo")).toBeTruthy();
+  expect(links.slice(1).every((a) => within(a).queryByText("Preview") && within(a).queryByText("See preview"))).toBe(true);
   expect(within(list).getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
     "Website",
     "Google Business Profile",

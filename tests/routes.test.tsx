@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { demoPageParams, getDemoPage, getIndustry, getService, industries, serviceParams } from "@/lib/catalog";
 import { catalogSchema } from "@/lib/schema";
 import { ServicePreview } from "@/components/sections/ServicePreview";
-import { LiveDemo } from "@/demos/render";
+import { LiveDemo, liveDemoTitle } from "@/demos/render";
 
 // The book page reads ?type= with useSearchParams, which needs the Next.js router outside tests.
 vi.mock("next/navigation", async (importOriginal) => ({
@@ -49,6 +49,24 @@ describe("every service route resolves", () => {
     render(<LiveDemo industry={found.industry} service={found.service} page={found.page} />);
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
     expect(screen.getAllByRole("link", { name: /Book an Appointment/ }).length).toBeGreaterThan(0);
+  });
+
+  it("/cafe/website is the Solstice live demo, a single page with no inner pages", () => {
+    const found = getService("cafe", "website");
+    expect(found?.service.status).toBe("live");
+    if (!found || found.service.status !== "live") return;
+    expect(found.service.demo).toBe("solstice-cafe");
+    expect(demoPageParams().filter((p) => p.industry === "cafe")).toEqual([]);
+    expect(getDemoPage("cafe", "website", "about")).toBeUndefined();
+    expect(liveDemoTitle("solstice-cafe", "")).toBe("Solstice Roastery & Bakehouse — Jubilee Hills");
+    render(<LiveDemo industry={found.industry} service={found.service} page="" />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Freshest Brews in Jubilee Hills");
+    expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/cafe");
+  });
+
+  it("the clinic demo keeps its own titles", () => {
+    expect(liveDemoTitle("lotus-clinic", "")).toMatch(/^Lotus Women's Clinic \| Gynecologist & Obstetrician in /);
+    expect(liveDemoTitle("lotus-clinic", "book")).toBe("Book | Lotus Women's Clinic");
   });
 
   it("unknown slugs do not resolve", () => {
