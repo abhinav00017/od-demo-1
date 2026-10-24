@@ -45,3 +45,14 @@ it("cafe page lists its 6 services in order, with Website as the live demo", () 
     "Daily sales summary",
   ]);
 });
+
+it("real estate page lists its 6 services, with Website as the live demo", () => {
+  render(<IndustryView industry={getIndustry("real-estate")!} />);
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("What we build for real estate developers");
+  const list = screen.getByRole("list", { name: "Real estate services" });
+  const links = within(list).getAllByRole("link");
+  expect(links).toHaveLength(6);
+  expect(links[0].getAttribute("href")).toBe("/real-estate/website");
+  expect(within(links[0]).getByText("Open live demo")).toBeTruthy();
+  expect(links.slice(1).every((a) => within(a).queryByText("See preview"))).toBe(true);
+});

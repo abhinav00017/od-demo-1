@@ -7,7 +7,7 @@ export const ensureStatic = "navigation";
 
 export const metadata: Metadata = {
   title: { default: "onlydevs demos", template: "%s | onlydevs demos" },
-  description: "Making business easy and stress-free. See what onlydevs builds for clinics and cafes.",
+  description: "Making business easy and stress-free. See what onlydevs builds for clinics, cafes and real estate developers.",
   applicationName: "onlydevs demos",
   robots: { index: false, follow: false },
 };

@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { demoPageParams, getDemoPage, getIndustry, getService, industries, serviceParams } from "@/lib/catalog";
 import { catalogSchema } from "@/lib/schema";
+import { IndustryView } from "@/components/sections/IndustryView";
 import { ServicePreview } from "@/components/sections/ServicePreview";
-import { LiveDemo, liveDemoTitle } from "@/demos/render";
+import { LiveDemo, liveDemoDescription, liveDemoTitle } from "@/demos/render";
 
 // The book page reads ?type= with useSearchParams, which needs the Next.js router outside tests.
 vi.mock("next/navigation", async (importOriginal) => ({
@@ -15,8 +16,8 @@ vi.mock("next/navigation", async (importOriginal) => ({
 vi.stubGlobal("fetch", () => new Promise(() => {}));
 
 describe("every service route resolves", () => {
-  it("generates 12 service routes and 5 inner demo pages", () => {
-    expect(serviceParams()).toHaveLength(12);
+  it("generates 18 service routes and 5 inner demo pages", () => {
+    expect(serviceParams()).toHaveLength(18);
     expect(demoPageParams().map((p) => `/${p.industry}/${p.service}/${p.page}`)).toEqual([
       "/clinic/website/services",
       "/clinic/website/about",
@@ -62,6 +63,55 @@ describe("every service route resolves", () => {
     render(<LiveDemo industry={found.industry} service={found.service} page="" />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Freshest Brews in Jubilee Hills");
     expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/cafe");
+  });
+
+  it("/real-estate/website is the Sky49 live demo, a single page with no inner pages", () => {
+    const found = getService("real-estate", "website");
+    expect(found?.service.status).toBe("live");
+    if (!found || found.service.status !== "live") return;
+    expect(found.service.demo).toBe("sky49");
+    expect(demoPageParams().filter((p) => p.industry === "real-estate")).toEqual([]);
+    expect(getDemoPage("real-estate", "website", "about")).toBeUndefined();
+    expect(liveDemoTitle("sky49", "")).toBe("THE SKY49");
+    expect(liveDemoDescription("sky49")).toBe(
+      "Ultra-premium aesthetic light-theme real estate experience with editorial luxury storytelling.",
+    );
+    render(<LiveDemo industry={found.industry} service={found.service} page="" />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Sky49 Tellapur Luxury 3 & 4 BHK Apartments");
+    expect(screen.getByRole("link", { name: /Back to hub/ }).getAttribute("href")).toBe("/real-estate");
+  });
+
+  it("/real-estate lists 6 services in order, with Website as the live demo", () => {
+    render(<IndustryView industry={getIndustry("real-estate")!} />);
+    const list = screen.getByRole("list", { name: "Real estate services" });
+    expect(within(list).getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "Website",
+      "Google Business Profile",
+      "WhatsApp lead follow-up",
+      "Site visit booking",
+      "Digital brochure",
+      "Lead dashboard",
+    ]);
+    const links = within(list).getAllByRole("link");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual([
+      "/real-estate/website",
+      "/real-estate/google-business-profile",
+      "/real-estate/whatsapp-lead-follow-up",
+      "/real-estate/site-visit-booking",
+      "/real-estate/digital-brochure",
+      "/real-estate/lead-dashboard",
+    ]);
+    expect(within(links[0]).getByText("Live demo")).toBeTruthy();
+    expect(links.slice(1).every((a) => within(a).queryByText("Preview"))).toBe(true);
+  });
+
+  it("the lead dashboard preview draws the lead list mock", () => {
+    const found = getService("real-estate", "lead-dashboard");
+    if (!found || found.service.status !== "preview") throw new Error("lead-dashboard should be a preview");
+    render(<ServicePreview industry={found.industry} service={found.service} />);
+    const figure = screen.getByRole("figure");
+    expect(within(figure).getByText("Lead dashboard · Banyan Heights")).toBeTruthy();
+    expect(within(figure).getAllByText("Site visit booked").length).toBeGreaterThan(0);
   });
 
   it("the clinic demo keeps its own titles", () => {

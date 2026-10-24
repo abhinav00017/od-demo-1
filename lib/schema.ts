@@ -94,6 +94,24 @@ export const mockSchema = z.discriminatedUnion("kind", [
     hours: z.array(z.object({ label: z.string(), value: z.number().min(0) })).min(4),
     top: z.array(z.object({ name: z.string(), count: z.number().int() })).min(2).max(4),
   }),
+  z.object({
+    kind: z.literal("leads"),
+    name: z.string(),
+    period: z.string(),
+    stats: z.array(z.object({ label: z.string(), value: z.string() })).min(2).max(3),
+    leads: z
+      .array(
+        z.object({
+          name: z.string(),
+          source: z.string(),
+          interest: z.string(),
+          status: z.enum(["new", "follow-up", "visit-booked", "brochure-opened"]),
+          when: z.string(),
+        }),
+      )
+      .min(3)
+      .max(6),
+  }),
 ]);
 
 const step = z.object({ title: z.string().min(1).max(60), text: line });
@@ -121,7 +139,7 @@ export const industrySchema = z.object({
   audience: line,
   /** One line on the industry page: what onlydevs does for this industry. */
   pitch: line,
-  icon: z.enum(["clinic", "cafe"]),
+  icon: z.enum(["clinic", "cafe", "real-estate"]),
   services: z.array(serviceSchema).min(1),
 });
 
