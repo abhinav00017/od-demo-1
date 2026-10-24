@@ -1,7 +1,7 @@
 /**
  * Verdant Crest by Nilaya Developers: the Real estate → Website live demo.
- * Both names are made up. The page layout follows a supplied Astro landing page; every name, address, figure, drawing
- * and contact from that page has been replaced with made-up values or the onlydevs demo contacts below.
+ * Both names are made up. The page layout follows a supplied Astro landing page; every name, address, figure, image
+ * and contact from that page has been replaced with made-up values, generated illustrations or the onlydevs demo contacts.
  */
 
 /** The onlydevs demo WhatsApp and phone number. Every wa.me and tel: link on the demo is built from these. */
@@ -36,12 +36,12 @@ export const site = {
 const IMG = "/demos/verdant-crest";
 
 export const images = {
-  hero: { src: `${IMG}/hero-skyline.jpg`, alt: "High-rise towers rising above the morning mist" },
-  about: { src: `${IMG}/about-architecture.jpg`, alt: "Clubhouse building with landscaped gardens and courts" },
-  highlights: { src: `${IMG}/hero-skyline.jpg`, alt: "Towers above the morning mist" },
+  hero: { src: `${IMG}/skyline-dusk.jpg`, alt: "Illustration of three residential towers at dusk above a treeline" },
+  about: { src: `${IMG}/clubhouse-gardens.jpg`, alt: "Illustration of the clubhouse with terraced floors, gardens and a court" },
+  highlights: { src: `${IMG}/skyline-dusk.jpg`, alt: "Illustration of the three towers at dusk" },
   /** A made-up illustrative site plan. */
   sitePlan: { src: `${IMG}/site-plan.jpg`, alt: "Illustrative site plan: three towers around a central court, with a clubhouse", width: 1600, height: 1131 },
-  faq: { src: `${IMG}/amenity-clubhouse.jpg`, alt: "Clubhouse elevation with layered terraces" },
+  faq: { src: `${IMG}/clubhouse-front.jpg`, alt: "Illustration of the clubhouse elevation with layered terraces" },
 } as const;
 
 /** In-page links in the header and the mobile menu. */
@@ -125,9 +125,9 @@ export const compareRows = [
 ] as const;
 
 export const projectGalleryImages = [
-  { src: `${IMG}/amenity-courtyard.jpg`, alt: "Landscaped central courtyard at dusk, seen from above" },
-  { src: `${IMG}/about-architecture.jpg`, alt: "Clubhouse and sports courts in the evening light" },
-  { src: `${IMG}/amenity-lobby.jpg`, alt: "Warm-lit residents’ lounge beside the lift lobby" },
+  { src: `${IMG}/courtyard-above.jpg`, alt: "Illustration of the central courtyard from above, with lawns, a deck and courts" },
+  { src: `${IMG}/clubhouse-gardens.jpg`, alt: "Illustration of the clubhouse, pergola and gardens" },
+  { src: `${IMG}/residents-lounge.jpg`, alt: "Illustration of the warm-lit residents’ lounge beside the lift lobby" },
 ];
 
 /** Icon paths are the original 24×24 strokes. */
@@ -157,9 +157,9 @@ export const diligenceChecklist = [
 ] as const;
 
 export const amenityShots = [
-  { src: `${IMG}/amenity-lobby.jpg`, alt: "Residents’ lounge with soft evening lighting" },
-  { src: `${IMG}/amenity-clubhouse.jpg`, alt: "Clubhouse with terraced floors above the sports courts" },
-  { src: `${IMG}/amenity-courtyard.jpg`, alt: "Central courtyard with lawns, a deck and play courts" },
+  { src: `${IMG}/residents-lounge.jpg`, alt: "Illustration of the residents’ lounge with soft lamp light" },
+  { src: `${IMG}/clubhouse-front.jpg`, alt: "Illustration of the clubhouse front with louvres and courts" },
+  { src: `${IMG}/courtyard-above.jpg`, alt: "Illustration of the courtyard with lawns, a timber deck and play courts" },
 ] as const;
 
 export const proximityRows = [
