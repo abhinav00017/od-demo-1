@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TicketWingsSite } from "@/demos/ticketwings/TicketWingsSite";
+import { ShowSalsaSite } from "@/demos/showsalsa/ShowSalsaSite";
 import {
   INITIAL_EVENTS,
   WHATSAPP_NUMBER,
@@ -10,10 +10,10 @@ import {
   isIndianMobile,
   listingMessage,
   type EventListing,
-} from "@/demos/ticketwings/data";
+} from "@/demos/showsalsa/data";
 
 function renderSite() {
-  return render(<TicketWingsSite hubHref="/ticketing-platform" />);
+  return render(<ShowSalsaSite hubHref="/ticketing-platform" />);
 }
 
 function openFirstEvent() {
@@ -24,7 +24,7 @@ function openFirstEvent() {
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("TicketWings ticketing demo", () => {
+describe("ShowSalsa ticketing demo", () => {
   it("shows the demo bar, the hero and the section headings", () => {
     renderSite();
     expect(screen.getByText("onlydevs demo")).toBeTruthy();
@@ -80,7 +80,7 @@ describe("TicketWings ticketing demo", () => {
     fireEvent.click(submit);
     const status = within(drawer).getByRole("status");
     expect(within(status).getByRole("heading", { name: "Booking Confirmed!" })).toBeTruthy();
-    expect(status.textContent).toMatch(/TW-\d{6}/);
+    expect(status.textContent).toMatch(/SS-\d{6}/);
     expect(status.textContent).toMatch(/riya@example.com/);
     expect(screen.getByRole("button", { name: "My Passes (2)" })).toBeTruthy();
 
@@ -127,11 +127,11 @@ describe("TicketWings ticketing demo", () => {
     for (const img of imgs) {
       expect(img.getAttribute("alt")?.trim()).toBeTruthy();
       expect(img.getAttribute("src")).not.toMatch(/unsplash\.com/);
-      expect(img.getAttribute("src")).toMatch(/\/_next\/image\?url=%2Fdemos%2Fticketwings%2F/);
+      expect(img.getAttribute("src")).toMatch(/\/_next\/image\?url=%2Fdemos%2Fshowsalsa%2F/);
     }
     for (const event of INITIAL_EVENTS) {
-      expect(event.image).toMatch(/^\/demos\/ticketwings\/[a-z0-9-]+\.jpg$/);
-      for (const artist of event.lineup) expect(artist.avatar).toMatch(/^\/demos\/ticketwings\/portrait-\d{2}\.jpg$/);
+      expect(event.image).toMatch(/^\/demos\/showsalsa\/[a-z0-9-]+\.jpg$/);
+      for (const artist of event.lineup) expect(artist.avatar).toMatch(/^\/demos\/showsalsa\/portrait-\d{2}\.jpg$/);
     }
   });
 
@@ -140,16 +140,16 @@ describe("TicketWings ticketing demo", () => {
     openFirstEvent();
     const body = container.ownerDocument.body;
     expect((within(body).getByRole("textbox", { name: "Attendee WhatsApp Number" }) as HTMLInputElement).value).toBe("+91 73821 30063");
-    expect(body.innerHTML).not.toMatch(/98201|9820144510|ShowSalsa|unsplash/i);
+    expect(body.innerHTML).not.toMatch(/98201|9820144510|unsplash/i);
   });
 });
 
-describe("TicketWings data", () => {
+describe("ShowSalsa data", () => {
   it("adds the 5% booking fee and GST on it, and applies promo codes", () => {
     const tiers = INITIAL_EVENTS[0].tiers;
     const plain = calculateCartTotals(tiers, { [tiers[1].id]: 2 });
     expect(plain).toMatchObject({ subtotal: 7998, bookingFee: 400, gstAmount: 72, grandTotal: 8470, totalTickets: 2 });
-    expect(calculateCartTotals(tiers, { [tiers[1].id]: 2 }, "wings10").discountAmount).toBe(800);
+    expect(calculateCartTotals(tiers, { [tiers[1].id]: 2 }, "salsa10").discountAmount).toBe(800);
     expect(calculateCartTotals(tiers, { [tiers[1].id]: 2 }, "VIP500").discountAmount).toBe(500);
     expect(calculateCartTotals(tiers, {}).grandTotal).toBe(0);
   });
@@ -184,7 +184,7 @@ describe("TicketWings data", () => {
     };
     expect(listingMessage(listing)).toBe(
       [
-        "Hi TicketWings, I want to list an event.",
+        "Hi ShowSalsa, I want to list an event.",
         "Event: Rooftop Jazz Night",
         "Headliner / host: The Blue Notes",
         "Category: Music & Gigs",

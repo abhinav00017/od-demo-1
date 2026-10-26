@@ -654,7 +654,7 @@ export const industries: z.input<typeof catalogSchema> = [
         name: "Ticketing platform",
         summary: "Your own ticketing site with event listings, ticket tiers, promo codes and instant QR passes.",
         status: "live",
-        demo: "ticketwings",
+        demo: "showsalsa",
       },
       {
         slug: "event-page",

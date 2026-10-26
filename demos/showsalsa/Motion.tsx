@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Motion for the TicketWings demo, the same pattern as Lotus and Solstice: LazyMotion + domAnimation + `m.*`.
+ * Motion for the ShowSalsa demo, the same pattern as Lotus and Solstice: LazyMotion + domAnimation + `m.*`.
  * The export only faded its event drawer in (tw-animate `animate-in fade-in`); here the drawers and the modal fade and
  * slide in and out, and the hero photo cross-fades between spotlights. `reducedMotion="user"` drops the movement.
  */
@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 
 export { AnimatePresence };
 
-export function WingsMotion({ children }: { children: ReactNode }) {
+export function SalsaMotion({ children }: { children: ReactNode }) {
   return (
     <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user">{children}</MotionConfig>

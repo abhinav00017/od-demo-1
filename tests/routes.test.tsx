@@ -114,16 +114,16 @@ describe("every service route resolves", () => {
     expect(within(figure).getAllByText("Site visit booked").length).toBeGreaterThan(0);
   });
 
-  it("/ticketing-platform/ticketing-platform is the TicketWings live demo, a single page with no inner pages", () => {
+  it("/ticketing-platform/ticketing-platform is the ShowSalsa live demo, a single page with no inner pages", () => {
     const found = getService("ticketing-platform", "ticketing-platform");
     expect(found?.service.status).toBe("live");
     if (!found || found.service.status !== "live") return;
-    expect(found.service.demo).toBe("ticketwings");
+    expect(found.service.demo).toBe("showsalsa");
     expect(demoPageParams().filter((p) => p.industry === "ticketing-platform")).toEqual([]);
     expect(getDemoPage("ticketing-platform", "ticketing-platform", "about")).toBeUndefined();
     expect(getService("ticketing-platform", "website")).toBeUndefined();
-    expect(liveDemoTitle("ticketwings", "")).toBe("TicketWings");
-    expect(liveDemoDescription("ticketwings")).toBe(
+    expect(liveDemoTitle("showsalsa", "")).toBe("ShowSalsa");
+    expect(liveDemoDescription("showsalsa")).toBe(
       "Discover flagship concerts, underground techno nights, stand-up comedy specials, and curated cultural festivals across India with instant QR ticketing.",
     );
     render(<LiveDemo industry={found.industry} service={found.service} page="" />);

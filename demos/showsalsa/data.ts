@@ -1,9 +1,9 @@
 /**
- * TicketWings: a made-up event ticketing platform for the Ticketing platform live demo.
+ * ShowSalsa: a made-up event ticketing platform for the Ticketing platform live demo.
  * Ported from the Google AI Studio export Abhinav supplied (24 Oct 2026). Every event, artist, venue, promoter and
  * price is made up. The export named real artists, venues and promoters; those names were replaced.
  *
- * Photos are from Unsplash (unsplash.com/photos/<id>), downloaded once into public/demos/ticketwings/ at the largest
+ * Photos are from Unsplash (unsplash.com/photos/<id>), downloaded once into public/demos/showsalsa/ at the largest
  * width the export asked for (300 px for portraits, up to 1400 px for event photos):
  *   event-tidal-goa.jpg          photo-1516450360452-9312f5e86fc7
  *   event-aurora-mumbai.jpg      photo-1470225620780-dba8ba36b745
@@ -24,7 +24,7 @@
  *     1535713875002-d1d0cf377fde, 1568602471122-7832951cc4c5, 1522075469751-3a6694fb2f61, 1544005313-94ddf0286df2
  */
 
-/** The onlydevs demo WhatsApp number. Every WhatsApp link and prefilled phone on the TicketWings demo comes from it. */
+/** The onlydevs demo WhatsApp number. Every WhatsApp link and prefilled phone on the ShowSalsa demo comes from it. */
 export const WHATSAPP_NUMBER = "917382130063";
 export const WHATSAPP_DISPLAY = "+91 73821 30063";
 
@@ -34,8 +34,8 @@ export function whatsAppHref(text?: string) {
 }
 
 export const site = {
-  name: "TicketWings",
-  title: "TicketWings",
+  name: "ShowSalsa",
+  title: "ShowSalsa",
   description:
     "Discover flagship concerts, underground techno nights, stand-up comedy specials, and curated cultural festivals across India with instant QR ticketing.",
 };
@@ -75,7 +75,7 @@ export interface EventItem {
   dateFilterBucket: Exclude<DateFilter, "Any">;
   /** 0 means free onwards. */
   startingPrice: number;
-  /** A photo in public/demos/ticketwings/. */
+  /** A photo in public/demos/showsalsa/. */
   image: string;
   /** Three colours for the poster gradient behind the photo (the export's Tailwind from/via/to steps, in hex). */
   poster: [string, string, string];
@@ -120,7 +120,7 @@ export interface BookingRecord {
   attendeePhone: string;
 }
 
-const photo = (name: string) => `/demos/ticketwings/${name}.jpg`;
+const photo = (name: string) => `/demos/showsalsa/${name}.jpg`;
 
 export const PHOTOS = {
   tidalGoa: photo("event-tidal-goa"),
@@ -454,7 +454,7 @@ export const INITIAL_EVENTS: EventItem[] = [
         id: "tier-free",
         name: "Early Bird Couple Guestlist",
         price: 0,
-        description: "Free couple entry before 8:30 PM with digital TicketWings QR pass.",
+        description: "Free couple entry before 8:30 PM with digital ShowSalsa QR pass.",
         perks: ["Couple Entry Before 8:30 PM", "Instant QR Confirmation"],
         availableCount: 15,
         badge: "FREE ONWARDS",
@@ -1085,7 +1085,7 @@ export function calculateCartTotals(tiers: TicketTier[], quantities: Record<stri
 
   const promo = (promoCode || "").trim().toUpperCase();
   let discountAmount = 0;
-  if (promo === "WINGS10" && subtotal > 0) {
+  if (promo === "SALSA10" && subtotal > 0) {
     discountAmount = Math.round(subtotal * 0.1);
   } else if (promo === "VIP500" && subtotal >= 2500) {
     discountAmount = 500;
@@ -1106,7 +1106,7 @@ export function formatINR(amount: number, includeOnwards = false): string {
   return includeOnwards ? `${formatted} Onwards` : formatted;
 }
 
-/** The organiser payout calculator: TicketWings keeps 2.5% and pays the rest within 48 hours. */
+/** The organiser payout calculator: ShowSalsa keeps 2.5% and pays the rest within 48 hours. */
 export function estimateOrganizerPayout(avgTicketPrice: number, expectedAttendees: number) {
   const grossRevenue = Math.max(0, avgTicketPrice) * Math.max(0, Math.floor(expectedAttendees));
   const platformCommission = Math.round(grossRevenue * 0.025);
@@ -1245,9 +1245,9 @@ export function listingToEvent(listing: EventListing, id: string): EventItem {
   };
 }
 
-/** A pass number such as TW-482913. Called from the checkout handler only, never while rendering. */
+/** A pass number such as SS-482913. Called from the checkout handler only, never while rendering. */
 export function newBookingId() {
-  return `TW-${Math.floor(100000 + Math.random() * 900000)}`;
+  return `SS-${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
 /** The time a pass was booked, such as "08:15 pm". Called from the checkout handler only. */
@@ -1257,7 +1257,7 @@ export function timeNowLabel() {
 
 /** The pass already in "My Passes" when the page opens, so the wallet is never empty in a demo. */
 export const SAMPLE_BOOKING: BookingRecord = {
-  bookingId: "TW-849201",
+  bookingId: "SS-849201",
   eventId: "evt-kairav-goa",
   eventTitle: "DJ Kairav Live at Tidal Goa",
   venue: "Tidal Club, Vagator",

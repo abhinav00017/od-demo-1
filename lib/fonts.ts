@@ -13,5 +13,5 @@ export const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--f
 /** The Verdant Crest real estate demo only (font-sky): headings and body, both Manrope. Applied on the Verdant Crest root. Not preloaded. */
 export const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap", preload: false });
 
-/** The TicketWings ticketing demo only (font-wing-display): headings, as the export set them. Body stays Plus Jakarta Sans. Not preloaded. */
+/** The ShowSalsa ticketing demo only (font-wing-display): headings, as the export set them. Body stays Plus Jakarta Sans. Not preloaded. */
 export const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", weight: ["500", "600", "700", "800"], display: "swap", preload: false });

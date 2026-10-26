@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { outfit } from "@/lib/fonts";
-import { TicketWingsApp } from "./TicketWingsApp";
+import { ShowSalsaApp } from "./ShowSalsaApp";
 
 /** The demo bar: tells the viewer this is an onlydevs demo and takes them back to the hub. */
 function DemoBar({ hubHref }: { hubHref: string }) {
@@ -23,17 +23,17 @@ function DemoBar({ hubHref }: { hubHref: string }) {
 }
 
 /**
- * TicketWings, the Ticketing platform live demo: one page. The demo bar is server-rendered; the app (filters, drawers,
+ * ShowSalsa, the Ticketing platform live demo: one page. The demo bar is server-rendered; the app (filters, drawers,
  * checkout, list-your-event) is one client tree, as the export was. No URL params are read, so the page is static.
  */
-export function TicketWingsSite({ hubHref }: { hubHref: string }) {
+export function ShowSalsaSite({ hubHref }: { hubHref: string }) {
   return (
     <div
-      data-site="ticketwings"
+      data-site="showsalsa"
       className={`${outfit.variable} min-h-dvh bg-wing-night font-sans text-wing-text antialiased [color-scheme:dark] selection:bg-wing-rose selection:text-white`}
     >
       <DemoBar hubHref={hubHref} />
-      <TicketWingsApp />
+      <ShowSalsaApp />
     </div>
   );
 }

@@ -8,8 +8,8 @@ import { cafe } from "./solstice-cafe/data";
 import { SolsticeSite } from "./solstice-cafe/SolsticeSite";
 import { site as verdantCrest } from "./verdant-crest/data";
 import { VerdantCrestSite } from "./verdant-crest/VerdantCrestSite";
-import { site as ticketwings } from "./ticketwings/data";
-import { TicketWingsSite } from "./ticketwings/TicketWingsSite";
+import { site as showsalsa } from "./showsalsa/data";
+import { ShowSalsaSite } from "./showsalsa/ShowSalsaSite";
 import { CrmSite } from "./tiles-crm/CrmSite";
 import { KALYANI } from "@/lib/crm/shop";
 
@@ -33,8 +33,8 @@ export function liveDemoTitle(demo: DemoId, page: string): string {
       return cafe.title;
     case "verdant-crest":
       return verdantCrest.title;
-    case "ticketwings":
-      return ticketwings.title;
+    case "showsalsa":
+      return showsalsa.title;
     case "tiles-crm":
       return `CRM | ${KALYANI.name}`;
   }
@@ -47,8 +47,8 @@ export function liveDemoDescription(demo: DemoId): string | undefined {
       return cafe.description;
     case "verdant-crest":
       return verdantCrest.description;
-    case "ticketwings":
-      return ticketwings.description;
+    case "showsalsa":
+      return showsalsa.description;
     case "tiles-crm":
       return `Leads, quotes and follow-ups for ${KALYANI.name}, a made-up tile showroom in ${KALYANI.city}.`;
     default:
@@ -59,7 +59,7 @@ export function liveDemoDescription(demo: DemoId): string | undefined {
 export function LiveDemo({ industry, service, page }: { industry: Industry; service: Extract<Service, { status: "live" }>; page: DemoPage }) {
   const base = serviceHref(industry, service);
   const nav: Nav = { base, page, hubHref: `/${industry.slug}`, href: (p) => (p ? `${base}/${p}` : base) };
-  // Each live demo has a case here. Lotus has its own page map; Solstice, Verdant Crest, TicketWings and the tiles CRM are single pages.
+  // Each live demo has a case here. Lotus has its own page map; Solstice, Verdant Crest, ShowSalsa and the tiles CRM are single pages.
   switch (service.demo) {
     case "lotus-clinic": {
       const Page = LOTUS_PAGES[page];
@@ -73,8 +73,8 @@ export function LiveDemo({ industry, service, page }: { industry: Industry; serv
       return <SolsticeSite hubHref={nav.hubHref} />;
     case "verdant-crest":
       return <VerdantCrestSite hubHref={nav.hubHref} />;
-    case "ticketwings":
-      return <TicketWingsSite hubHref={nav.hubHref} />;
+    case "showsalsa":
+      return <ShowSalsaSite hubHref={nav.hubHref} />;
     case "tiles-crm":
       return <CrmSite hubHref={nav.hubHref} />;
   }

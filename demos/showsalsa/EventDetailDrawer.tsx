@@ -394,7 +394,7 @@ export function EventDetailDrawer({ event, onClose, onCompleteBooking }: EventDe
                       type="text"
                       value={promoCode}
                       onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder="Promo Code (Try WINGS10 or VIP500)"
+                      placeholder="Promo Code (Try SALSA10 or VIP500)"
                       aria-label="Promo Code"
                       className={`w-full pl-9 ${FIELD}`}
                     />

@@ -22,8 +22,8 @@ export const LIVE_DEMOS = {
   "verdant-crest": {
     pages: [{ slug: "", label: "Home" }],
   },
-  /** TicketWings, a made-up event ticketing platform: one page with drawers for event details, checkout and passes. */
-  ticketwings: {
+  /** ShowSalsa, a made-up event ticketing platform: one page with drawers for event details, checkout and passes. */
+  showsalsa: {
     pages: [{ slug: "", label: "Home" }],
   },
   /** Kalyani Tiles & Sanitary, a made-up showroom: the CRM, one client app behind a login. Screens live in the query string. */

@@ -23,7 +23,7 @@ import { EventCard } from "./EventCard";
 import { EventDetailDrawer } from "./EventDetailDrawer";
 import { HeroCarousel } from "./HeroCarousel";
 import { ListEventModal } from "./ListEventModal";
-import { AnimatePresence, WingsMotion } from "./Motion";
+import { AnimatePresence, SalsaMotion } from "./Motion";
 import { Navbar } from "./Navbar";
 import { PartnerBanner } from "./PartnerBanner";
 import { Wordmark } from "./Wordmark";
@@ -41,10 +41,10 @@ const CATEGORY_ICONS: Record<EventCategory, LucideIcon> = {
 const DATE_FILTERS: DateFilter[] = ["Any", "Today", "This Week", "This Month"];
 
 /**
- * The TicketWings app: filters, the trending grid, curated exclusives, the organiser banner, and the drawers.
+ * The ShowSalsa app: filters, the trending grid, curated exclusives, the organiser banner, and the drawers.
  * Everything lives in page state. New passes and listed events last until the page is reloaded.
  */
-export function TicketWingsApp() {
+export function ShowSalsaApp() {
   const [events, setEvents] = useState<EventItem[]>(INITIAL_EVENTS);
   const [selectedCity, setSelectedCity] = useState<CityName>("All Cities");
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("All");
@@ -96,7 +96,7 @@ export function TicketWingsApp() {
   };
 
   return (
-    <WingsMotion>
+    <SalsaMotion>
       <div className="relative flex min-h-screen flex-col bg-wing-night text-wing-text">
         <div
           aria-hidden="true"
@@ -311,7 +311,7 @@ export function TicketWingsApp() {
               ))}
             </nav>
 
-            <div className="text-xs text-wing-zinc-400">© 2026 {site.name}. A made-up platform for an onlydevs demo.</div>
+            <div className="text-xs text-wing-zinc-400">© 2026 {site.name}. {site.name} is a made-up platform for an onlydevs demo.</div>
           </div>
         </footer>
 
@@ -332,6 +332,6 @@ export function TicketWingsApp() {
 
         <AnimatePresence>{isBookingsOpen && <BookingsDrawer key="passes" onClose={() => setIsBookingsOpen(false)} bookings={bookings} />}</AnimatePresence>
       </div>
-    </WingsMotion>
+    </SalsaMotion>
   );
 }

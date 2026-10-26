@@ -109,7 +109,7 @@ export function Navbar({
             type="button"
             onClick={() => onSwitchView("discover")}
             className="group flex items-center gap-1.5 text-left focus:outline-none"
-            aria-label="TicketWings Home"
+            aria-label="ShowSalsa Home"
           >
             <Wordmark className="text-xl sm:text-2xl" />
           </button>

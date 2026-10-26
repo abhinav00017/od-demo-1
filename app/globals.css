@@ -147,7 +147,7 @@
   --color-sky-error: #b42318;
 
   /*
-   * TicketWings demo site (Ticketing platform → live demo). Ported from Abhinav's AI Studio export: near-black night,
+   * ShowSalsa demo site (Ticketing platform → live demo). Ported from Abhinav's AI Studio export: near-black night,
    * rose and violet accents, amber prices. The zinc, emerald and amber steps are Tailwind's, in hex.
    */
   --color-wing-night: #0a0a0c;
@@ -197,7 +197,7 @@
   --font-sol-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
   /* The Verdant Crest real estate demo: Manrope for headings and body, as the original set both its sans and serif to it. */
   --font-sky: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  /* The TicketWings ticketing demo: Outfit headings over the shared Plus Jakarta Sans body. */
+  /* The ShowSalsa ticketing demo: Outfit headings over the shared Plus Jakarta Sans body. */
   --font-wing-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -248,21 +248,21 @@
     outline-color: var(--color-sky-charcoal);
   }
 
-  /* Rose on the near-black TicketWings page; the hub's violet ring is too dark there. */
-  [data-site="ticketwings"] :focus-visible {
+  /* Rose on the near-black ShowSalsa page; the hub's violet ring is too dark there. */
+  [data-site="showsalsa"] :focus-visible {
     outline-color: var(--color-wing-rose-light);
   }
 
-  /* TicketWings headings use Outfit, as the export's base layer set h1–h3. */
-  [data-site="ticketwings"] :is(h1, h2, h3) {
+  /* ShowSalsa headings use Outfit, as the export's base layer set h1–h3. */
+  [data-site="showsalsa"] :is(h1, h2, h3) {
     font-family: var(--font-wing-display);
   }
 
-  /* The TicketWings page is dark end to end: no light canvas on overscroll, and a dark, slim page scrollbar. */
-  html:has([data-site="ticketwings"]) {
+  /* The ShowSalsa page is dark end to end: no light canvas on overscroll, and a dark, slim page scrollbar. */
+  html:has([data-site="showsalsa"]) {
     scrollbar-color: rgb(255 255 255 / 0.14) var(--color-wing-night);
   }
-  html:has([data-site="ticketwings"]) body {
+  html:has([data-site="showsalsa"]) body {
     background-color: var(--color-wing-night);
   }
 
@@ -302,7 +302,7 @@
   }
 }
 
-/* TicketWings category chips: the row scrolls sideways without showing a scrollbar. */
+/* ShowSalsa category chips: the row scrolls sideways without showing a scrollbar. */
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {
