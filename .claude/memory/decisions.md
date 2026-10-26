@@ -412,3 +412,4 @@ Append only. Newest at the bottom.
 ## 2026-10-24 (CRM dashboard with calendar)
 
 - Abhinav: rename "Today" to "Dashboard". Add a calendar/date picker; for the selected date show every record from that day: leads created, quotes created (with the lead or customer), quotes sold, follow-ups due; counts for that date. Calendar marks days with activity. Default is today. Keep the Due list and recent activity.
+- 26 Oct 2026: Abhinav: the ticketing demo's product name is "ShowSalsa", not TicketWings (the zip's metadata said TicketWings; its code mixed ShowSalsa/TicketWings/District). Rename everywhere in the demo, hub entry title, tests and folder. Dashboard-with-calendar build is halted by Abhinav with partial uncommitted work in lib/crm, app/api/crm/dashboard, demos/tiles-crm; leave it untouched until he decides.
