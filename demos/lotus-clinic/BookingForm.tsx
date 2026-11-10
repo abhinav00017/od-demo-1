@@ -11,18 +11,21 @@ import { clinic } from "./data";
 import { DrawnCheck, EASE, LayoutMotion, PillButton, PlainMotion, useCalmMotion } from "./Motion";
 import { ui } from "./ui";
 
-const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: false };
+// Submitting the form is the consent: the line under the button says so, and every request sends consent: true.
+const EMPTY: BookingInput = { name: "", phone: "", visitType: "clinic", date: "", slot: "", reason: "", consent: true };
 
-const ORDER: FieldName[] = ["visitType", "name", "phone", "date", "slot", "reason", "consent"];
+/** The fields the form shows. Consent has no field of its own. */
+type FormField = Exclude<FieldName, "consent">;
 
-const LABELS: Record<FieldName, string> = {
+const ORDER: FormField[] = ["visitType", "name", "phone", "date", "slot", "reason"];
+
+const LABELS: Record<FormField, string> = {
   visitType: "Type of visit",
   name: "Your name",
   phone: "Mobile number",
   date: "Preferred date",
   slot: "Time of day",
   reason: "Reason for the visit",
-  consent: "WhatsApp consent",
 };
 
 const inputClass = ui.input;
@@ -32,7 +35,7 @@ const labelClass = "font-medium text-lotus-text";
 /** The quick-reply buttons under the WhatsApp preview, as the patient sees them. */
 const PREVIEW_BUTTONS = ["Confirm", "Change time"];
 
-function Field({ name, errors, children, hint }: { name: FieldName; errors: FieldErrors; children: ReactNode; hint?: string }) {
+function Field({ name, errors, children, hint }: { name: FormField; errors: FieldErrors; children: ReactNode; hint?: string }) {
   const calm = useCalmMotion();
   // The error opens its own height and fades in; under reduced motion it only fades.
   const closed = calm ? { opacity: 0 } : { opacity: 0, height: 0 };
@@ -64,7 +67,7 @@ function Field({ name, errors, children, hint }: { name: FieldName; errors: Fiel
   );
 }
 
-function describedBy(name: FieldName, errors: FieldErrors, hint = false) {
+function describedBy(name: FormField, errors: FieldErrors, hint = false) {
   return [hint ? `${name}-hint` : "", errors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined;
 }
 
@@ -146,7 +149,7 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
   // The success card mounts after the form has folded away, so it takes focus as it mounts.
   const focusDone = useCallback((el: HTMLDivElement | null) => el?.focus(), []);
 
-  function update<K extends FieldName>(name: K, value: BookingInput[K]) {
+  function update<K extends FormField>(name: K, value: BookingInput[K]) {
     const next = { ...values, [name]: value };
     setValues(next);
     if (tried) setErrors(validateBooking(next, new Date()));
@@ -155,7 +158,8 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (saving) return;
-    const found = validateBooking(values, new Date());
+    const request = { ...values, consent: true };
+    const found = validateBooking(request, new Date());
     setTried(true);
     setErrors(found);
     setSubmitError("");
@@ -168,7 +172,7 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, [HONEYPOT_FIELD]: trap }),
+        body: JSON.stringify({ ...request, [HONEYPOT_FIELD]: trap }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; id?: string; error?: string; fieldErrors?: FieldErrors };
       if (res.ok && data.ok && data.id) {
@@ -436,24 +440,6 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
             </div>
           </div>
 
-          <div className="mt-6">
-            <Field name="consent" errors={errors}>
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  id={`${id}-consent`}
-                  type="checkbox"
-                  name="consent"
-                  checked={values.consent}
-                  onChange={(e) => update("consent", e.target.checked)}
-                  aria-invalid={errors.consent ? true : undefined}
-                  aria-describedby={describedBy("consent", errors)}
-                  className="mt-1 size-4 accent-lotus-accent"
-                />
-                <span className="text-lotus-text">The clinic may message me on WhatsApp about this visit.</span>
-              </label>
-            </Field>
-          </div>
-
           {/* Bots fill every field. People never see this one. */}
           <div aria-hidden className="absolute -left-[9999px] size-px overflow-hidden">
             <label htmlFor={`${id}-trap`}>Leave this empty</label>
@@ -474,6 +460,9 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
           >
             {saving ? "Saving your booking…" : "Request appointment"}
           </PillButton>
+          <p data-booking-consent="" className="mt-3 text-center text-sm text-lotus-muted sm:text-left">
+            By booking, you agree that {clinic.name} may message you on WhatsApp about this visit.
+          </p>
         </form>
 
         <aside className={`h-fit p-6 sm:p-7 ${ui.card}`}>

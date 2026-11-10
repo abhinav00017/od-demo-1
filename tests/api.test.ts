@@ -82,6 +82,17 @@ describe("POST /api/bookings", () => {
     expect(await all()).toHaveLength(0);
   });
 
+  it("still refuses a booking without consent, even though the form has no checkbox", async () => {
+    const noConsent: Partial<typeof good> = { ...good };
+    delete noConsent.consent;
+    for (const body of [{ ...good, consent: false }, noConsent]) {
+      const res = await POST(req("/api/bookings", { method: "POST", body }));
+      expect(res.status).toBe(400);
+      expect(Object.keys((await res.json()).fieldErrors)).toEqual(["consent"]);
+    }
+    expect(await all()).toHaveLength(0);
+  });
+
   it("refuses an unknown visit type", async () => {
     const res = await POST(req("/api/bookings", { method: "POST", body: { ...good, visitType: "home-visit" } }));
     expect(res.status).toBe(400);

@@ -68,10 +68,41 @@ async function submitBooking() {
   fireEvent.change(screen.getByLabelText("Preferred date"), { target: { value: tomorrow() } });
   fireEvent.change(screen.getByLabelText("Time of day"), { target: { value: "Morning, 10 am – 1 pm" } });
   fireEvent.change(screen.getByLabelText("Reason for the visit"), { target: { value: "Pregnancy care" } });
-  fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(screen.getByRole("button", { name: "Request appointment" }));
   await waitFor(() => expect(screen.getByText("Request received")).toBeTruthy());
 }
+
+const CONSENT_LINE = "By booking, you agree that Lotus Women’s Clinic may message you on WhatsApp about this visit.";
+
+describe("booking form consent", () => {
+  it("has no consent checkbox and shows the consent line right under the submit button", () => {
+    render(<BookingForm initialVisitType="online" />);
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByText(/Tick this box/)).toBeNull();
+    const line = screen.getByText(CONSENT_LINE.replace("’", "'"));
+    expect(line.tagName).toBe("P");
+    expect(line.className).toContain("text-lotus-muted");
+    expect(line.previousElementSibling).toBe(screen.getByRole("button", { name: "Request appointment" }));
+  });
+
+  it("shows no consent error when an empty form is submitted", () => {
+    render(<BookingForm initialVisitType="online" />);
+    fireEvent.click(screen.getByRole("button", { name: "Request appointment" }));
+    const summary = screen.getByRole("alert");
+    expect(summary.textContent).toContain("Please check 5 fields");
+    expect(summary.textContent).not.toMatch(/consent|Tick this box/i);
+  });
+
+  it("sends consent: true with every booking", async () => {
+    render(<BookingForm initialVisitType="online" optIn={null} />);
+    await submitBooking();
+    const fetchMock = vi.mocked(globalThis.fetch);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/bookings");
+    expect(JSON.parse(String(init?.body))).toMatchObject({ name: "Priya Sharma", consent: true });
+  });
+});
 
 describe("booking success screen", () => {
   it("shows the WhatsApp join button when opt-in is configured", async () => {
