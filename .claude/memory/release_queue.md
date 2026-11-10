@@ -24,11 +24,12 @@ Abhinav's decisions: keep the slot windows (Morning 10–1, Afternoon, Evening);
 9. Patient page via unique link /clinic/website/v/<token> (random, no login, expires after the visit date): clinic, day, slot window, visit type, address with directions, add to calendar, change day or slot (lands on the dashboard as "Wants new time" with the requested slot), cancel. No reason or health details.
 10. Dashboard: staff can change a booking's day or slot (sends 6); "Call to confirm" / "Confirmed by phone" for No-WhatsApp; hide "via Twilio", show "WhatsApp: delivered".
 11. Wording: "Prescription on WhatsApp" and prescriptions/reports-over-WhatsApp claims (Lotus data.ts, hub industries.ts) become "sent as a secure link".
+12. Consent record on every booking: consent_at (timestamp), consent_text (the exact line shown, versioned), consent_source (website form / staff with "Send on WhatsApp" ticked). Shown in the patient panel as a small "WhatsApp consent: website, 10 Nov 2026, 10:42" line. Staff bookings without the tick have no consent and get no WhatsApp. Approved by Abhinav 10 Nov 2026.
 Templates to submit after the Twilio upgrade: request received; visit confirmed (+ link button); reminder (+ link button); visit moved (+ Confirm / Change quick replies).
 Dropped: exact-time picker, clinic hours settings, "Confirm by" choice, clinic-proposes-a-time flow, "I'll be there" button, the join opt-in step.
 
 ## Needs Abhinav (not code)
 - Upgrade Twilio off trial (~$20 credit) and submit the two templates with buttons, so the live demo sends the promised wording instead of Twilio's sample text. Trial ends around 20 Nov 2026.
-- Final deploy: Abhinav said "deploy" on 10 Nov, then chose "wait for all": deploy everything together once the admin redesign (item 2) and items 3-11 are built and verified. Do NOT ship pieces earlier. Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
+- Final deploy: Abhinav said "deploy" on 10 Nov, then chose "wait for all": deploy everything together once the admin redesign (item 2) and items 3-12 are built and verified. Do NOT ship pieces earlier. Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
 
 **How to apply:** Read this before any deploy and before starting queued work. Update it whenever something is committed, built or shipped.
