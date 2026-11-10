@@ -122,7 +122,7 @@ export const industries: z.input<typeof catalogSchema> = [
             "Slot booking that follows your clinic timings.",
             "Payment by UPI or card before the call.",
             "A WhatsApp link to join, sent 10 minutes before.",
-            "Notes and prescription sent after the call.",
+            "Notes and prescription sent as a secure link after the call.",
           ],
           steps: [
             { title: "Set your slots", text: "You choose the days and times for online consultations, and the fee." },
@@ -185,14 +185,14 @@ export const industries: z.input<typeof catalogSchema> = [
           intro: "No more lost reports. Each patient's history is ready before they sit down, and they can see it too.",
           gets: [
             "Visit history, prescriptions and reports in one place.",
-            "Reports sent to the patient on WhatsApp.",
+            "Reports sent to the patient as a secure link.",
             "Consent asked and recorded before any record is stored.",
             "Access only for you and the staff you choose.",
           ],
           steps: [
             { title: "Patient agrees", text: "The patient gives consent on WhatsApp before we store anything." },
             { title: "Add each visit", text: "Staff add the prescription and reports after each visit, in under a minute." },
-            { title: "Both can see it", text: "You see the full history. The patient gets their own copy on WhatsApp." },
+            { title: "Both can see it", text: "You see the full history. The patient gets their own copy as a secure link." },
           ],
           mock: {
             kind: "records",

@@ -127,8 +127,8 @@ export const clinic = {
       short:
         "Patients can consult Dr. Rao by video or phone from home. Online visits suit follow-ups, report reviews and second opinions.",
       /** One line the card reveals on hover. */
-      expect: "A video or phone link on WhatsApp, and your prescription after the call.",
-      details: ["Video or phone consultation", "Payment by UPI before the call", "Prescription on WhatsApp", "Sundays and evenings"],
+      expect: "A video or phone link on WhatsApp, and your prescription sent as a secure link after the call.",
+      details: ["Video or phone consultation", "Payment by UPI before the call", "Prescription sent as a secure link", "Sundays and evenings"],
     },
   ],
   why: [
