@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DemoPage } from "@/lib/demos";
 import { LotusMark } from "./Art";
+import { AttributionCapture } from "./AttributionCapture";
 import { clinic, clinicWhatsAppHref } from "./data";
 import { MenuStateProvider } from "./MenuState";
 import { MobileBar } from "./MobileBar";
@@ -152,6 +153,7 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
           <noscript>
             <style>{NO_SCRIPT_CSS}</style>
           </noscript>
+          <AttributionCapture />
           <DemoBar hubHref={nav.hubHref} />
           <ScrollProgress />
           <SiteHeader>

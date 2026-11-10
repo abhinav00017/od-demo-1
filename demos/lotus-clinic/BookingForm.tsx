@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Bubble } from "@/components/mocks/ChatMock";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
+import { readAttribution, safeLocalStorage } from "./attribution";
 import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
 import { DrawnCheck, EASE, LayoutMotion, PillButton, PlainMotion, useCalmMotion } from "./Motion";
@@ -172,7 +173,8 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...request, [HONEYPOT_FIELD]: trap }),
+        // Where the visitor first came from (display only on the clinic dashboard). Website when nothing is stored.
+        body: JSON.stringify({ ...request, ...(readAttribution(safeLocalStorage()) ?? {}), [HONEYPOT_FIELD]: trap }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; id?: string; error?: string; fieldErrors?: FieldErrors };
       if (res.ok && data.ok && data.id) {
