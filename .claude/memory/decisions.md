@@ -432,3 +432,4 @@ Append only. Newest at the bottom.
 
 - No deploys until Abhinav asks for the final one. Undeployed changes so far: none (everything up to 886adea is live).
 - Open question to Abhinav: the booking form's consent checkbox "The clinic may message me on WhatsApp about this visit". Recommendation given: replace the checkbox with a line under the submit button; keep consent for real clinics.
+- 10 Nov 2026, UNDEPLOYED (3aec85a): Lotus booking consent checkbox removed. Under the submit button: "By booking, you agree that {clinic.name} may message you on WhatsApp about this visit." (muted, small; centred on phones, left-aligned with the button from sm). The form sends consent: true on every submit; the server still answers 400 without consent.
