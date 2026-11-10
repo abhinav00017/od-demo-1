@@ -1,4 +1,4 @@
-import { clinic, type VisitTypeId } from "./data";
+import { clinic } from "./data";
 
 export type BookingInput = {
   name: string;
@@ -88,15 +88,4 @@ export const HONEYPOT_FIELD = "lotus_hp";
 /** Short booking reference shown to the patient, from the first 8 characters of the id. */
 export function shortBookingId(id: string) {
   return id.replace(/-/g, "").slice(0, 8).toUpperCase();
-}
-
-/** The WhatsApp message the clinic would send. The demo only shows it; nothing is sent. */
-export function confirmationMessage(input: BookingInput): string {
-  const first = input.name.trim().split(/\s+/)[0];
-  const type = clinic.booking.visitTypes.find((t) => t.id === (input.visitType as VisitTypeId))?.label.toLowerCase() ?? "visit";
-  const day = parseDay(input.date);
-  const when = day ? formatDay(day) : input.date;
-  const slot = input.slot.split(",")[0].toLowerCase();
-  const article = /^[aeiou]/.test(type) ? "an" : "a";
-  return `Hi ${first}, thank you for booking with ${clinic.name}. We have your request for ${article} ${type} on ${when}, ${slot}. We will confirm the exact time here within 2 hours.`;
 }

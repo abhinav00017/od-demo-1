@@ -53,6 +53,10 @@
   --color-lotus-tint: #f5faf9;
   /* 10% accent over white: initials, service icon circles, the years chip and the stat cards. Text on it: lotus-text, lotus-muted, lotus-accent-hover. */
   --color-lotus-avatar: #e7f1f1;
+  /* Amber flags on the dashboard ("Wants a new time", "No WhatsApp. Call to confirm."): amber 800 on amber 100, amber 300 ring. */
+  --color-lotus-warn: #92400e;
+  --color-lotus-warn-soft: #fef3c7;
+  --color-lotus-warn-line: #fcd34d;
 
   /*
    * Kalyani Tiles CRM demo (made-up showroom): white, Plus Jakarta Sans, one warm terracotta accent so it reads

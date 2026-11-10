@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BookingForm } from "@/demos/lotus-clinic/BookingForm";
 import { Dashboard, splitHint, whatsappLine, type DeskOptIn } from "@/demos/lotus-clinic/Dashboard";
-import type { Booking, DashboardBooking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking, type DashboardBooking } from "@/lib/bookings/types";
 import { qrPath } from "@/lib/qr";
 import { displayWhatsAppNumber, whatsappOptIn } from "@/lib/whatsapp/optin";
 
@@ -115,7 +115,8 @@ describe("booking success screen", () => {
     expect(button.getAttribute("target")).toBe("_blank");
     expect(button.getAttribute("rel")).toBe("noopener");
     expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "You’ll send a short message to +1 737 250 8034. That’s it.")).toBeTruthy();
-    expect(screen.getByText("You’ll get the real message on WhatsApp once the clinic confirms. Tap Open WhatsApp above first.")).toBeTruthy();
+    expect(screen.getByText("We'll confirm on WhatsApp. If you're not on WhatsApp, the clinic will call you.")).toBeTruthy();
+    expect(screen.getByText("Tap Open WhatsApp above first, so the messages can reach you.")).toBeTruthy();
     expect(screen.queryByText(/No message was sent/)).toBeNull();
   });
 
@@ -125,7 +126,7 @@ describe("booking success screen", () => {
     expect(screen.queryByRole("link", { name: "Open WhatsApp" })).toBeNull();
     expect(screen.queryByText("Get updates on WhatsApp")).toBeNull();
     expect(container.innerHTML).not.toContain("wa.me");
-    expect(screen.getByText("You’ll get the real message on WhatsApp once the clinic confirms.")).toBeTruthy();
+    expect(screen.getByText("We'll confirm on WhatsApp. If you're not on WhatsApp, the clinic will call you.")).toBeTruthy();
     expect(screen.queryByText(/Tap Open WhatsApp/)).toBeNull();
   });
 });
@@ -147,6 +148,7 @@ const booking: Booking = {
   campaign: null,
   utm: null,
   isDemo: false,
+  ...BOOKING_FLAG_DEFAULTS,
 };
 const props = { today: "2026-10-20", live: true, bookHref: "/clinic/website/book", onStatus: () => {}, onLogout: () => {} };
 

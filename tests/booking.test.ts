@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { confirmationMessage, normalisePhone, validateBooking, type BookingInput } from "@/demos/lotus-clinic/booking";
+import { normalisePhone, validateBooking, type BookingInput } from "@/demos/lotus-clinic/booking";
 
 // Monday 20 Oct 2026. Sunday is 25 Oct.
 const today = new Date(2026, 9, 20, 15, 0);
@@ -39,12 +39,5 @@ describe("booking validation", () => {
   it("refuses a Sunday clinic visit but allows a Sunday online consultation", () => {
     expect(validateBooking({ ...good, date: "2026-10-25" }, today).date).toMatch(/closed on Sundays/);
     expect(validateBooking({ ...good, date: "2026-10-25", visitType: "online" }, today).date).toBeUndefined();
-  });
-
-  it("builds the WhatsApp confirmation with the first name, type, day and time", () => {
-    expect(confirmationMessage(good)).toBe(
-      "Hi Priya, thank you for booking with Lotus Women's Clinic. We have your request for a clinic visit on Thu, 22 Oct, morning. We will confirm the exact time here within 2 hours.",
-    );
-    expect(confirmationMessage({ ...good, visitType: "online", slot: "Evening, 5 pm – 7 pm" })).toContain("for an online consultation on Thu, 22 Oct, evening.");
   });
 });

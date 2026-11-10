@@ -5,9 +5,11 @@ import { AnimatePresence, m } from "motion/react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Bubble } from "@/components/mocks/ChatMock";
+import { CONSENT_TEXT_V1 } from "@/lib/bookings/consent";
 import type { WhatsAppOptIn } from "@/lib/whatsapp/optin";
+import { requestReceivedText } from "@/lib/whatsapp/texts";
 import { readAttribution, safeLocalStorage } from "./attribution";
-import { confirmationMessage, HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
+import { HONEYPOT_FIELD, shortBookingId, validateBooking, type BookingInput, type FieldErrors, type FieldName } from "./booking";
 import { clinic } from "./data";
 import { DrawnCheck, EASE, LayoutMotion, PillButton, PlainMotion, useCalmMotion } from "./Motion";
 import { ui } from "./ui";
@@ -33,8 +35,8 @@ const inputClass = ui.input;
 
 const labelClass = "font-medium text-lotus-text";
 
-/** The quick-reply buttons under the WhatsApp preview, as the patient sees them. */
-const PREVIEW_BUTTONS = ["Confirm", "Change time"];
+/** The line under the success card's preview. */
+export const SUCCESS_LINE = "We'll confirm on WhatsApp. If you're not on WhatsApp, the clinic will call you.";
 
 function Field({ name, errors, children, hint }: { name: FormField; errors: FieldErrors; children: ReactNode; hint?: string }) {
   const calm = useCalmMotion();
@@ -215,7 +217,7 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
       >
         <DrawnCheck className="size-9 text-lotus-accent" />
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-lotus-text sm:text-3xl">Request received</h2>
-        <p className="mt-1.5">This is the WhatsApp message {sent.name.trim().split(/\s+/)[0]} would get from the clinic:</p>
+        <p className="mt-1.5">The clinic’s WhatsApp message to {sent.name.trim().split(/\s+/)[0]}:</p>
         <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-lotus-hairline">
           <m.div
             data-motion=""
@@ -232,42 +234,27 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
               <span className="block text-[11px] text-white">Business account</span>
             </span>
           </m.div>
-          {/* The bubble, then its two quick-reply buttons, appear one after another. Same marks as Bubble's own buttons. */}
+          {/* Exactly the message the server sends (the same builder), with no buttons. */}
           <div className="bg-lotus-wash p-4">
             <m.div
               data-motion=""
+              data-request-preview=""
               initial={calm ? { opacity: 0 } : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.3, ease: EASE }}
             >
               <Bubble from="business" time="now">
-                {confirmationMessage(sent)}
+                {requestReceivedText(sent)}
               </Bubble>
             </m.div>
-            <div data-preview-buttons="" className="mt-1 flex w-[85%] flex-col gap-1">
-              {PREVIEW_BUTTONS.map((b, i) => (
-                <m.span
-                  key={b}
-                  data-motion=""
-                  className="rounded-lg bg-wa-in py-2 text-center text-[13px] font-semibold text-wa-header shadow-sm"
-                  initial={calm ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ opacity: { duration: 0.2, delay: 0.55 + i * 0.1 }, scale: { type: "spring", stiffness: 420, damping: 22, delay: 0.55 + i * 0.1 } }}
-                >
-                  {b}
-                </m.span>
-              ))}
-            </div>
           </div>
         </div>
-        <p className="mt-5 font-semibold text-lotus-text">Booking saved. The clinic will confirm on WhatsApp.</p>
+        <p className="mt-5 font-semibold text-lotus-text">{SUCCESS_LINE}</p>
         <p className="mt-1 text-sm">
           Booking id: <span className="font-mono font-semibold text-lotus-text">{shortBookingId(sent.id)}</span>
         </p>
         {optIn ? <WhatsAppJoin optIn={optIn} /> : null}
-        <p className="mt-4 text-sm">
-          You&rsquo;ll get the real message on WhatsApp once the clinic confirms.{optIn ? " Tap Open WhatsApp above first." : null}
-        </p>
+        {optIn ? <p className="mt-4 text-sm">Tap Open WhatsApp above first, so the messages can reach you.</p> : null}
         <PillButton
           type="button"
           onClick={() => {
@@ -463,7 +450,7 @@ function BookingFormView({ initialVisitType, optIn }: FormProps) {
             {saving ? "Saving your booking…" : "Request appointment"}
           </PillButton>
           <p data-booking-consent="" className="mt-3 text-center text-sm text-lotus-muted sm:text-left">
-            By booking, you agree that {clinic.name} may message you on WhatsApp about this visit.
+            {CONSENT_TEXT_V1}
           </p>
         </form>
 

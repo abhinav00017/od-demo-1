@@ -2,6 +2,7 @@
 
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { SOURCE_LABELS, STAFF_SOURCES, type BookingSource } from "@/lib/bookings/sources";
+import { STAFF_CONSENT_TEXT_V1 } from "@/lib/bookings/consent";
 import type { DashboardBooking } from "@/lib/bookings/types";
 import type { AdminApi, StaffBookingInput } from "./adminApi";
 import { clinic } from "./data";
@@ -29,7 +30,8 @@ const submitClass = `w-full sm:w-auto disabled:cursor-not-allowed disabled:bg-lo
 
 /**
  * The staff New booking form: name, phone, date, slot, visit type, reason and where it came from.
- * Saves as confirmed. WhatsApp only when "Send confirmation on WhatsApp" is ticked (off by default).
+ * Saves as confirmed. "Send on WhatsApp" (off by default) records the patient's consent and sends the confirmation;
+ * without it the booking never gets a WhatsApp message.
  */
 export function NewBookingForm({ api, today, onDone }: { api: AdminApi; today: string; onDone: (b: DashboardBooking) => void }) {
   const id = useId();
@@ -115,8 +117,8 @@ export function NewBookingForm({ api, today, onDone }: { api: AdminApi; today: s
       <label className="flex items-start gap-3 text-sm text-lotus-text sm:col-span-2">
         <input type="checkbox" checked={values.sendWhatsApp} onChange={(e) => set("sendWhatsApp", e.target.checked)} className="mt-0.5 size-5 accent-lotus-accent" />
         <span>
-          Send confirmation on WhatsApp
-          <span className="block text-lotus-muted">Off by default. The booking is saved as confirmed either way.</span>
+          Send on WhatsApp
+          <span className="block text-lotus-muted">Tick only if: {STAFF_CONSENT_TEXT_V1} Without it, the clinic never messages this booking on WhatsApp.</span>
         </span>
       </label>
       {error ? (
@@ -133,19 +135,20 @@ export function NewBookingForm({ api, today, onDone }: { api: AdminApi; today: s
   );
 }
 
-/** Picks a new day and slot for a patient who asked for a new time. */
+/** Picks a new day and slot. Starts on the day and slot the patient asked for, when they asked on their page. */
 export function RescheduleForm({
   booking,
   today,
   onSave,
 }: {
-  booking: Pick<DashboardBooking, "name" | "date" | "slot">;
+  booking: Pick<DashboardBooking, "name" | "date" | "slot"> & Partial<Pick<DashboardBooking, "requestedDate" | "requestedSlot">>;
   today: string;
   onSave: (date: string, slot: string) => Promise<string | null>;
 }) {
   const id = useId();
-  const [date, setDate] = useState(booking.date < today ? today : booking.date);
-  const [slot, setSlot] = useState(booking.slot);
+  const startDate = booking.requestedDate && booking.requestedDate >= today ? booking.requestedDate : booking.date;
+  const [date, setDate] = useState(startDate < today ? today : startDate);
+  const [slot, setSlot] = useState(booking.requestedSlot ?? booking.slot);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -160,7 +163,7 @@ export function RescheduleForm({
 
   return (
     <form onSubmit={submit} aria-label={`Reschedule ${booking.name}`} className="grid gap-4 sm:grid-cols-2">
-      <p className="text-sm sm:col-span-2">The visit moves to the new time, is confirmed, and the patient gets a WhatsApp confirmation.</p>
+      <p className="text-sm sm:col-span-2">The visit moves and stays confirmed. The patient gets “Your visit has moved” on WhatsApp, with Confirm and Change.</p>
       <Labelled id={`${id}-date`} label="New date">
         <input id={`${id}-date`} type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} className={field} />
       </Labelled>
@@ -178,7 +181,7 @@ export function RescheduleForm({
       ) : null}
       <div className="sm:col-span-2">
         <button type="submit" disabled={busy || !date} className={submitClass}>
-          {busy ? "Saving…" : "Reschedule and confirm"}
+          {busy ? "Saving…" : "Move the visit"}
         </button>
       </div>
     </form>

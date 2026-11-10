@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AdminApi } from "@/demos/lotus-clinic/adminApi";
 import { Dashboard, actionsFor } from "@/demos/lotus-clinic/Dashboard";
 import { adminCounts, initials, matchesQuery, upcomingWeek } from "@/demos/lotus-clinic/dashboardData";
-import type { Booking, DashboardBooking, PatientSummary } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking, type DashboardBooking, type PatientSummary } from "@/lib/bookings/types";
 
 const TODAY = "2026-10-20"; // Tuesday
 
@@ -25,6 +25,7 @@ function make(over: Partial<Booking>): DashboardBooking {
     campaign: null,
     utm: null,
     isDemo: false,
+    ...BOOKING_FLAG_DEFAULTS,
     ...over,
   };
 }
@@ -89,13 +90,19 @@ describe("admin helpers", () => {
 
   it("row actions by tab", () => {
     const labels = (b: DashboardBooking, c: Parameters<typeof actionsFor>[1]) => actionsFor(b, c).map((a) => a.label);
-    expect(labels(fresh, "needs")).toEqual(["Confirm", "Cancel"]);
-    expect(labels(moving, "needs")).toEqual(["Reschedule", "Cancel"]);
-    expect(labels(make({ status: "new" }), "today")).toEqual(["Confirm", "Visited", "No-show", "Cancel"]);
-    expect(labels(later, "today")).toEqual(["Visited", "No-show", "Cancel"]);
-    expect(labels(fresh, "upcoming")).toEqual(["Confirm", "Cancel"]);
+    expect(labels(fresh, "needs")).toEqual(["Confirm", "Change day or slot", "Cancel"]);
+    expect(labels(moving, "needs")).toEqual(["Change day or slot", "Cancel"]);
+    expect(labels(make({ status: "new" }), "today")).toEqual(["Confirm", "Visited", "No-show", "Change day or slot", "Cancel"]);
+    expect(labels(later, "today")).toEqual(["Visited", "No-show", "Change day or slot", "Cancel"]);
+    expect(labels(fresh, "upcoming")).toEqual(["Confirm", "Change day or slot", "Cancel"]);
     expect(labels(later, "past")).toEqual(["Visited", "No-show"]);
     expect(labels(seen, "past")).toEqual([]);
+    expect(labels(make({ status: "cancelled", date: "2026-10-22" }), "upcoming")).toEqual(["Confirm", "Cancel"]);
+    // No WhatsApp: Call (a tel: link) and Confirmed by phone lead, until confirmed by phone.
+    const noWa = make({ name: "Call Chandra", date: "2026-10-21", noWhatsApp: true });
+    expect(labels(noWa, "needs")).toEqual(["Call", "Confirmed by phone", "Change day or slot", "Cancel"]);
+    expect(actionsFor(noWa, "needs")[0].href).toBe("tel:+919876543210");
+    expect(labels({ ...noWa, phoneConfirmedAt: "2026-10-20T05:00:00.000Z" }, "upcoming")).toEqual(["Confirm", "Change day or slot", "Cancel"]);
   });
 });
 
@@ -235,8 +242,9 @@ describe("new booking dialog", () => {
     for (const label of ["Name", "Mobile number", "Date", "Time", "Visit type", "Reason", "Source"]) expect(within(dialog).getByLabelText(label)).toBeTruthy();
     const source = within(dialog).getByLabelText("Source") as HTMLSelectElement;
     expect([...source.options].map((o) => o.textContent)).toEqual(["Walk-in", "Phone", "Referral", "Website", "Google Ads", "Meta Ads", "Google Maps", "Other"]);
-    const whatsapp = within(dialog).getByRole("checkbox", { name: /Send confirmation on WhatsApp/ }) as HTMLInputElement;
+    const whatsapp = within(dialog).getByRole("checkbox", { name: /Send on WhatsApp/ }) as HTMLInputElement;
     expect(whatsapp.checked).toBe(false);
+    expect(within(dialog).getByText(/The patient agreed to get WhatsApp messages about this visit\./)).toBeTruthy();
     expect((within(dialog).getByLabelText("Date") as HTMLInputElement).value).toBe(TODAY);
 
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Walk In Wanda" } });
@@ -265,17 +273,28 @@ describe("new booking dialog", () => {
   });
 });
 
-describe("reschedule", () => {
+describe("change day or slot", () => {
   it("opens a dialog for a patient who wants a new time and sends the new day and slot", async () => {
     const onReschedule = vi.fn(async () => null);
     renderDash({ onReschedule });
-    fireEvent.click(screen.getByRole("button", { name: "Reschedule Moving Mounika" }));
-    const dialog = screen.getByRole("dialog", { name: "Reschedule Moving Mounika" });
+    fireEvent.click(screen.getByRole("button", { name: "Change day or slot Moving Mounika" }));
+    const dialog = screen.getByRole("dialog", { name: "Change day or slot for Moving Mounika" });
+    expect(dialog.textContent).toContain("Your visit has moved");
     fireEvent.change(within(dialog).getByLabelText("New date"), { target: { value: "2026-10-24" } });
     fireEvent.change(within(dialog).getByLabelText("New time"), { target: { value: "Afternoon, 2 pm – 5 pm" } });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Reschedule and confirm" }));
-    await waitFor(() => expect(screen.getAllByText(/Moving Mounika moved to Sat, 24 Oct, afternoon, and confirmed/).length).toBeGreaterThan(0));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Move the visit" }));
+    await waitFor(() => expect(screen.getAllByText(/Moving Mounika moved to Sat, 24 Oct, afternoon\. The patient is asked to confirm on WhatsApp\./).length).toBeGreaterThan(0));
     expect(onReschedule).toHaveBeenCalledWith(moving.id, "2026-10-24", "Afternoon, 2 pm – 5 pm");
+  });
+
+  it("starts on the day and slot the patient asked for on their page", () => {
+    const asked = make({ name: "Asked Anu", date: "2026-10-23", wantsNewTime: true, requestedDate: "2026-10-26", requestedSlot: "Evening, 5 pm – 7 pm", phone: "9000020105" });
+    render(<Dashboard {...props} bookings={[asked]} needsAction={[asked]} api={fakeApi()} onReschedule={vi.fn(async () => null)} />);
+    expect(screen.getByText("Wants a new time: Mon, 26 Oct, Evening")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Change day or slot Asked Anu" }));
+    const dialog = screen.getByRole("dialog");
+    expect((within(dialog).getByLabelText("New date") as HTMLInputElement).value).toBe("2026-10-26");
+    expect((within(dialog).getByLabelText("New time") as HTMLSelectElement).value).toBe("Evening, 5 pm – 7 pm");
   });
 });
 

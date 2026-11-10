@@ -6,7 +6,7 @@ import { LiveDemo } from "@/demos/render";
 import { clinic, homeServiceSlugs } from "@/demos/lotus-clinic/data";
 import { Dashboard } from "@/demos/lotus-clinic/Dashboard";
 import { CountUp, ecgPath, formatFigure, MotionProvider, parseFigure, Reveal, RevealGroup, RevealItem } from "@/demos/lotus-clinic/Motion";
-import type { DashboardBooking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type DashboardBooking } from "@/lib/bookings/types";
 import { intersectAll, setReducedMotion } from "./setup";
 
 vi.mock("next/navigation", async (importOriginal) => ({
@@ -221,6 +221,7 @@ describe("motion pass 2", () => {
       campaign: null,
       utm: null,
       isDemo: false,
+      ...BOOKING_FLAG_DEFAULTS,
     });
     const props = { today: "2026-10-22", live: true, bookHref: "/book", onStatus: () => undefined, onLogout: () => undefined };
     const { container, rerender } = render(<Dashboard {...props} bookings={[row("a", "Asha")]} />);

@@ -121,7 +121,7 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
       if (!data.ok) throw new Error("not ok");
       if (startedAt !== edits.current) return;
       setBookings(data.bookings);
-      setWaiting(data.needsAction ?? data.bookings.filter(isWaiting));
+      setWaiting(data.needsAction ?? data.bookings.filter((b) => isWaiting(b, data.today)));
       setSources(data.sources ?? {});
       setToday(data.today);
       setStorage(data.storage);
@@ -169,7 +169,7 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
   function merge(updated: Booking) {
     // Keep the row's WhatsApp line. The next poll brings the new one, sent after this response.
     setBookings((list) => list.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
-    setWaiting((list) => list.flatMap((b) => (b.id !== updated.id ? [b] : isWaiting(updated) ? [{ ...b, ...updated }] : [])));
+    setWaiting((list) => list.flatMap((b) => (b.id !== updated.id ? [b] : isWaiting(updated, today) ? [{ ...b, ...updated }] : [])));
   }
 
   async function patch(id: string, body: unknown): Promise<{ booking?: Booking; error?: string }> {
@@ -194,8 +194,8 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
     }
   }
 
-  async function setStatus(id: string, status: BookingStatus): Promise<DashboardBooking | void> {
-    const { booking, error } = await patch(id, { status });
+  async function setStatus(id: string, status: BookingStatus, opts?: { byPhone?: boolean }): Promise<DashboardBooking | void> {
+    const { booking, error } = await patch(id, opts?.byPhone ? { status, byPhone: true } : { status });
     if (error) setActionError(error);
     return booking;
   }

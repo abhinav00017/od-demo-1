@@ -11,6 +11,7 @@ import { AdminDialog } from "./AdminDialog";
 import { httpAdminApi, type AdminApi } from "./adminApi";
 import {
   adminCounts,
+  callToRemind,
   dayLabel,
   groupByDay,
   groupByDayNewest,
@@ -18,22 +19,24 @@ import {
   longDay,
   matchesQuery,
   needsAction as isWaiting,
+  needsCall,
   shiftDay,
   shortDay,
+  telHref,
   upcomingWeek,
 } from "./dashboardData";
-import { Phone, SourceChip, StatusChip, WhatsAppStatus } from "./DashboardParts";
+import { BookingFlags, Phone, SourceChip, StatusChip, WhatsAppRowLine } from "./DashboardParts";
 import { EASE, LayoutMotion, Ticker, useCalmMotion } from "./Motion";
 import { PatientPanel } from "./PatientPanel";
 import { NewBookingForm, RescheduleForm } from "./StaffForms";
 import { ui } from "./ui";
 
-export { providerNote, splitHint, whatsappLine } from "./DashboardParts";
+export { consentLine, splitHint, whatsappLine } from "./DashboardParts";
 
 export type DashboardProps = {
   /** Today (clinic time) onward, from the 5 s poll. */
   bookings: DashboardBooking[];
-  /** Status new on any day, or wants a new time. Worked out from `bookings` when left out. */
+  /** Status new on any day, wants a new time, or No WhatsApp to call. Worked out from `bookings` when left out. */
   needsAction?: DashboardBooking[];
   /** Bookings created in the last 30 days, by source. */
   sources?: SourceCounts;
@@ -44,9 +47,9 @@ export type DashboardProps = {
   updatedAt?: Date;
   busyId?: string;
   bookHref: string;
-  /** Changes a status. Resolves with the updated booking (or nothing when it failed). */
-  onStatus: (id: string, status: BookingStatus) => void | Promise<DashboardBooking | void>;
-  /** Moves a booking to a new day and slot. Resolves with an error message, or null when it worked. */
+  /** Changes a status. `byPhone`: "Confirmed by phone" for a No-WhatsApp booking. Resolves with the updated booking (or nothing when it failed). */
+  onStatus: (id: string, status: BookingStatus, opts?: { byPhone?: boolean }) => void | Promise<DashboardBooking | void>;
+  /** Moves a booking to a new day and slot (the patient gets "visit moved"). Resolves with an error message, or null when it worked. */
   onReschedule?: (id: string, date: string, slot: string) => Promise<string | null>;
   /** Asks for fresh live data now (after a new booking or a demo reset). */
   onRefresh?: () => Promise<void> | void;
@@ -65,24 +68,45 @@ type Tab = "needs" | "today" | "upcoming" | "past" | "patients";
 type Context = Tab | "history";
 type PastStatus = "all" | "visited" | "no_show" | "cancelled";
 
-type RowAction = { key: string; label: string; status?: BookingStatus; reschedule?: true; tone: "primary" | "plain" | "danger"; disabled?: boolean };
+type RowAction = {
+  key: string;
+  label: string;
+  status?: BookingStatus;
+  reschedule?: true;
+  /** "Confirmed by phone": confirms without sending anything. */
+  byPhone?: true;
+  /** A link, not a button: the Call action. */
+  href?: string;
+  tone: "primary" | "plain" | "danger";
+  disabled?: boolean;
+};
 
-/** The buttons on a row, by tab. Visited and No-show only appear on today's and past rows. */
+/**
+ * The buttons on a row, by tab. Visited and No-show only appear on today's and past rows.
+ * "Change day or slot" moves an open booking and sends "visit moved"; it leads for a patient who asked for a new time.
+ * A No-WhatsApp booking still to call gets Call (a tel: link) and "Confirmed by phone" first.
+ */
 export function actionsFor(b: DashboardBooking, context: Context): RowAction[] {
   const confirm: RowAction = { key: "confirm", label: "Confirm", status: "confirmed", tone: "primary", disabled: b.status === "confirmed" };
   const cancel: RowAction = { key: "cancel", label: "Cancel", status: "cancelled", tone: "danger", disabled: b.status === "cancelled" };
   const visited: RowAction = { key: "visited", label: "Visited", status: "visited", tone: "plain", disabled: b.status === "visited" };
   const noShow: RowAction = { key: "no_show", label: "No-show", status: "no_show", tone: "plain", disabled: b.status === "no_show" };
-  const reschedule: RowAction = { key: "reschedule", label: "Reschedule", reschedule: true, tone: "primary" };
+  const change: RowAction = { key: "reschedule", label: "Change day or slot", reschedule: true, tone: b.wantsNewTime ? "primary" : "plain" };
+  const call: RowAction = { key: "call", label: "Call", href: telHref(b.phone), tone: "plain" };
+  const byPhone: RowAction = { key: "by_phone", label: "Confirmed by phone", status: "confirmed", byPhone: true, tone: "primary" };
+  const open = b.status === "new" || b.status === "confirmed";
+  const calling = needsCall(b) ? [call, byPhone] : [];
+  // What leads: call first, then a requested new time, then Confirm.
+  const lead = calling.length ? calling : b.wantsNewTime ? [change] : [confirm];
+  const rest = open && !lead.includes(change) ? [change] : [];
   switch (context) {
     case "needs":
-      return b.wantsNewTime ? [reschedule, cancel] : [confirm, cancel];
-    case "today":
-      return [...(b.status === "new" ? [confirm] : []), ...(b.wantsNewTime ? [reschedule] : []), visited, noShow, cancel];
     case "upcoming":
-      return [b.wantsNewTime ? reschedule : confirm, cancel];
+      return [...lead, ...rest, cancel];
+    case "today":
+      return [...(calling.length ? calling : b.status === "new" ? [confirm] : []), ...(b.wantsNewTime ? [change] : []), visited, noShow, ...(open && !b.wantsNewTime ? [change] : []), cancel];
     case "past":
-      return b.status === "new" || b.status === "confirmed" ? [visited, noShow] : [];
+      return open ? [visited, noShow] : [];
     default:
       return [];
   }
@@ -168,25 +192,36 @@ function Row({
           <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-lotus-text ring-1 ring-lotus-hairline">{b.visitType === "online" ? "Online" : "Clinic"}</span>
           <StatusChip status={b.status} />
           <SourceChip source={b.source ?? "website"} campaign={b.campaign} />
-          {b.wantsNewTime ? <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">Wants a new time</span> : null}
+          <BookingFlags b={b} />
         </div>
         <p className="mt-1 text-sm">{b.reason}</p>
         <Phone phone={b.phone} name={b.name} />
-        {b.whatsapp ? <WhatsAppStatus w={b.whatsapp} /> : null}
+        <WhatsAppRowLine b={b} />
         {actions.length ? (
           <div className="mt-3 flex flex-wrap gap-2">
-            {actions.map((a) => (
-              <button
-                key={a.key}
-                type="button"
-                disabled={busy || a.disabled}
-                onClick={() => onAction(b, a)}
-                aria-label={`${a.label} ${b.name}`}
-                className={`inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold transition disabled:cursor-not-allowed ${BUTTON[a.tone]}`}
-              >
-                {a.label}
-              </button>
-            ))}
+            {actions.map((a) =>
+              a.href ? (
+                <a
+                  key={a.key}
+                  href={a.href}
+                  aria-label={`${a.label} ${b.name}`}
+                  className={`inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold transition ${BUTTON[a.tone]}`}
+                >
+                  {a.label}
+                </a>
+              ) : (
+                <button
+                  key={a.key}
+                  type="button"
+                  disabled={busy || a.disabled}
+                  onClick={() => onAction(b, a)}
+                  aria-label={`${a.label} ${b.name}`}
+                  className={`inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold transition disabled:cursor-not-allowed ${BUTTON[a.tone]}`}
+                >
+                  {a.label}
+                </button>
+              ),
+            )}
           </div>
         ) : null}
       </div>
@@ -330,7 +365,7 @@ function DashboardView({
   demoReset = true,
 }: DashboardProps) {
   const id = useId();
-  const waiting = useMemo(() => needsAction ?? bookings.filter(isWaiting), [needsAction, bookings]);
+  const waiting = useMemo(() => needsAction ?? bookings.filter((b) => isWaiting(b, today)), [needsAction, bookings, today]);
   // The ids in the first lists that had any bookings. Rows that are not in them came in with a later poll.
   const [firstIds, setFirstIds] = useState<Set<string> | null>(null);
   if (firstIds === null && (bookings.length || waiting.length)) setFirstIds(new Set([...bookings, ...waiting].map((b) => b.id)));
@@ -400,7 +435,7 @@ function DashboardView({
       return;
     }
     if (!a.status) return;
-    const updated = await onStatus(b.id, a.status);
+    const updated = a.byPhone ? await onStatus(b.id, a.status, { byPhone: true }) : await onStatus(b.id, a.status);
     if (updated) setPast((p) => (p ? { ...p, rows: p.rows.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)) } : p));
     setVersion((v) => v + 1);
   }
@@ -408,6 +443,7 @@ function DashboardView({
   const filtered = (list: DashboardBooking[]) => (q ? list.filter((b) => matchesQuery(b, q)) : list);
   const needsRows = filtered(waiting);
   const todayRows = filtered(bookings.filter((b) => b.date === today));
+  const remindRows = filtered(callToRemind(bookings, today));
   const upcomingRows = filtered(upcomingWeek(bookings, today));
   const patientRows = (patients?.rows ?? []).filter((p) => matchesQuery(p, q));
 
@@ -452,7 +488,7 @@ function DashboardView({
     content = needsRows.length ? (
       <RowList items={needsRows}>{render("needs", true)}</RowList>
     ) : (
-      (noMatch ?? <Empty>Nothing needs action. New requests and patients who ask for a new time show up here.</Empty>)
+      (noMatch ?? <Empty>Nothing needs action. New requests, patients who ask for a new time and patients to call show up here.</Empty>)
     );
   } else if (tab === "today") {
     content =
@@ -467,10 +503,11 @@ function DashboardView({
             Open the booking page
           </a>
         </div>
-      ) : todayRows.length ? (
-        <RowList items={groupByDay(todayRows).flatMap((g) => g.items)}>{render("today", true)}</RowList>
       ) : (
-        (noMatch ?? <Empty>No bookings today.</Empty>)
+        <>
+          {todayRows.length ? <RowList items={groupByDay(todayRows).flatMap((g) => g.items)}>{render("today", true)}</RowList> : (noMatch ?? <Empty>No bookings today.</Empty>)}
+          {remindRows.length ? <CallToRemind rows={remindRows} /> : null}
+        </>
       );
   } else if (tab === "upcoming") {
     content = upcomingRows.length ? (
@@ -744,7 +781,11 @@ function DashboardView({
           }}
         />
       </AdminDialog>
-      <AdminDialog open={dialog?.kind === "reschedule"} title={dialog?.kind === "reschedule" ? `Reschedule ${dialog.booking.name}` : "Reschedule"} onClose={() => setDialog(null)}>
+      <AdminDialog
+        open={dialog?.kind === "reschedule"}
+        title={dialog?.kind === "reschedule" ? `Change day or slot for ${dialog.booking.name}` : "Change day or slot"}
+        onClose={() => setDialog(null)}
+      >
         {dialog?.kind === "reschedule" ? (
           <RescheduleForm
             booking={dialog.booking}
@@ -754,7 +795,7 @@ function DashboardView({
               if (!problem) {
                 setDialog(null);
                 setVersion((v) => v + 1);
-                setNotice(`${dialog.booking.name} moved to ${shortDay(date)}, ${slot.split(",")[0].toLowerCase()}, and confirmed.`);
+                setNotice(`${dialog.booking.name} moved to ${shortDay(date)}, ${slot.split(",")[0].toLowerCase()}. The patient is asked to confirm on WhatsApp.`);
               }
               return problem;
             }}
@@ -762,6 +803,36 @@ function DashboardView({
         ) : null}
       </AdminDialog>
     </div>
+  );
+}
+
+/** Tomorrow's patients who are not on WhatsApp: the reminder job skips them, so the desk calls. Under Today's rows. */
+function CallToRemind({ rows }: { rows: DashboardBooking[] }) {
+  return (
+    <section aria-labelledby="call-to-remind" data-call-to-remind="" className={`mt-6 p-5 sm:p-6 ${ui.card}`}>
+      <h3 id="call-to-remind" className="text-base font-semibold text-lotus-text">
+        Call to remind <span className="ml-1 text-sm font-normal text-lotus-muted">tomorrow · {rows.length}</span>
+      </h3>
+      <p className="mt-1 text-sm">Not on WhatsApp, so no reminder goes out. Call them today.</p>
+      <ul className="mt-3 divide-y divide-lotus-hairline">
+        {rows.map((b) => (
+          <li key={b.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-lotus-text">{b.name}</span>
+              <span className="block text-sm">{b.slot}</span>
+            </span>
+            <Phone phone={b.phone} name={b.name} />
+            <a
+              href={telHref(b.phone)}
+              aria-label={`Call ${b.name}`}
+              className="inline-flex min-h-10 items-center rounded-full bg-white px-4 text-sm font-semibold text-lotus-text ring-1 ring-lotus-hairline transition hover:text-lotus-accent hover:ring-lotus-accent"
+            >
+              Call
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

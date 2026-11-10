@@ -61,9 +61,27 @@ export function shiftDay(day: string, n: number) {
   return addDays(day, n);
 }
 
-/** True when the booking needs staff: a new request (any day) or a patient who asked for a new time. */
-export function needsAction(b: Pick<Booking, "status" | "wantsNewTime">) {
-  return b.status === "new" || b.wantsNewTime;
+type Waiting = Pick<Booking, "status" | "wantsNewTime"> & Partial<Pick<Booking, "noWhatsApp" | "phoneConfirmedAt" | "date">>;
+
+/** A No-WhatsApp booking staff still have to call: open, from `today` on (when given), not confirmed by phone yet. */
+export function needsCall(b: Waiting, today?: string) {
+  return b.noWhatsApp === true && (b.status === "new" || b.status === "confirmed") && !b.phoneConfirmedAt && (!today || !b.date || b.date >= today);
+}
+
+/** True when the booking needs staff: a new request (any day), a patient who asked for a new time, or No WhatsApp to call. */
+export function needsAction(b: Waiting, today?: string) {
+  return b.status === "new" || b.wantsNewTime || needsCall(b, today);
+}
+
+/** Tomorrow's confirmed visits whose patients are not on WhatsApp: the reminder job skips them, so staff call. */
+export function callToRemind<T extends Booking>(bookings: T[], today: string) {
+  const tomorrow = addDays(today, 1);
+  return bookings.filter((b) => b.date === tomorrow && b.status === "confirmed" && b.noWhatsApp);
+}
+
+/** "tel:+919876543210" for the Call button. */
+export function telHref(phone: string) {
+  return `tel:+91${phone}`;
 }
 
 /**

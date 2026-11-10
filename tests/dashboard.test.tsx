@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { Dashboard, whatsappLine } from "@/demos/lotus-clinic/Dashboard";
 import { dashboardCounts, endOfWeek, maskPhone } from "@/demos/lotus-clinic/dashboardData";
-import type { Booking, DashboardBooking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking, type DashboardBooking } from "@/lib/bookings/types";
 
 const TODAY = "2026-10-20"; // Tuesday
 
@@ -24,6 +24,7 @@ function make(over: Partial<Booking>): Booking {
     campaign: null,
     utm: null,
     isDemo: false,
+    ...BOOKING_FLAG_DEFAULTS,
     ...over,
   };
 }
@@ -118,17 +119,15 @@ describe("WhatsApp status line", () => {
     expect(screen.queryByText("via Twilio")).toBeNull();
   });
 
-  it("adds a small 'via Twilio' note for Twilio sends only", () => {
+  it("never names the provider: 'WhatsApp: delivered', no 'via Twilio'", () => {
     const rows: DashboardBooking[] = [
       { ...make({ name: "Twilio Tanvi" }), whatsapp: { kind: "confirmation", status: "delivered", error: null, at: "2026-10-20T15:21:00.000Z", provider: "twilio" } },
       { ...make({ name: "Meta Mira" }), whatsapp: { kind: "reminder", status: "sent", error: null, at: "2026-10-20T15:21:00.000Z", provider: "meta" } },
     ];
-    render(<Dashboard {...props} bookings={rows} />);
+    const { container } = render(<Dashboard {...props} bookings={rows} />);
     expect(screen.getByText("WhatsApp: delivered 8:51 pm")).toBeTruthy();
-    const notes = screen.getAllByText("via Twilio");
-    expect(notes).toHaveLength(1);
-    expect(notes[0].className).toContain("text-lotus-muted");
-    expect(notes[0].closest("li")?.textContent).toContain("Twilio Tanvi");
+    expect(screen.getByText("WhatsApp reminder: sent 8:51 pm")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/Twilio\b(?! Tanvi)|via Meta|\bvia\b/);
   });
 
   it("says the patient confirmed on WhatsApp, with no provider note", () => {
@@ -142,15 +141,15 @@ describe("WhatsApp status line", () => {
 });
 
 describe("Wants a new time chip", () => {
-  it("shows an amber chip only on rows that asked, with Reschedule and Cancel in Needs action", () => {
+  it("shows an amber chip only on rows that asked, with Change day or slot and Cancel in Needs action", () => {
     const rows: DashboardBooking[] = [{ ...make({ name: "Moving Maya", status: "confirmed", wantsNewTime: true }) }, { ...make({ name: "Settled Sana" }) }];
     render(<Dashboard {...props} bookings={rows} />);
     const chips = screen.getAllByText("Wants a new time");
     expect(chips).toHaveLength(1);
-    expect(chips[0].className).toContain("bg-amber-100");
+    expect(chips[0].className).toContain("bg-lotus-warn-soft");
     const row = chips[0].closest("li")!;
     expect(row.textContent).toContain("Moving Maya");
-    expect(within(row).getByRole("button", { name: "Reschedule Moving Maya" })).toBeTruthy();
+    expect(within(row).getByRole("button", { name: "Change day or slot Moving Maya" })).toBeTruthy();
     expect(within(row).getByRole("button", { name: "Cancel Moving Maya" })).toBeTruthy();
     expect(within(row).queryByRole("button", { name: "Confirm Moving Maya" })).toBeNull();
     const sana = screen.getByRole("button", { name: "Confirm Settled Sana" }).closest("li")!;

@@ -6,7 +6,7 @@ import { SOURCE_LABELS } from "@/lib/bookings/sources";
 import type { DashboardBooking, PatientNotes } from "@/lib/bookings/types";
 import type { AdminApi } from "./adminApi";
 import { initials, longDay, shortDay } from "./dashboardData";
-import { Phone, StatusChip, WhatsAppStatus } from "./DashboardParts";
+import { BookingFlags, consentLine, Phone, StatusChip, WhatsAppRowLine } from "./DashboardParts";
 import { ui } from "./ui";
 
 type Loaded = { visits: DashboardBooking[]; notes: PatientNotes | null };
@@ -101,6 +101,11 @@ export function PatientPanel({ bookingId, name, api, version, onClose }: { booki
               </dd>
             </div>
           </dl>
+          {current ? (
+            <p data-consent="" className="mt-3 text-sm text-lotus-muted" title={current.consentText ?? undefined}>
+              {consentLine(current)}
+            </p>
+          ) : null}
 
           <Notes key={`${bookingId}-${data.notes?.updatedAt ?? ""}`} bookingId={bookingId} api={api} initial={data.notes} />
 
@@ -112,12 +117,13 @@ export function PatientPanel({ bookingId, name, api, version, onClose }: { booki
                   <p className="font-semibold text-lotus-text">{shortDay(v.date)}</p>
                   <span className="text-sm">{v.slot.split(",")[0]}</span>
                   <StatusChip status={v.status} />
+                  <BookingFlags b={v} />
                 </div>
                 <p className="mt-1 text-sm">
                   {v.reason}
                   {v.visitType === "online" ? " · Online" : ""}
                 </p>
-                {v.whatsapp ? <WhatsAppStatus w={v.whatsapp} /> : null}
+                <WhatsAppRowLine b={v} />
               </li>
             ))}
           </ol>
