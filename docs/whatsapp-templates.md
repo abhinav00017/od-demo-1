@@ -30,8 +30,10 @@ The dashboard then shows the error with the hint "set TWILIO_CONTENT_SID_*, or p
    - `TWILIO_ACCOUNT_SID` = the Account SID
    - `TWILIO_AUTH_TOKEN` = the Auth Token (sensitive)
    - `TWILIO_WHATSAPP_FROM` = your quickstart sender, like `+17372508034`
-   - `TWILIO_CONTENT_SID_CONFIRM` = the HX sid of the confirmation template (see below)
-   - `TWILIO_CONTENT_SID_REMINDER` = the HX sid of the reminder template (optional)
+   - `TWILIO_CONTENT_SID_REQUEST_RECEIVED` = the HX sid of the request received template (see below)
+   - `TWILIO_CONTENT_SID_CONFIRM` = the HX sid of the visit confirmed template
+   - `TWILIO_CONTENT_SID_REMINDER` = the HX sid of the reminder template
+   - `TWILIO_CONTENT_SID_VISIT_MOVED` = the HX sid of the visit moved template
    - `TWILIO_CONTENT_SID_CLINIC_ALERT` = the HX sid of the clinic alert template (optional)
    - `WHATSAPP_PUBLIC_URL` = `https://od-demo-lyart.vercel.app`
    - `WHATSAPP_PROVIDER` = `twilio` (optional; the Twilio vars alone pick it)
@@ -45,33 +47,77 @@ Outside it, sends fail with error 63016, also shown with the hint.
 
 Never paste the Auth Token or the Account SID in chat, code or memory files. GitHub push protection blocks Account SIDs.
 
-### Create the content templates
+### The four patient templates
+
+All four go to the patient. All are category **Utility**, language English. The words are in `lib/whatsapp/texts.ts`
+(`PATIENT_BODIES`); the booking success screen shows the "request received" text from the same function, so the two never drift.
+`{{1}}` is the day ("Sat 24 Oct"), `{{2}}` the slot window ("Morning, 10 am – 1 pm"). The token is the end of the
+patient's own page link, `https://od-demo-lyart.vercel.app/clinic/website/v/<token>`, 24 url-safe characters.
+Every link uses `WHATSAPP_PUBLIC_URL` (the live demo's origin when unset).
+
+| When | Kind | Twilio env var | Meta env var | Buttons |
+| --- | --- | --- | --- | --- |
+| Patient books on the website | `request_received` | `TWILIO_CONTENT_SID_REQUEST_RECEIVED` | `WHATSAPP_TEMPLATE_REQUEST_RECEIVED` | none |
+| Staff press Confirm | `confirmation` | `TWILIO_CONTENT_SID_CONFIRM` | `WHATSAPP_TEMPLATE_CONFIRM` | URL "View or change" |
+| Day before, 6 pm (cron) | `reminder` | `TWILIO_CONTENT_SID_REMINDER` | `WHATSAPP_TEMPLATE_REMINDER` | none (link in the body) |
+| Staff change the day or slot | `visit_moved` | `TWILIO_CONTENT_SID_VISIT_MOVED` | `WHATSAPP_TEMPLATE_VISIT_MOVED` | quick replies Confirm / Change |
+
+#### 1. Request received: `lotus_request_received`
+
+```
+We've received your request for {{1}}, {{2}}. The clinic will confirm on WhatsApp.
+```
+
+- Variables: {{1}} `Sat 24 Oct`, {{2}} `Morning, 10 am – 1 pm`
+- Buttons: none. Twilio content type: **Text**.
+
+#### 2. Visit confirmed: `lotus_visit_confirmed`
+
+```
+Your visit at Lotus Women's Clinic is confirmed for {{1}}, {{2}}. You can come any time in this window.
+```
+
+- Variables: {{1}} `Sat 24 Oct`, {{2}} `Morning, 10 am – 1 pm`, {{3}} the token (sample `Xk3v9QmT0bLr2aWc8YpE5nHd`).
+- Button: one **URL** button (call to action), label `View or change`, URL `https://od-demo-lyart.vercel.app/clinic/website/v/{{3}}`.
+  Twilio content type: **Call to action**, with the URL ending in the variable. Meta: a dynamic URL button whose suffix is the token.
+- No quick replies.
+
+#### 3. Reminder: `lotus_visit_reminder`
+
+```
+See you tomorrow, {{1}}, {{2}}.
+View or change: {{3}}
+Reply STOP to stop messages.
+```
+
+- Variables: {{1}} `Sat 24 Oct`, {{2}} `Morning, 10 am – 1 pm`, {{3}} the whole page link
+  (sample `https://od-demo-lyart.vercel.app/clinic/website/v/Xk3v9QmT0bLr2aWc8YpE5nHd`).
+- Buttons: none (Abhinav's decision: the day-before reminder has no button). Twilio content type: **Text**.
+
+#### 4. Visit moved: `lotus_visit_moved`
+
+```
+Your visit has moved to {{1}}, {{2}}.
+```
+
+- Variables: {{1}} `Sat 24 Oct`, {{2}} `Evening, 5 pm – 7 pm`
+- Buttons: two **Quick Reply** buttons, `Confirm` (ID `confirm`) and `Change` (ID `change`). Twilio content type: **Quick Reply**.
+
+#### Creating them in Twilio
 
 1. Twilio console > Messaging > Content Template Builder > Create new.
-2. Name: use the names below. Language: English.
-3. Content type: **Text**.
-4. Body: paste the text below, with `{{1}}` and `{{2}}` as written. Add a sample value for each.
+2. Name and content type as above. Language: English.
+3. Body: paste the text with `{{1}}`.. as written. Add the sample for each variable.
+4. Add the buttons listed for that template.
 5. Save, then **Submit for WhatsApp approval**. Category: **Utility**.
 6. When it shows Approved, copy its **Content SID** (starts with `HX`) into the matching env var on Vercel. Redeploy.
 
-The wording follows the Meta templates below. Twilio's version has two variables, so the clinic name is written in.
-The code sends the variables in the order listed in `CONTENT_VARIABLES` in `lib/whatsapp/messages.ts`. Change that map if a template needs another order.
+The code sends the variables in the order listed in `CONTENT_VARIABLES` in `lib/whatsapp/messages.ts`.
 
-#### Booking confirmed: `lotus_booking_confirmed` → `TWILIO_CONTENT_SID_CONFIRM`
-
-```
-Hello, your visit at Lotus Women's Clinic is confirmed for {{1}}, {{2}}. Reply to this message if you need to change it.
-```
-
-Samples: {{1}} `Sat 24 Oct`, {{2}} `Morning, 10 am – 1 pm`
-
-#### Visit reminder: `lotus_booking_reminder` → `TWILIO_CONTENT_SID_REMINDER`
-
-```
-Hello, this is a reminder from Lotus Women's Clinic. Your visit is tomorrow, {{1}}, {{2}}. Reply to this message if you need to change it.
-```
-
-Samples: same as above.
+Fallback when a kind has no sid: request received and visit moved send plain text (Body), which only lands inside a 24 hour
+session the patient opened. Plain text carries what the buttons would: the confirmation adds "View or change: <link>",
+visit moved adds "Reply Confirm or Change.". The reminder and the clinic alert reuse `TWILIO_CONTENT_SID_CONFIRM` when theirs
+is unset, as before (the log says so). Twilio's sample template takes two variables; the confirmation now sends three.
 
 #### New booking alert (to the clinic): `lotus_new_booking_alert` → `TWILIO_CONTENT_SID_CLINIC_ALERT`
 
@@ -104,27 +150,24 @@ For a verified business sender there is no join step: leave `TWILIO_JOIN_KEYWORD
 A send to someone who has not joined fails. If Twilio answers 21654 or 63016, the dashboard row shows
 "Hint: set TWILIO_CONTENT_SID_*, or patient has not joined on WhatsApp yet" under the error.
 
-### Quick Reply template
+### Who gets messages
 
-The confirmation can carry two buttons, so the patient answers with one tap.
+Every patient send checks, in this order, and logs a "skipped (<reason>)" row instead of calling the provider:
 
-1. Content Template Builder > Create new. Name: `lotus_booking_confirmed_buttons`. Language: English.
-2. Content type: **Quick Reply**.
-3. Body: the same text as `lotus_booking_confirmed` above, with `{{1}}` and `{{2}}`:
+1. **Opted out**: the phone sent STOP (table `whatsapp_optouts`). Row line: "WhatsApp: opted out".
+2. **No consent**: the booking has no `consent_source`. Website bookings store the line under the button
+   (`CONSENT_TEXT_V1` in `lib/bookings/consent.ts`); staff bookings only when "Send on WhatsApp" is ticked.
+3. **No WhatsApp**: the booking or the phone (table `whatsapp_unreachable`) is marked not on WhatsApp.
+4. **Demo**: an `is_demo` booking or a 90000 2xxxx number.
 
-   ```
-   Hello, your visit at Lotus Women's Clinic is confirmed for {{1}}, {{2}}. Reply to this message if you need to change it.
-   ```
+A send or a status callback that fails with one of these codes marks the booking No WhatsApp and remembers the phone:
 
-4. Buttons (title, then ID):
-   - `Confirm`, ID `confirm`
-   - `Change time`, ID `change_time`
-5. Save, then **Submit for WhatsApp approval**. Category: **Utility**.
-6. When approved, put its HX sid in `TWILIO_CONTENT_SID_CONFIRM` on Vercel. Redeploy.
+- Twilio **63024** "Invalid message recipient" and **63003** "Channel could not find To address"
+  (https://www.twilio.com/docs/api/errors/63024, https://www.twilio.com/docs/api/errors/63003).
+- Meta **131026** (message undeliverable: not a WhatsApp user).
 
-A tap reaches the inbound webhook below as `ButtonPayload` (the ID) and `ButtonText` (the title).
-Typed replies work too: `confirm`, `c` or `yes` confirm; `change time`, `change`, `r` or `reschedule` ask for a new time.
-So Twilio's sample template ("Reply C to confirm or R to reschedule") also works.
+The dashboard then shows the amber chip "No WhatsApp. Call to confirm." in Needs action, with **Call** and **Confirmed by phone**.
+The reminder job skips those bookings; Today shows them under "Call to remind".
 
 ### Inbound webhook
 
@@ -139,20 +182,22 @@ https://od-demo-lyart.vercel.app/api/whatsapp/twilio-inbound
 
 These menu names come from the brief and were not checked against the live console.
 
-What it does, for the sender's newest booking that is new or confirmed and today or later:
+What it does. The sender's booking is their newest open one (new or confirmed, today or later), preferring one waiting for them:
 
-- **Confirm**: the booking becomes confirmed. No second confirmation template is sent. The patient gets
-  "Thank you. Your visit is confirmed for <day>, <slot>. Lotus Women's Clinic."
-  The dashboard row says "Patient confirmed on WhatsApp".
-- **Change time**: the row gets an amber "Wants a new time" chip. The patient gets the booking link for the same visit type.
-  The chip clears when staff click Confirm or Cancel.
-- **Anything else**, or no open booking: one polite reply per sender per hour with the booking link and the clinic phone. After that, no reply.
+- **STOP**, and Twilio's other opt-out words (STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT, REVOKE, OPTOUT): the phone is opted out of
+  every message. The first time, the reply is "You won't get more WhatsApp messages from Lotus Women's Clinic. Reply START to turn them back on."
+- **START** or UNSTOP: the opt-out is removed, with a short reply.
+- **Confirm** (or `confirm`, `c`, `yes`), only when staff moved the visit (`awaiting_patient`): the wait clears, the row loses
+  "Waiting for patient", and the patient gets "Thank you, see you on <day>, <slot>."
+- **Change** (or `change`, `r`, `reschedule`), only when staff moved the visit: the reply is the patient's own page link.
+- Confirm or Change without a moved visit, anything else, or no open booking: one polite reply per sender per hour with the
+  booking link and the clinic phone. Opted-out numbers get no auto-reply.
 
 The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`, like the status callback, and answers 403 when it is wrong.
 Server logs carry the intent, the last 4 digits and the booking reference. Never the message text.
 The messages table logs each reply as kind `inbound` (template = the intent) and each tap on Confirm as `patient_confirmed`.
 
-These need the `wants_new_time` column and the new message kinds. Run `npm run db:migrate` on Neon before deploying.
+These need the columns and tables from `lib/bookings/schema.sql`. Run `npm run db:migrate` on Neon before deploying.
 
 ### Delivery statuses
 
@@ -163,43 +208,22 @@ If the console offers a status callback URL for the sender, paste the same URL t
 https://od-demo-lyart.vercel.app/api/whatsapp/twilio-status
 ```
 
-The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`. The dashboard row then moves from "sent" to "delivered" or "read", and shows "via Twilio".
+The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`. The dashboard row then moves from "sent" to "delivered" or "read". It never names the provider.
 The message log stores the HX sid in its `template` column for content sends, and `text` for plain-text sends.
 
 ### Meta stays
 
 The Meta route is unchanged. For a verified business, set `WHATSAPP_PROVIDER=meta` (or remove the Twilio vars) and follow the steps below.
 
-## 1. Create three templates
+## 1. Create the templates
 
-Go to WhatsApp Manager > Message templates > Create template.
-Create all three. Use the exact names, so the env vars below match.
+Go to WhatsApp Manager > Message templates > Create template. Create the four patient templates above
+(`lotus_request_received`, `lotus_visit_confirmed`, `lotus_visit_reminder`, `lotus_visit_moved`), category Utility,
+English (US) `en_US`, with the same bodies, samples and buttons. For the confirmation, add a **Visit website** button
+with a **Dynamic** URL `https://od-demo-lyart.vercel.app/clinic/website/v/{{1}}`; the code sends the token as that button's
+parameter. For visit moved, add two **Custom** quick-reply buttons, `Confirm` and `Change`; the code sends payloads `confirm` and `change`.
 
-### Booking confirmed
-
-- Category: Utility
-- Name: `lotus_booking_confirmed`
-- Language: English (US), code `en_US`
-- Body:
-
-  ```
-  Hello {{1}}, your visit at {{2}} is confirmed for {{3}}, {{4}}. Visit type: {{5}}. Reply to this message if you need to change it.
-  ```
-
-- Sample values: {{1}} `Priya`, {{2}} `Lotus Women's Clinic`, {{3}} `Sat 24 Oct`, {{4}} `Morning, 10 am – 1 pm`, {{5}} `Clinic visit`
-
-### Visit reminder
-
-- Category: Utility
-- Name: `lotus_booking_reminder`
-- Language: English (US), code `en_US`
-- Body:
-
-  ```
-  Hello {{1}}, this is a reminder from {{2}}. Your visit is tomorrow, {{3}}, {{4}}. Visit type: {{5}}. Reply to this message if you need to change it.
-  ```
-
-- Sample values: same as above.
+The clinic alert stays as it was:
 
 ### New booking alert (to the clinic)
 
@@ -216,21 +240,21 @@ This one goes to the clinic's own number on every new booking, so staff know a r
 
 - Sample values: {{1}} `Priya Sharma`, {{2}} `Clinic visit`, {{3}} `Sat 24 Oct`, {{4}} `Morning, 10 am – 1 pm`, {{5}} `Pregnancy care`
 
-No header, footer or buttons. Approval usually takes minutes to a day.
+Approval usually takes minutes to a day.
 
 When they show "Active", set these on Vercel (Production), then redeploy:
 
-- `WHATSAPP_TEMPLATE_CONFIRM` = `lotus_booking_confirmed`
-- `WHATSAPP_TEMPLATE_REMINDER` = `lotus_booking_reminder`
+- `WHATSAPP_TEMPLATE_REQUEST_RECEIVED` = `lotus_request_received`
+- `WHATSAPP_TEMPLATE_CONFIRM` = `lotus_visit_confirmed`
+- `WHATSAPP_TEMPLATE_REMINDER` = `lotus_visit_reminder`
+- `WHATSAPP_TEMPLATE_VISIT_MOVED` = `lotus_visit_moved`
 - `WHATSAPP_TEMPLATE_CLINIC_ALERT` = `lotus_new_booking_alert`
 - `WHATSAPP_TEMPLATE_LANG` = `en_US`
 
 Also set `CLINIC_WHATSAPP` to the clinic's own number: digits only, `91` then 10 digits, no plus.
 Without it, no clinic alert is sent. While on the test number, that number must be one of the 5 verified recipients.
 
-If Meta asks for a different wording, keep the five placeholders in the same order.
-Patient templates: first name, clinic name, date, time slot, visit type.
-Clinic alert: full name, visit type, date, time slot, reason.
+If Meta asks for a different wording, keep the placeholders in the same order: day, slot window, then the link (reminder only).
 
 ## 2. Connect the webhook
 
