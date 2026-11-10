@@ -73,10 +73,23 @@ export function needsAction(b: Waiting, today?: string) {
   return b.status === "new" || b.wantsNewTime || needsCall(b, today);
 }
 
-/** Tomorrow's confirmed visits whose patients are not on WhatsApp: the reminder job skips them, so staff call. */
-export function callToRemind<T extends Booking>(bookings: T[], today: string) {
+export type RemindReason = "No WhatsApp" | "Opted out" | "No consent";
+
+/**
+ * Why the reminder job will not message this booking, as the small note on the Call to remind row. Null = it will.
+ * Same three blocks as the job (lib/whatsapp/reachability): No WhatsApp first, to match the row's amber chip.
+ */
+export function remindReason(b: Pick<Booking, "noWhatsApp" | "consentSource"> & { optedOut?: boolean }): RemindReason | null {
+  if (b.noWhatsApp) return "No WhatsApp";
+  if (b.optedOut) return "Opted out";
+  if (!b.consentSource) return "No consent";
+  return null;
+}
+
+/** Tomorrow's confirmed visits that get no WhatsApp reminder (No WhatsApp, opted out, no consent): the reminder job skips them, so staff call. */
+export function callToRemind<T extends Booking & { optedOut?: boolean }>(bookings: T[], today: string) {
   const tomorrow = addDays(today, 1);
-  return bookings.filter((b) => b.date === tomorrow && b.status === "confirmed" && b.noWhatsApp);
+  return bookings.filter((b) => b.date === tomorrow && b.status === "confirmed" && remindReason(b) !== null);
 }
 
 /** "tel:+919876543210" for the Call button. */

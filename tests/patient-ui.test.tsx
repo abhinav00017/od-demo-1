@@ -93,15 +93,24 @@ describe("dashboard states", () => {
     expect(within(stoppedRow).getByText("WhatsApp: opted out")).toBeTruthy();
   });
 
-  it("lists tomorrow's No-WhatsApp visits under Call to remind on Today", () => {
-    const noWa = make({ name: "Call Chandra", date: "2026-10-21", noWhatsApp: true, phone: "9123456789" });
-    const fine = make({ name: "Fine Fatima", date: "2026-10-21" });
+  it("lists tomorrow's visits that get no reminder under Call to remind on Today, each with why", () => {
+    const consent = { consentSource: "website" as const, consentAt: "2026-10-19T04:00:00.000Z" };
+    const noWa = make({ name: "Call Chandra", date: "2026-10-21", noWhatsApp: true, phone: "9123456789", ...consent });
+    const stopped = make({ name: "Stopped Sita", date: "2026-10-21", optedOut: true, phone: "9123456780", ...consent });
+    const noConsent = make({ name: "Desk Divya", date: "2026-10-21", phone: "9123456781", source: "walk_in" });
+    const fine = make({ name: "Fine Fatima", date: "2026-10-21", ...consent });
+    const fresh = make({ name: "New Neha", date: "2026-10-21", status: "new" });
+    const gone = make({ name: "Gone Geetha", date: "2026-10-21", status: "cancelled", noWhatsApp: true });
     const later = make({ name: "Later Latha", date: "2026-10-22", noWhatsApp: true });
-    render(<Dashboard {...props} bookings={[make({ name: "Today Tara" }), noWa, fine, later]} needsAction={[]} />);
+    render(<Dashboard {...props} bookings={[make({ name: "Today Tara" }), noWa, stopped, noConsent, fine, fresh, gone, later]} needsAction={[]} />);
     fireEvent.click(screen.getByRole("tab", { name: /^Today/ }));
     const list = screen.getByRole("region", { name: /Call to remind/ });
-    expect(list.textContent).toContain("Call Chandra");
-    expect(list.textContent).not.toMatch(/Fine Fatima|Later Latha|Today Tara/);
+    const why = (name: string) => within(list).getByText(name).closest("li")!.querySelector("[data-remind-reason]")?.textContent;
+    expect(why("Call Chandra")).toBe("No WhatsApp");
+    expect(why("Stopped Sita")).toBe("Opted out");
+    expect(why("Desk Divya")).toBe("No consent");
+    expect(list.textContent).toContain("tomorrow · 3");
+    expect(list.textContent).not.toMatch(/Fine Fatima|New Neha|Gone Geetha|Later Latha|Today Tara/);
     expect(within(list).getByRole("link", { name: "Call Call Chandra" }).getAttribute("href")).toBe("tel:+919123456789");
   });
 

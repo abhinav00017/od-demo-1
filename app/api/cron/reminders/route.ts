@@ -7,8 +7,8 @@ import { sendBookingMessage } from "@/lib/whatsapp/notify";
 /**
  * Daily reminder job. Vercel Cron calls it at 12:30 UTC (6 pm in India) with "Authorization: Bearer CRON_SECRET".
  * Sends the reminder template to every confirmed booking for tomorrow (India time) that has no reminder logged yet.
- * No-WhatsApp bookings are left out (they are on the dashboard's "Call to remind" list). Opted-out phones and bookings
- * without consent get a "skipped" row instead of a message (sendBookingMessage checks), so they are never retried.
+ * No-WhatsApp bookings are left out. Opted-out phones and bookings without consent get a "skipped" row instead of a message
+ * (sendBookingMessage checks), so they are never retried. All three are on the dashboard's "Call to remind" list.
  */
 export async function GET(req: NextRequest) {
   // Read the request first. That keeps the route dynamic, so the build never prerenders a 503.

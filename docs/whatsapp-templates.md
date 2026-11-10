@@ -167,7 +167,9 @@ A send or a status callback that fails with one of these codes marks the booking
 - Meta **131026** (message undeliverable: not a WhatsApp user).
 
 The dashboard then shows the amber chip "No WhatsApp. Call to confirm." in Needs action, with **Call** and **Confirmed by phone**.
-The reminder job skips those bookings; Today shows them under "Call to remind".
+The reminder job skips those bookings. Today's "Call to remind" lists every confirmed visit for tomorrow that gets no reminder:
+No WhatsApp, opted out, or no consent, each with a small grey note saying which. A phone marked only in `whatsapp_unreachable`
+(not on the booking) is not on that list.
 
 ### Inbound webhook
 

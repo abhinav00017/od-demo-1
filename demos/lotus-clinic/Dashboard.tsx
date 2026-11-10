@@ -12,6 +12,7 @@ import { httpAdminApi, type AdminApi } from "./adminApi";
 import {
   adminCounts,
   callToRemind,
+  remindReason,
   dayLabel,
   groupByDay,
   groupByDayNewest,
@@ -808,20 +809,23 @@ function DashboardView({
   );
 }
 
-/** Tomorrow's patients who are not on WhatsApp: the reminder job skips them, so the desk calls. Under Today's rows. */
+/** Tomorrow's patients who get no WhatsApp reminder (No WhatsApp, opted out, no consent), so the desk calls. Under Today's rows. */
 function CallToRemind({ rows }: { rows: DashboardBooking[] }) {
   return (
     <section aria-labelledby="call-to-remind" data-call-to-remind="" className={`mt-6 p-5 sm:p-6 ${ui.card}`}>
       <h3 id="call-to-remind" className="text-base font-semibold text-lotus-text">
         Call to remind <span className="ml-1 text-sm font-normal text-lotus-muted">tomorrow · {rows.length}</span>
       </h3>
-      <p className="mt-1 text-sm">Not on WhatsApp, so no reminder goes out. Call them today.</p>
+      <p className="mt-1 text-sm">No WhatsApp reminder goes out to these patients. Call them today.</p>
       <ul className="mt-3 divide-y divide-lotus-hairline">
         {rows.map((b) => (
           <li key={b.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-lotus-text">{b.name}</span>
               <span className="block text-sm">{b.slot}</span>
+              <span data-remind-reason="" className="block text-xs text-lotus-muted">
+                {remindReason(b)}
+              </span>
             </span>
             <Phone phone={b.phone} name={b.name} />
             <a
