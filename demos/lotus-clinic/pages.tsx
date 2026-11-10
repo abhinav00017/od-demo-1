@@ -55,7 +55,7 @@ function SectionTitle({ id, title, line, link }: { id?: string; title: string; l
   return (
     <Reveal className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
       <div className="max-w-2xl">
-        <h2 id={id} className={`flex items-start gap-3 ${ui.h2}`}>
+        <h2 id={id} className={`flex items-start gap-3 lg:scroll-mt-24 ${ui.h2}`}>
           <LotusLineMark className="mt-[0.3em] size-6 shrink-0" />
           {title}
         </h2>
@@ -191,12 +191,42 @@ function TrustStrip() {
   );
 }
 
+/**
+ * A slim booking row at the foot of a white home section, so booking is never far away on a long page.
+ * Tinted, to stand apart from the white band. One row on desktop, stacked and centred on phones.
+ */
+function BookingStrip({ nav, title, label }: { nav: Nav; title: string; label: string }) {
+  return (
+    <Reveal
+      as="aside"
+      aria-label={label}
+      data-booking-strip=""
+      className="mt-12 flex flex-col items-center gap-5 rounded-3xl bg-lotus-tint px-6 py-7 text-center ring-1 ring-lotus-hairline sm:px-8 lg:mt-16 lg:flex-row lg:justify-center lg:gap-8 lg:px-8 lg:py-6 lg:text-left"
+    >
+      <div>
+        <p className="text-xl font-bold tracking-tight text-lotus-text">{title}</p>
+        <p className="mt-1">Choose a clinic visit or an online consultation. We confirm on WhatsApp.</p>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center justify-center gap-3">
+        <LotusButton href={nav.href("book")} className="lg:px-5">
+          <CalendarCheck aria-hidden strokeWidth={1.75} className="size-5" />
+          Book an Appointment
+        </LotusButton>
+        <LotusButton href={`${nav.href("book")}?type=online`} variant="secondary" className="lg:px-5">
+          <MessageCircle aria-hidden strokeWidth={1.75} className="size-5" />
+          Consult Online
+        </LotusButton>
+      </div>
+    </Reveal>
+  );
+}
+
 export function LotusHome({ nav }: { nav: Nav }) {
   const services = homeServiceSlugs.map((slug) => clinic.services.find((s) => s.slug === slug)!);
   const { doctor } = clinic;
   return (
     <>
-      <section className="relative" style={HERO_BACKDROP}>
+      <section className={`relative ${ui.anchor}`} style={HERO_BACKDROP}>
         <HeroGlow backgroundImage={HERO_GLOW} />
         <LotusContainer className="relative grid items-center gap-12 py-14 sm:py-20 lg:min-h-[80vh] lg:grid-cols-[1.15fr_0.85fr] lg:gap-20 lg:py-20">
           <RevealGroup onMount>
@@ -229,7 +259,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="numbers-heading">
+      <section aria-labelledby="numbers-heading" className={ui.anchor}>
         <LotusContainer className={ui.section}>
           <Reveal className="mx-auto max-w-2xl text-center">
             <h2 id="numbers-heading" className={`text-balance ${ui.h2}`}>
@@ -277,7 +307,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="journey-heading" data-band="" className="bg-lotus-tint">
+      <section aria-labelledby="journey-heading" data-band="" className={`bg-lotus-tint ${ui.anchor}`}>
         <LotusContainer className={ui.section}>
           <SectionTitle id="journey-heading" title="How a Visit Works" line="From booking to follow-up, every step reaches you on WhatsApp." />
           <div className="mt-10 grid items-center gap-12 lg:mt-12 lg:grid-cols-[1fr_17rem] lg:gap-16">
@@ -287,7 +317,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="services-heading">
+      <section aria-labelledby="services-heading" className={ui.anchor}>
         <LotusContainer className={ui.section}>
           <SectionTitle
             id="services-heading"
@@ -312,10 +342,11 @@ export function LotusHome({ nav }: { nav: Nav }) {
               </RevealItem>
             ))}
           </RevealGroup>
+          <BookingStrip nav={nav} title="Ready to book your visit?" label="Book a visit after the specialities" />
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="why-heading" data-band="" className="bg-lotus-tint">
+      <section aria-labelledby="why-heading" data-band="" className={`bg-lotus-tint ${ui.anchor}`}>
         <LotusContainer className={ui.section}>
           <SectionTitle id="why-heading" title={`Why Choose ${clinic.name}`} line="Careful, personal care, based on clinical evidence." />
           <RevealGroup as="ul" className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-12 lg:grid-cols-4 lg:gap-8">
@@ -333,7 +364,7 @@ export function LotusHome({ nav }: { nav: Nav }) {
       </section>
 
       {/* overflow-x-clip: the cards slide in from 24px outside their column, which must never widen the page on phones. */}
-      <section aria-labelledby="stories-heading" className="overflow-x-clip">
+      <section aria-labelledby="stories-heading" className={`overflow-x-clip ${ui.anchor}`}>
         <LotusContainer className={ui.section}>
           <SectionTitle id="stories-heading" title="What Our Patients Say" line="Experiences shared by women who visit the clinic." />
           <RevealGroup as="ul" stagger={0.12} className="mt-10 grid gap-6 md:grid-cols-2 lg:mt-12 lg:gap-8">
@@ -366,10 +397,11 @@ export function LotusHome({ nav }: { nav: Nav }) {
               </RevealItem>
             ))}
           </RevealGroup>
+          <BookingStrip nav={nav} title="Still deciding? Talk to Dr. Rao." label="Book a visit after the patient stories" />
         </LotusContainer>
       </section>
 
-      <section aria-labelledby="visit-heading" data-band="" className="bg-lotus-tint">
+      <section aria-labelledby="visit-heading" data-band="" className={`bg-lotus-tint ${ui.anchor}`}>
         <LotusContainer className={ui.section}>
           <SectionTitle id="visit-heading" title="Visit Us" line="Near Siripuram Junction, opposite the city park, with parking in the building." />
           <Reveal className="mt-10 lg:mt-12">
@@ -389,7 +421,7 @@ export function LotusServices({ nav }: { nav: Nav }) {
       <LotusContainer className={ui.section}>
         <RevealGroup as="ul" className="grid gap-6 md:grid-cols-2 lg:gap-8">
           {clinic.services.map((s) => (
-            <RevealItem as="li" lift tilt={3} key={s.slug} id={s.slug} className={`group flex scroll-mt-6 flex-col p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
+            <RevealItem as="li" lift tilt={3} key={s.slug} id={s.slug} className={`group flex scroll-mt-6 flex-col lg:scroll-mt-24 p-7 sm:p-9 ${ui.card} ${ui.lift}`}>
               <div className="flex items-center gap-4">
                 <ServiceIcon name={s.icon} />
                 <h2 className="text-xl font-semibold tracking-tight text-lotus-text sm:text-2xl">{s.name}</h2>

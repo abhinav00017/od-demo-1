@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { getService } from "@/lib/catalog";
 import { LiveDemo } from "@/demos/render";
@@ -55,5 +55,53 @@ describe("Lotus home order", () => {
     expect(list("why-heading")).toBe(4);
     expect(list("services-heading")).toBe(4);
     expect(main.textContent).not.toContain("Speaks");
+  });
+});
+
+describe("Lotus sticky desktop header", () => {
+  it("sticks to the top from lg only, above the dots and below the menu, and slims after a short scroll", () => {
+    renderHome();
+    const header = screen.getByRole("banner");
+    const cls = header.className.split(/\s+/);
+    for (const c of ["lg:sticky", "lg:top-0", "lg:z-30", "lg:data-slim:shadow-lotus", "lg:data-slim:backdrop-blur-md", "motion-reduce:transition-none"]) expect(cls, c).toContain(c);
+    // Never sticky or blurred below lg: the phone menu panel is positioned inside the header.
+    expect(cls.filter((c) => /^(sticky|fixed|backdrop-|data-slim:backdrop)/.test(c))).toEqual([]);
+    expect(header.hasAttribute("data-slim")).toBe(false);
+    expect((header.firstElementChild as HTMLElement).className).toContain("lg:group-data-slim/header:py-2.5");
+
+    act(() => {
+      Object.defineProperty(window, "scrollY", { value: 200, configurable: true });
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(header.hasAttribute("data-slim")).toBe(true);
+    act(() => {
+      Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(header.hasAttribute("data-slim")).toBe(false);
+  });
+
+  it("leaves room for the header above every home section the dots scroll to", () => {
+    const { container } = renderHome();
+    for (const section of container.querySelectorAll("main section")) expect(section.className).toContain("lg:scroll-mt-[4.25rem]");
+  });
+});
+
+describe("Lotus booking strips", () => {
+  it("puts two booking strips on home, after the specialities and after the patient stories", () => {
+    const { container } = renderHome();
+    const strips = [...container.querySelectorAll<HTMLElement>("[data-booking-strip]")];
+    expect(strips).toHaveLength(2);
+    expect(strips[0].closest("section")!.getAttribute("aria-labelledby")).toBe("services-heading");
+    expect(strips[1].closest("section")!.getAttribute("aria-labelledby")).toBe("stories-heading");
+    expect(strips[0].textContent).toContain("Ready to book your visit?");
+    expect(strips[1].textContent).toContain("Still deciding? Talk to Dr. Rao.");
+    for (const strip of strips) {
+      expect(strip.textContent).toContain("Choose a clinic visit or an online consultation. We confirm on WhatsApp.");
+      expect(within(strip).getByRole("link", { name: "Book an Appointment" }).getAttribute("href")).toBe("/clinic/website/book");
+      expect(within(strip).getByRole("link", { name: "Consult Online" }).getAttribute("href")).toBe("/clinic/website/book?type=online");
+      // Last thing in its section, so the band order and backgrounds stay as they are.
+      expect(strip.parentElement!.lastElementChild).toBe(strip);
+    }
   });
 });

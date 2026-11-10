@@ -7,6 +7,7 @@ import { clinic, clinicWhatsAppHref } from "./data";
 import { MenuStateProvider } from "./MenuState";
 import { MobileBar } from "./MobileBar";
 import { MobileMenu } from "./MobileMenu";
+import { SiteHeader } from "./SiteHeader";
 import { BloomMark, FloatingButton, MotionProvider, PageFade, PillLink, ScrollProgress } from "./Motion";
 import { ui } from "./ui";
 
@@ -127,8 +128,8 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
           </noscript>
           <DemoBar hubHref={nav.hubHref} />
           <ScrollProgress />
-          <header className="relative border-b border-lotus-hairline bg-white">
-            <LotusContainer className="flex items-center justify-between gap-6 py-3.5">
+          <SiteHeader>
+            <LotusContainer className="flex items-center justify-between gap-6 py-3.5 transition-[padding] duration-200 ease-out motion-reduce:transition-none lg:group-data-slim/header:py-2.5">
               <Link href={nav.base} className="flex items-center gap-2.5 rounded-lg">
                 <BloomMark />
                 <span className="leading-tight">
@@ -162,7 +163,7 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
                 <MobileMenu items={items} book={book} phone={{ href: clinicWhatsAppHref, label: clinic.phone }} />
               </div>
             </LotusContainer>
-          </header>
+          </SiteHeader>
 
           <PageFade key={nav.page} className="flex-1">
             {children}

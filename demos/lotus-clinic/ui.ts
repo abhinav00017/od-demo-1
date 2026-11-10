@@ -26,6 +26,11 @@ export const ui = {
   /** Page headlines: extra bold, tight tracking. */
   h1: "font-extrabold tracking-[-0.03em] text-lotus-text",
   h2: "text-3xl font-bold tracking-tight text-lotus-text sm:text-4xl",
+  /**
+   * Room for the sticky desktop header (slim height, 67.5px measured at 1440) above anything scrolled to: home sections the
+   * section dots jump to, and anchored headings and cards. Phones have no sticky header, so lg only.
+   */
+  anchor: "lg:scroll-mt-[4.25rem]",
   /** Airy section padding. Each home section has its own band, so sections never share a gap. */
   section: "py-14 sm:py-20 lg:py-24",
 };

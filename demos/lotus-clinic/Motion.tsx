@@ -193,6 +193,7 @@ export function Magnetic({ children }: { children: ReactNode }) {
 }
 
 const TAGS = {
+  aside: m.aside,
   div: m.div,
   dl: m.dl,
   figure: m.figure,
