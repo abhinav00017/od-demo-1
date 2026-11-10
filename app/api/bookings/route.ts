@@ -1,8 +1,10 @@
 import type { NextRequest } from "next/server";
 import { HONEYPOT_FIELD, normalisePhone, parseBookingBody, parseDay, validateBooking } from "@/demos/lotus-clinic/booking";
 import { ADMIN_COOKIE, isAdminRequest } from "@/lib/admin/auth";
-import { CLINIC_SLUG, clinicToday, getStore, latestByBooking, type Booking, type MessageLog, type WhatsAppSummary } from "@/lib/bookings";
+import { CLINIC_SLUG, clinicToday, getStore, type Booking } from "@/lib/bookings";
+import { parseAttribution } from "@/lib/bookings/attribution";
 import { json, NOT_LOGGED_IN } from "@/lib/bookings/http";
+import { withWhatsApp } from "@/lib/bookings/whatsappSummary";
 import { notifyClinic, runAfterResponse } from "@/lib/bookings/notify";
 import { sendBookingMessage } from "@/lib/whatsapp/notify";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
@@ -39,6 +41,10 @@ export async function POST(req: NextRequest) {
       status: "new",
       notes: null,
       wantsNewTime: false,
+      source: "website",
+      campaign: null,
+      utm: null,
+      isDemo: false,
     };
     return json({ ok: true, id: fake.id, booking: fake }, 201);
   }
@@ -48,9 +54,13 @@ export async function POST(req: NextRequest) {
     return json({ ok: false, error: "Please check the highlighted fields.", fieldErrors }, 400);
   }
 
+  // Where the visitor first came from. Re-checked here, and only ever shown on the dashboard.
+  const attribution = parseAttribution(body);
+
   let booking: Booking;
   try {
     booking = await getStore().create({
+      ...attribution,
       clinicSlug: CLINIC_SLUG,
       name: input.name.trim(),
       phone: normalisePhone(input.phone)!,
@@ -72,29 +82,37 @@ export async function POST(req: NextRequest) {
   return json({ ok: true, id: booking.id, booking }, 201);
 }
 
-function summary(m: MessageLog | undefined): WhatsAppSummary | null {
-  return m ? { kind: m.kind, status: m.status, error: m.error, at: m.updatedAt, provider: m.provider } : null;
-}
+/** Bookings this many days back count toward "Bookings by source". */
+const SOURCE_WINDOW_DAYS = 30;
 
-/** Bookings from today (clinic time) onward, each with its latest WhatsApp message. Admin only. */
+/**
+ * The dashboard's live data, polled every 5 s. Admin only.
+ * `bookings`: today (clinic time) onward. `needsAction`: status new on any day, or wants a new time.
+ * `sources`: bookings created in the last 30 days, by source. Each booking carries its latest WhatsApp message.
+ */
 export async function GET(req: NextRequest) {
   if (!isAdminRequest(req.cookies.get(ADMIN_COOKIE)?.value)) return json(NOT_LOGGED_IN, 401);
   const store = getStore();
   const today = clinicToday();
   try {
-    const list = await store.list({ from: today, clinicSlug: CLINIC_SLUG });
-    // The message log is extra. If it fails (say the table is not migrated yet), bookings still load.
-    // The row shows what the patient got, so the clinic's own alert is left out, and so are the patient's own messages.
-    // A patient tapping Confirm (patient_confirmed) stays in: the row says so.
-    let latest = new Map<string, MessageLog>();
-    try {
-      const sent = await store.listMessagesForBookings(list.map((b) => b.id));
-      latest = latestByBooking(sent.filter((m) => m.kind !== "clinic_alert" && m.kind !== "inbound"));
-    } catch (err) {
-      console.error(`message list failed: ${err instanceof Error ? err.message : "unknown error"}`);
-    }
-    const bookings = list.map((b) => ({ ...b, whatsapp: summary(latest.get(b.id)) }));
-    return json({ ok: true, today, storage: store.kind, bookings });
+    const [list, waiting] = await Promise.all([store.list({ from: today, clinicSlug: CLINIC_SLUG }), store.needsAction({ clinicSlug: CLINIC_SLUG })]);
+    // Sources are extra: if the query fails (say the column is not migrated yet), the bookings still load.
+    const since = new Date(Date.now() - SOURCE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const sources = await store.sourceCounts({ clinicSlug: CLINIC_SLUG, since }).catch((err: unknown) => {
+      console.error(`source counts failed: ${err instanceof Error ? err.message : "unknown error"}`);
+      return {};
+    });
+    const seen = new Set(list.map((b) => b.id));
+    const rows = await withWhatsApp(store, [...list, ...waiting.filter((b) => !seen.has(b.id))]);
+    const byId = new Map(rows.map((b) => [b.id, b]));
+    return json({
+      ok: true,
+      today,
+      storage: store.kind,
+      bookings: list.map((b) => byId.get(b.id)!),
+      needsAction: waiting.map((b) => byId.get(b.id)!),
+      sources,
+    });
   } catch (err) {
     console.error(`booking list failed: ${err instanceof Error ? err.message : "unknown error"}`);
     return json({ ok: false, error: "Could not load bookings." }, 500);
