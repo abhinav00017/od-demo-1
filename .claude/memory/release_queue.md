@@ -29,6 +29,6 @@ Dropped: exact-time picker, clinic hours settings, "Confirm by" choice, clinic-p
 
 ## Needs Abhinav (not code)
 - Upgrade Twilio off trial (~$20 credit) and submit the two templates with buttons, so the live demo sends the promised wording instead of Twilio's sample text. Trial ends around 20 Nov 2026.
-- Final deploy: say "deploy". Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
+- Final deploy: Abhinav said "deploy" on 10 Nov, then chose "wait for all": deploy everything together once the admin redesign (item 2) and items 3-11 are built and verified. Do NOT ship pieces earlier. Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
 
 **How to apply:** Read this before any deploy and before starting queued work. Update it whenever something is committed, built or shipped.
