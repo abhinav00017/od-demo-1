@@ -1,9 +1,26 @@
 import { clinicToday } from "./clinicDay";
-import { byDayThenCreated, MESSAGE_STATUS_RANK, type Booking, type BookingStore, type MessageLog, type NewBooking } from "./types";
+import { isDemoPhone } from "./demoPhones";
+import {
+  byDayThenCreated,
+  MESSAGE_STATUS_RANK,
+  type Booking,
+  type BookingStore,
+  type DemoData,
+  type MessageLog,
+  type NewBooking,
+  type PatientNotes,
+  type PatientSummary,
+  type SourceCounts,
+} from "./types";
 
 // Kept on globalThis so every route in one server process shares the same list.
 // In `next dev` each route can load its own copy of this module.
-const g = globalThis as typeof globalThis & { __lotusBookings?: Booking[]; __lotusMessages?: MessageLog[] };
+const g = globalThis as typeof globalThis & {
+  __lotusBookings?: Booking[];
+  __lotusMessages?: MessageLog[];
+  __lotusNotes?: Map<string, PatientNotes>;
+  __lotusDemoSeeded?: boolean;
+};
 
 function rows(): Booking[] {
   g.__lotusBookings ??= [];
@@ -15,7 +32,33 @@ function messages(): MessageLog[] {
   return g.__lotusMessages;
 }
 
+function notes(): Map<string, PatientNotes> {
+  g.__lotusNotes ??= new Map();
+  return g.__lotusNotes;
+}
+
+const noteKey = (clinicSlug: string, phone: string) => `${clinicSlug}:${phone}`;
 const stamp = () => new Date().toISOString();
+const copy = (b: Booking): Booking => ({ ...b, utm: b.utm ? { ...b.utm } : null });
+/** Newest day first, then newest created first. */
+const newestFirst = (a: Booking, b: Booking) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
+
+function replaceDemo(clinicSlug: string, data: DemoData) {
+  const list = rows();
+  const gone = new Set(list.filter((b) => b.isDemo && b.clinicSlug === clinicSlug).map((b) => b.id));
+  g.__lotusBookings = list.filter((b) => !gone.has(b.id));
+  g.__lotusMessages = messages().filter((m) => !gone.has(m.bookingId));
+  for (const key of [...notes().keys()]) {
+    const [slug, phone] = key.split(":");
+    if (slug === clinicSlug && isDemoPhone(phone)) notes().delete(key);
+  }
+  for (const b of data.bookings) rows().push({ ...b, clinicSlug, isDemo: true });
+  for (const m of data.messages) {
+    messages().push({ ...m, id: crypto.randomUUID(), channel: "whatsapp", providerMessageId: null, error: null });
+  }
+  for (const n of data.notes) notes().set(noteKey(clinicSlug, n.phone), { notes: n.notes, updatedAt: n.updatedAt });
+  return { deleted: gone.size, inserted: data.bookings.length };
+}
 
 /** In-memory store for dev and tests. Bookings vanish when the server restarts. */
 export const memoryStore: BookingStore = {
@@ -23,22 +66,107 @@ export const memoryStore: BookingStore = {
 
   async create(input: NewBooking) {
     const booking: Booking = {
-      ...input,
+      clinicSlug: input.clinicSlug,
+      name: input.name,
+      phone: input.phone,
+      visitType: input.visitType,
+      date: input.date,
+      slot: input.slot,
+      reason: input.reason,
       notes: input.notes ?? null,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      status: "new",
+      status: input.status ?? "new",
       wantsNewTime: false,
+      source: input.source ?? "website",
+      campaign: input.campaign ?? null,
+      utm: input.utm ?? null,
+      isDemo: false,
     };
     rows().push(booking);
-    return { ...booking };
+    return copy(booking);
   },
 
-  async list({ from, clinicSlug }) {
+  async get(id) {
+    const found = rows().find((b) => b.id === id);
+    return found ? copy(found) : null;
+  },
+
+  async list({ from, to, clinicSlug, statuses }) {
     return rows()
-      .filter((b) => b.date >= from && (!clinicSlug || b.clinicSlug === clinicSlug))
+      .filter(
+        (b) =>
+          (!from || b.date >= from) &&
+          (!to || b.date <= to) &&
+          (!clinicSlug || b.clinicSlug === clinicSlug) &&
+          (!statuses || statuses.includes(b.status)),
+      )
       .sort(byDayThenCreated)
-      .map((b) => ({ ...b }));
+      .map(copy);
+  },
+
+  async needsAction({ clinicSlug }) {
+    return rows()
+      .filter((b) => b.clinicSlug === clinicSlug && (b.status === "new" || b.wantsNewTime))
+      .sort(byDayThenCreated)
+      .map(copy);
+  },
+
+  async search({ clinicSlug, q, limit = 100 }) {
+    const text = q.trim().toLowerCase();
+    const digits = q.replace(/\D/g, "");
+    if (!text) return [];
+    return rows()
+      .filter((b) => b.clinicSlug === clinicSlug && (b.name.toLowerCase().includes(text) || (digits !== "" && b.phone.includes(digits))))
+      .sort(newestFirst)
+      .slice(0, limit)
+      .map(copy);
+  },
+
+  async historyByPhone({ clinicSlug, phone }) {
+    return rows()
+      .filter((b) => b.clinicSlug === clinicSlug && b.phone === phone)
+      .sort(newestFirst)
+      .map(copy);
+  },
+
+  async patients({ clinicSlug }) {
+    const byPhone = new Map<string, Booking[]>();
+    for (const b of rows()) {
+      if (b.clinicSlug !== clinicSlug) continue;
+      byPhone.set(b.phone, [...(byPhone.get(b.phone) ?? []), b]);
+    }
+    const out: { summary: PatientSummary; lastCreated: string }[] = [];
+    for (const [phone, list] of byPhone) {
+      const byCreated = [...list].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const first = byCreated[0];
+      const latest = byCreated[byCreated.length - 1];
+      const visited = list.filter((b) => b.status === "visited").map((b) => b.date).sort();
+      out.push({
+        lastCreated: latest.createdAt,
+        summary: {
+          phone,
+          name: latest.name,
+          latestBookingId: latest.id,
+          bookings: list.length,
+          visits: visited.length,
+          firstVisit: visited[0] ?? null,
+          lastDate: list.map((b) => b.date).sort().at(-1)!,
+          source: first.source,
+          campaign: first.campaign,
+          isDemo: list.some((b) => b.isDemo),
+        },
+      });
+    }
+    return out.sort((a, b) => b.lastCreated.localeCompare(a.lastCreated)).map((p) => p.summary);
+  },
+
+  async sourceCounts({ clinicSlug, since }) {
+    const counts: SourceCounts = {};
+    for (const b of rows()) {
+      if (b.clinicSlug === clinicSlug && b.createdAt >= since) counts[b.source] = (counts[b.source] ?? 0) + 1;
+    }
+    return counts;
   },
 
   async updateStatus(id, status) {
@@ -46,14 +174,24 @@ export const memoryStore: BookingStore = {
     if (!found) return null;
     found.status = status;
     if (status !== "new") found.wantsNewTime = false;
-    return { ...found };
+    return copy(found);
+  },
+
+  async reschedule(id, date, slot) {
+    const found = rows().find((b) => b.id === id);
+    if (!found) return null;
+    found.date = date;
+    found.slot = slot;
+    found.status = "confirmed";
+    found.wantsNewTime = false;
+    return copy(found);
   },
 
   async setWantsNewTime(id, value) {
     const found = rows().find((b) => b.id === id);
     if (!found) return null;
     found.wantsNewTime = value;
-    return { ...found };
+    return copy(found);
   },
 
   async findLatestByPhone(phone, today = clinicToday()) {
@@ -62,7 +200,22 @@ export const memoryStore: BookingStore = {
       .map((b, i) => ({ b, i }))
       .filter(({ b }) => b.phone === phone && (b.status === "new" || b.status === "confirmed") && b.date >= today)
       .sort((x, y) => y.b.createdAt.localeCompare(x.b.createdAt) || y.i - x.i)[0];
-    return found ? { ...found.b } : null;
+    return found ? copy(found.b) : null;
+  },
+
+  async getNotes({ clinicSlug, phone }) {
+    const found = notes().get(noteKey(clinicSlug, phone));
+    return found ? { ...found } : null;
+  },
+
+  async setNotes({ clinicSlug, phone, notes: text }) {
+    const saved = { notes: text, updatedAt: stamp() };
+    notes().set(noteKey(clinicSlug, phone), saved);
+    return { ...saved };
+  },
+
+  async replaceDemoData(clinicSlug, data) {
+    return replaceDemo(clinicSlug, data);
   },
 
   async logMessage(input) {
@@ -105,8 +258,21 @@ export const memoryStore: BookingStore = {
   },
 };
 
-/** Tests only: empties the bookings and the message log. */
-export function resetMemoryStore() {
+/**
+ * Fills the memory store with the demo clinic's sample data once per server process, on first use,
+ * so the dashboard looks real in dev and on a deploy without a database. Postgres is seeded by
+ * scripts/seed-clinic-demo.ts instead.
+ */
+export function seedMemoryDemoOnce(clinicSlug: string, build: () => DemoData) {
+  if (g.__lotusDemoSeeded) return;
+  g.__lotusDemoSeeded = true;
+  replaceDemo(clinicSlug, build());
+}
+
+/** Tests only: empties the bookings, the message log and the notes. `seed: true` lets the next getStore() seed the demo data again. */
+export function resetMemoryStore({ seed = false }: { seed?: boolean } = {}) {
   rows().length = 0;
   messages().length = 0;
+  notes().clear();
+  g.__lotusDemoSeeded = !seed;
 }

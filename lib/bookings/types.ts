@@ -1,5 +1,13 @@
-export const BOOKING_STATUSES = ["new", "confirmed", "cancelled"] as const;
+import type { BookingSource, Utm } from "./sources";
+
+export * from "./sources";
+
+/** visited and no_show close a booking on its day or after. They never send anything on WhatsApp. */
+export const BOOKING_STATUSES = ["new", "confirmed", "cancelled", "visited", "no_show"] as const;
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+/** Statuses that only make sense on the booking's day or later. */
+export const ATTENDANCE_STATUSES: readonly BookingStatus[] = ["visited", "no_show"];
 
 /** One row of the bookings table, as the API and the dashboard see it. */
 export type Booking = {
@@ -19,11 +27,59 @@ export type Booking = {
   notes: string | null;
   /** The patient tapped "Change time" on WhatsApp. Cleared when staff confirm or cancel. */
   wantsNewTime: boolean;
+  /** Where the booking came from. Display only. */
+  source: BookingSource;
+  /** utm_campaign, or the ad campaign staff typed. */
+  campaign: string | null;
+  /** First-touch details from the website. Null for staff bookings. */
+  utm: Utm | null;
+  /** Sample data from the demo seed. Reset demo data replaces these rows and never touches the rest. */
+  isDemo: boolean;
 };
 
 export type NewBooking = Pick<Booking, "clinicSlug" | "name" | "phone" | "visitType" | "date" | "slot" | "reason"> & {
   notes?: string | null;
+  /** Default "new". Staff bookings start confirmed. */
+  status?: BookingStatus;
+  /** Default "website". */
+  source?: BookingSource;
+  campaign?: string | null;
+  utm?: Utm | null;
 };
+
+/** One patient on the Patients tab: every booking with the same phone number, rolled up. */
+export type PatientSummary = {
+  phone: string;
+  /** The name on the newest booking. */
+  name: string;
+  /** The newest booking's id. The patient panel is opened by booking id, so no phone number goes in a URL. */
+  latestBookingId: string;
+  /** Bookings of any status. */
+  bookings: number;
+  /** Bookings marked visited. */
+  visits: number;
+  /** The earliest visited day, or null when the patient has not visited yet. */
+  firstVisit: string | null;
+  /** The latest booking day, any status. */
+  lastDate: string;
+  /** The source and campaign of the patient's first booking. */
+  source: BookingSource;
+  campaign: string | null;
+  isDemo: boolean;
+};
+
+/** Front-desk notes on a patient, keyed by clinic and phone. */
+export type PatientNotes = { notes: string; updatedAt: string };
+
+/** Bookings per source. Sources with no bookings are left out. */
+export type SourceCounts = Partial<Record<BookingSource, number>>;
+
+/** A booking row the demo seed writes, with every field set, including the id and created time. */
+export type DemoBooking = Omit<Booking, "isDemo">;
+/** A message log row the demo seed writes. */
+export type DemoMessage = Pick<MessageLog, "bookingId" | "kind" | "provider" | "toMasked" | "template" | "status" | "createdAt" | "updatedAt">;
+/** Everything Reset demo data writes. */
+export type DemoData = { bookings: DemoBooking[]; messages: DemoMessage[]; notes: { phone: string; notes: string; updatedAt: string }[] };
 
 /**
  * clinic_alert goes to the clinic's own number on every new booking. confirmation, reminder and cancellation go to the patient.
@@ -70,10 +126,36 @@ export type NewMessageLog = Pick<MessageLog, "bookingId" | "kind" | "toMasked" |
 export interface BookingStore {
   readonly kind: "memory" | "postgres";
   create(input: NewBooking): Promise<Booking>;
-  /** Bookings on or after `from` (YYYY-MM-DD), earliest day first. */
-  list(opts: { from: string; clinicSlug?: string }): Promise<Booking[]>;
-  /** Returns the updated booking, or null when no booking has that id. Confirmed or cancelled also clears wantsNewTime. */
+  /** One booking, or null when no booking has that id. */
+  get(id: string): Promise<Booking | null>;
+  /**
+   * Bookings from `from` to `to` (YYYY-MM-DD, both included, either may be left out), earliest day first.
+   * `statuses` keeps only those statuses.
+   */
+  list(opts: { from?: string; to?: string; clinicSlug?: string; statuses?: readonly BookingStatus[] }): Promise<Booking[]>;
+  /** Bookings waiting on staff: status new (any date) or the patient asked for a new time. Earliest day first. */
+  needsAction(opts: { clinicSlug: string }): Promise<Booking[]>;
+  /** Bookings whose name contains `q`, or whose phone contains the digits in `q`. Newest day first, at most `limit` (default 100). */
+  search(opts: { clinicSlug: string; q: string; limit?: number }): Promise<Booking[]>;
+  /** Every booking for a 10-digit phone, newest day first. */
+  historyByPhone(opts: { clinicSlug: string; phone: string }): Promise<Booking[]>;
+  /** Everyone who ever booked, grouped by phone, most recently booked first. */
+  patients(opts: { clinicSlug: string }): Promise<PatientSummary[]>;
+  /** Bookings created at or after `since` (ISO timestamp), counted by source. */
+  sourceCounts(opts: { clinicSlug: string; since: string }): Promise<SourceCounts>;
+  /** Returns the updated booking, or null when no booking has that id. Any status but new also clears wantsNewTime. */
   updateStatus(id: string, status: BookingStatus): Promise<Booking | null>;
+  /** Moves a booking to a new day and slot, confirms it, and clears wantsNewTime. Null when no booking has that id. */
+  reschedule(id: string, date: string, slot: string): Promise<Booking | null>;
+  /** Front-desk notes for a phone, or null when there are none. */
+  getNotes(opts: { clinicSlug: string; phone: string }): Promise<PatientNotes | null>;
+  /** Saves the notes for a phone, replacing what was there. */
+  setNotes(opts: { clinicSlug: string; phone: string; notes: string }): Promise<PatientNotes>;
+  /**
+   * Deletes every is_demo booking of the clinic (their messages go with them) and the notes on demo phones,
+   * then writes `data` as is_demo rows. Never touches a booking with is_demo false. Postgres runs it in one transaction.
+   */
+  replaceDemoData(clinicSlug: string, data: DemoData): Promise<{ deleted: number; inserted: number }>;
   /** Sets the "wants a new time" flag. Returns the updated booking, or null when no booking has that id. */
   setWantsNewTime(id: string, value: boolean): Promise<Booking | null>;
   /**
@@ -98,6 +180,8 @@ export type WhatsAppSummary = Pick<MessageLog, "kind" | "status" | "error"> & {
   at: string;
   /** Who carried it. The dashboard shows "via Twilio" for twilio. */
   provider?: MessageProvider;
+  /** True when nothing was sent because the booking is demo data. */
+  skipped?: boolean;
 };
 
 /** A booking row on the dashboard. `whatsapp` is null when nothing was sent. */

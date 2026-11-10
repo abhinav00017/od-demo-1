@@ -31,6 +31,13 @@ describe("schema.sql", () => {
       "ALTER TABLE messages ADD COLUMN IF NOT EXISTS crm_quote_id uuid REFERENCES crm_quotes (id) ON DELETE SET NULL",
       "CREATE INDEX IF NOT EXISTS messages_crm_lead_idx ON messages (crm_lead_id, created_at) WHERE crm_lead_id IS NOT NULL",
       "ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_owner_check, ADD CONSTRAINT messages_owner_check CHECK (booking_id IS NOT NULL OR crm_lead_id IS NOT NULL)",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'website' CHECK (source IN ('website', 'google_ads', 'meta_ads', 'google_maps', 'google_search', 'walk_in', 'phone', 'referral', 'whatsapp', 'other'))",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS campaign text",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS utm jsonb",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false",
+      "ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check, ADD CONSTRAINT bookings_status_check CHECK (status IN ('new', 'confirmed', 'cancelled', 'visited', 'no_show'))",
+      "CREATE INDEX IF NOT EXISTS bookings_clinic_phone_idx ON bookings (clinic_slug, phone)",
+      "CREATE TABLE IF NOT EXISTS patient_notes (",
     ]);
     expect(statements.every((s) => /IF (NOT )?EXISTS/.test(s) && !s.includes(";"))).toBe(true);
   });

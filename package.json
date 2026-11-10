@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed-crm": "tsx scripts/seed-crm.ts"
+    "db:seed-crm": "tsx scripts/seed-crm.ts",
+    "db:seed-clinic-demo": "tsx scripts/seed-clinic-demo.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

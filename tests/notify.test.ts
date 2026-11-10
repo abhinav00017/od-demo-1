@@ -16,6 +16,10 @@ const booking: Booking = {
   status: "new",
   notes: null,
   wantsNewTime: false,
+  source: "website",
+  campaign: null,
+  utm: null,
+  isDemo: false,
 };
 
 afterEach(() => vi.restoreAllMocks());

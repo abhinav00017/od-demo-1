@@ -19,6 +19,10 @@ const booking: Booking = {
   status: "confirmed",
   notes: null,
   wantsNewTime: false,
+  source: "website",
+  campaign: null,
+  utm: null,
+  isDemo: false,
 };
 
 afterEach(() => {

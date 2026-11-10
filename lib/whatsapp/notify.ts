@@ -1,5 +1,6 @@
 import { shortBookingId } from "@/demos/lotus-clinic/booking";
 import { getStore, type Booking, type BookingStore, type MessageLog } from "@/lib/bookings";
+import { isDemoPhone, SKIPPED_DEMO } from "@/lib/bookings/demoPhones";
 import { maskNumber, providerOf, type WhatsAppSender } from "./client";
 import { getWhatsApp, HELLO_WORLD, whatsappSettings } from "./index";
 import { TWILIO_CONTENT_SID_VARS } from "./twilio";
@@ -10,10 +11,18 @@ type Env = Record<string, string | undefined>;
 /** What the template column holds when Twilio sent plain text (Body), not a content template. Content sends store the HX sid. */
 export const PLAIN_TEXT = "text";
 
+export { SKIPPED_DEMO };
+
+/** Demo bookings and demo numbers (90000 2xxxx) never reach Twilio or Meta, so the live demo cannot message a stranger. */
+export function isDemoBooking(b: Pick<Booking, "phone"> & { isDemo?: boolean }) {
+  return b.isDemo === true || isDemoPhone(b.phone);
+}
+
 /**
  * Sends one message for a booking and logs it in the messages table, with the provider that carried it.
  * Meta gets the template. Twilio gets the content template (TWILIO_CONTENT_SID_*) when one is set, else the plain-text body.
  * Confirmation and reminder go to the patient. clinic_alert goes to CLINIC_WHATSAPP, and is skipped when that is unset.
+ * Demo bookings (is_demo, or a 90000 2xxxx number) are never sent: one log line and a row with template "skipped (demo)".
  * Never throws: a failed send is logged as status "failed". Logs carry no names, reasons or full numbers.
  */
 export async function sendBookingMessage(
@@ -24,6 +33,20 @@ export async function sendBookingMessage(
   const env = opts.env ?? process.env;
   const ref = shortBookingId(b.id);
   try {
+    if (isDemoBooking(b)) {
+      // No provider is called. One log line, and a row so the dashboard says what happened.
+      console.log(`whatsapp: ${kind} for booking ${ref} skipped (demo)`);
+      return await (opts.store ?? getStore()).logMessage({
+        bookingId: b.id,
+        kind,
+        provider: "fake",
+        toMasked: maskNumber(b.phone),
+        template: SKIPPED_DEMO,
+        providerMessageId: null,
+        status: "sent",
+        error: null,
+      });
+    }
     let to = whatsappNumber(b.phone);
     if (kind === "clinic_alert") {
       to = whatsappSettings(env).clinicNumber;

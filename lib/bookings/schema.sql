@@ -147,3 +147,30 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS crm_quote_id uuid REFERENCES crm_q
 CREATE INDEX IF NOT EXISTS messages_crm_lead_idx ON messages (crm_lead_id, created_at) WHERE crm_lead_id IS NOT NULL;
 
 ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_owner_check, ADD CONSTRAINT messages_owner_check CHECK (booking_id IS NOT NULL OR crm_lead_id IS NOT NULL);
+
+-- Clinic admin redesign: where each booking came from, demo rows, the visited and no-show statuses, and front-desk notes.
+-- source is display only. utm holds first-touch details (utm_*, gclid, fbclid, referrer host, landing path).
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'website' CHECK (source IN ('website', 'google_ads', 'meta_ads', 'google_maps', 'google_search', 'walk_in', 'phone', 'referral', 'whatsapp', 'other'));
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS campaign text;
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS utm jsonb;
+
+-- Sample data from the demo seed. Reset demo data deletes and rewrites only these rows.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+
+-- Widens the inline status check (Postgres names it bookings_status_check) to add visited and no_show.
+-- One statement, so the drop and the add happen together. Safe to rerun.
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check, ADD CONSTRAINT bookings_status_check CHECK (status IN ('new', 'confirmed', 'cancelled', 'visited', 'no_show'));
+
+-- Patient history and the Patients tab look bookings up by phone.
+CREATE INDEX IF NOT EXISTS bookings_clinic_phone_idx ON bookings (clinic_slug, phone);
+
+-- Front-desk notes on a patient, one per clinic and phone.
+CREATE TABLE IF NOT EXISTS patient_notes (
+  clinic_slug text        NOT NULL,
+  phone       text        NOT NULL,
+  notes       text        NOT NULL DEFAULT '',
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (clinic_slug, phone)
+);
