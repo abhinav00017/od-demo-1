@@ -23,6 +23,10 @@ Single list of what is committed-but-undeployed and what is queued, per [[feedba
 9. No WhatsApp fallback: when the first message comes back undeliverable, mark the booking/phone "No WhatsApp"; dashboard shows "No WhatsApp. Call to confirm." in Needs action with Call + "Confirmed by phone" (staff enter the agreed time); day-before list "Call to remind" for these; remember per phone. Booking form gets "Confirm by: WhatsApp / Phone call" (default WhatsApp); success screen says the clinic will call if not on WhatsApp. No SMS (India DLT registration).
 10. Unique booking link: every confirmation and reminder carries a link button "View or change" to /clinic/website/v/<token> (unguessable token, no login, expires after the visit). Page shows clinic, date and time, visit type, address with directions, add to calendar, and Confirm / Change date or slot / Cancel. Changes land on the dashboard as "Wants new time" with the requested slot for staff to confirm. No reason or health details on the page. Template keeps one quick-reply "Confirm" plus the link button (replaces the "Change time" quick reply); confirm mixing both button types when the template is submitted.
 
+## Revision proposed 10 Nov 2026 (awaiting Abhinav's approval; replaces items 3-5)
+- Abhinav: a patient who books on the website should not be asked to confirm again. Proposed: patient picks an exact time on the form (from clinic hours + appointment length, taken times greyed) and the booking is confirmed instantly; WhatsApp "Booked" message with a "View or change" link; patient Confirm only when the clinic changes the time. Staff set hours + appointment length in the dashboard.
+- Decided by Abhinav: the day-before reminder has NO "I'll be there" button; it is informational with the "View or change" link only.
+
 ## Needs Abhinav (not code)
 - Upgrade Twilio off trial (~$20 credit) and submit the two templates with buttons, so the live demo sends the promised wording instead of Twilio's sample text. Trial ends around 20 Nov 2026.
 - Final deploy: say "deploy". Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
