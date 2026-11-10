@@ -22,6 +22,7 @@ function confirmOnce(store: BookingStore, booking: Booking) {
  * {"status": ...}: new, confirmed, cancelled, visited or no_show. Visited and no-show only on the booking's day or later.
  * Confirming sends the WhatsApp confirmation (with the "View or change" link) after the response; nothing else sends anything.
  * {"status": "confirmed", "byPhone": true}: "Confirmed by phone" for a No-WhatsApp booking. Sends nothing.
+ * A cancelled booking stays cancelled: confirmed, visited or no_show on it (by phone too) answers 409.
  * {"date", "slot"}: staff change the day or slot. The booking moves and stays confirmed, and the patient gets "Your visit has moved"
  * with Confirm / Change; it waits for the patient (awaitingPatient) when they can be reached on WhatsApp.
  * A failed send never fails the change.
@@ -59,6 +60,10 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/bookings/[
       if (!booking) return json(NOT_FOUND, 404);
       runAfterResponse(() => sendBookingMessage(booking, "visit_moved", { store }));
       return json({ ok: true, booking });
+    }
+
+    if (current.status === "cancelled" && (b.status === "confirmed" || b.status === "visited" || b.status === "no_show")) {
+      return json({ ok: false, error: "This booking is cancelled. Make a new booking instead." }, 409);
     }
 
     if (b.byPhone === true) {

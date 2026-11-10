@@ -97,7 +97,10 @@ describe("admin helpers", () => {
     expect(labels(fresh, "upcoming")).toEqual(["Confirm", "Change day or slot", "Cancel"]);
     expect(labels(later, "past")).toEqual(["Visited", "No-show"]);
     expect(labels(seen, "past")).toEqual([]);
-    expect(labels(make({ status: "cancelled", date: "2026-10-22" }), "upcoming")).toEqual(["Confirm", "Cancel"]);
+    // Cancelled: no actions anywhere, only the "Cancelled" chip.
+    const gone = make({ status: "cancelled", date: "2026-10-22" });
+    for (const c of ["needs", "today", "upcoming", "past", "history"] as const) expect(labels(gone, c)).toEqual([]);
+    expect(labels({ ...gone, noWhatsApp: true, wantsNewTime: true, date: TODAY }, "today")).toEqual([]);
     // No WhatsApp: Call (a tel: link) and Confirmed by phone lead, until confirmed by phone.
     const noWa = make({ name: "Call Chandra", date: "2026-10-21", noWhatsApp: true });
     expect(labels(noWa, "needs")).toEqual(["Call", "Confirmed by phone", "Change day or slot", "Cancel"]);
@@ -117,6 +120,21 @@ describe("tabs", () => {
     render(<Dashboard {...props} bookings={[seen, later]} needsAction={[]} api={fakeApi()} />);
     expect(screen.getByRole("tab", { name: /^Today/ }).getAttribute("aria-selected")).toBe("true");
     expect(rowNames()).toEqual(["Visited Vani", "Later Lakshmi"]);
+  });
+
+  it("shows a cancelled row on Upcoming with the Cancelled chip and no Confirm, Visited or No-show", () => {
+    const gone = make({ name: "Gone Geetha", date: "2026-10-22", status: "cancelled", phone: "9000020105" });
+    render(<Dashboard {...props} bookings={[...bookings, gone]} needsAction={waiting} api={fakeApi()} />);
+    fireEvent.click(screen.getByRole("tab", { name: /Upcoming/ }));
+    const row = screen.getByRole("button", { name: "Open Gone Geetha's history" }).closest("li")!;
+    expect(within(row).getByText("Cancelled")).toBeTruthy();
+    for (const label of ["Confirm", "Visited", "No-show", "Cancel", "Change day or slot", "Confirmed by phone"]) {
+      expect(within(row).queryByRole("button", { name: `${label} Gone Geetha` })).toBeNull();
+    }
+    expect(within(row).queryByRole("link", { name: /Call/ })).toBeNull();
+    // The open row on the same day keeps its Confirm.
+    const open = screen.getByRole("button", { name: "Open New Nandini's history" }).closest("li")!;
+    expect(within(open).getByRole("button", { name: "Confirm New Nandini" })).toBeTruthy();
   });
 
   it("shows four count cards, tab counts, source and status chips", () => {

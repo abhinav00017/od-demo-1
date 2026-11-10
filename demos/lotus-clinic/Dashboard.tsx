@@ -85,10 +85,12 @@ type RowAction = {
  * The buttons on a row, by tab. Visited and No-show only appear on today's and past rows.
  * "Change day or slot" moves an open booking and sends "visit moved"; it leads for a patient who asked for a new time.
  * A No-WhatsApp booking still to call gets Call (a tel: link) and "Confirmed by phone" first.
+ * A cancelled booking gets none: its "Cancelled" chip is all the row shows.
  */
 export function actionsFor(b: DashboardBooking, context: Context): RowAction[] {
+  if (b.status === "cancelled") return [];
   const confirm: RowAction = { key: "confirm", label: "Confirm", status: "confirmed", tone: "primary", disabled: b.status === "confirmed" };
-  const cancel: RowAction = { key: "cancel", label: "Cancel", status: "cancelled", tone: "danger", disabled: b.status === "cancelled" };
+  const cancel: RowAction = { key: "cancel", label: "Cancel", status: "cancelled", tone: "danger" };
   const visited: RowAction = { key: "visited", label: "Visited", status: "visited", tone: "plain", disabled: b.status === "visited" };
   const noShow: RowAction = { key: "no_show", label: "No-show", status: "no_show", tone: "plain", disabled: b.status === "no_show" };
   const change: RowAction = { key: "reschedule", label: "Change day or slot", reschedule: true, tone: b.wantsNewTime ? "primary" : "plain" };

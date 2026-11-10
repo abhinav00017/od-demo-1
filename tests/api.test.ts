@@ -171,6 +171,18 @@ describe("PATCH /api/bookings/[id]", () => {
     expect((await res.json()).booking.status).toBe("confirmed");
   });
 
+  it("refuses Confirm, Visited, No-show and Confirmed by phone on a cancelled booking with 409, and it stays cancelled", async () => {
+    const { id } = await (await POST(req("/api/bookings", { method: "POST", body: good }))).json();
+    const patch = (body: unknown) => PATCH(req(`/api/bookings/${id}`, { method: "PATCH", body, cookie: adminCookie() }), ctx(id));
+    expect((await patch({ status: "cancelled" })).status).toBe(200);
+    for (const body of [{ status: "confirmed" }, { status: "visited" }, { status: "no_show" }, { status: "confirmed", byPhone: true }]) {
+      const res = await patch(body);
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ ok: false, error: "This booking is cancelled. Make a new booking instead." });
+    }
+    expect((await memoryStore.get(id))?.status).toBe("cancelled");
+  });
+
   it("needs the cookie, a known status and a known id", async () => {
     const { id } = await (await POST(req("/api/bookings", { method: "POST", body: good }))).json();
     expect((await PATCH(req(`/api/bookings/${id}`, { method: "PATCH", body: { status: "confirmed" } }), ctx(id))).status).toBe(401);
