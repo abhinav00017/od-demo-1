@@ -420,3 +420,7 @@ Append only. Newest at the bottom.
 
 - Abhinav: on the clinic demo "Book an Appointment" is only at the top on desktop; it must be reachable at any point. Phones already have the fixed bottom bar. Decision: (1) sticky header on desktop, slightly slimmer once scrolled, with the Book an Appointment button always visible; (2) short booking strips ("Ready to book?" + button) after Our Specialities and after What Our Patients Say on the home page. No floating booking pill (right edge already has the WhatsApp circle and section dots).
 - State of the checkout on 10 Nov: the CRM dashboard-with-calendar work is still halted and uncommitted (app/api/crm/today/route.ts, demos/tiles-crm/CrmApp.tsx and friends). Commit with `git commit -- <paths>` only; deploy from a clean worktree.
+
+## 2026-11-10 (sticky header build)
+
+- Built: Lotus header sticks from lg (new SiteHeader.tsx); after 24px scroll it slims (py-3.5 to py-2.5, 75.5px to 67.5px), white/95, lg-only backdrop blur and shadow-lotus, 200 ms CSS transition, off under reduced motion. Below lg unchanged. Scroll progress line stays at the very top above it (z-40 over header z-30). Home sections get lg:scroll-mt-[4.25rem]; services cards lg:scroll-mt-24. Two BookingStrips (tinted, 104px on desktop) end the Specialities and Patient Stories sections. Not deployed.
