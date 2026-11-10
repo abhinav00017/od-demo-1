@@ -10,8 +10,8 @@ Single list of what is committed-but-undeployed and what is queued, per [[feedba
 ## Committed, not deployed
 1. Lotus booking form: consent checkbox replaced by a line under the button (3aec85a).
 
-## Building now
-2. Clinic admin redesign + demo data (tabs, patient history, lead source capture, visited/no-show, staff bookings, Reset demo data). Needs at deploy: `npm run db:migrate`, `npm run db:seed-clinic-demo`.
+## Committed, not deployed (cont.)
+2. Clinic admin redesign + demo data (eecf6f7..670622c; verified on a clean worktree 10 Nov: lint, typecheck, 587 tests, build) (tabs, patient history, lead source capture, visited/no-show, staff bookings, Reset demo data). Needs at deploy: `npm run db:migrate`, `npm run db:seed-clinic-demo`.
 
 ## Queued: FINAL plan approved by Abhinav 10 Nov 2026 (build after item 2 lands; same files)
 Abhinav's decisions: keep the slot windows (Morning 10–1, Afternoon, Evening); no exact-time picker and no clinic-hours settings; the patient may arrive any time inside the booked window. No "Confirm by WhatsApp / Phone call" choice on the form. The day-before reminder has no button. Patient confirmation is needed only when the clinic changes the day or slot.
@@ -33,3 +33,7 @@ Dropped: exact-time picker, clinic hours settings, "Confirm by" choice, clinic-p
 - Final deploy: Abhinav said "deploy" on 10 Nov, then chose "wait for all": deploy everything together once the admin redesign (item 2) and items 3-12 are built and verified. Do NOT ship pieces earlier. Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
 
 **How to apply:** Read this before any deploy and before starting queued work. Update it whenever something is committed, built or shipped.
+
+## Notes
+- 10 Nov 2026: .env.local was found missing (no agent reported deleting it). Rebuilt with `vercel env pull` (DATABASE_URL and the integration vars) plus ADMIN_PASSWORD and CRM_ADMIN_PASSWORD written back by hand; both verified against the live logins. Sensitive Vercel vars (ADMIN_SECRET, CRON_SECRET, WHATSAPP_VERIFY_TOKEN, Twilio, WHATSAPP_TOKEN) are only on Vercel and pull back empty; not needed locally. Agents must never move, copy or delete .env.local again.
+- Admin redesign open questions, decided by the main session as defaults: a booking on a demo-block number (90000 2xxxx) counts as demo data and is cleared by Reset; source strip counts bookings created in the last 30 days; "visits" counts visited only; reschedule sends the item-6 "visit moved" message, not a fresh confirmation; Past excludes today.
