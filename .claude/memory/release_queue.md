@@ -20,6 +20,8 @@ Single list of what is committed-but-undeployed and what is queued, per [[feedba
 6. Opt-out: "Reply STOP to stop messages" in the reminder; inbound STOP marks the number opted out and nothing more is sent.
 7. Replace "Prescription on WhatsApp" / prescriptions-and-reports-over-WhatsApp claims (Lotus data.ts, hub industries.ts previews) with "sent as a secure link".
 8. Hide "via Twilio" on dashboard rows; show "WhatsApp: delivered" only.
+9. No WhatsApp fallback: when the first message comes back undeliverable, mark the booking/phone "No WhatsApp"; dashboard shows "No WhatsApp. Call to confirm." in Needs action with Call + "Confirmed by phone" (staff enter the agreed time); day-before list "Call to remind" for these; remember per phone. Booking form gets "Confirm by: WhatsApp / Phone call" (default WhatsApp); success screen says the clinic will call if not on WhatsApp. No SMS (India DLT registration).
+10. Unique booking link: every confirmation and reminder carries a link button "View or change" to /clinic/website/v/<token> (unguessable token, no login, expires after the visit). Page shows clinic, date and time, visit type, address with directions, add to calendar, and Confirm / Change date or slot / Cancel. Changes land on the dashboard as "Wants new time" with the requested slot for staff to confirm. No reason or health details on the page. Template keeps one quick-reply "Confirm" plus the link button (replaces the "Change time" quick reply); confirm mixing both button types when the template is submitted.
 
 ## Needs Abhinav (not code)
 - Upgrade Twilio off trial (~$20 credit) and submit the two templates with buttons, so the live demo sends the promised wording instead of Twilio's sample text. Trial ends around 20 Nov 2026.
