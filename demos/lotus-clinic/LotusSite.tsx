@@ -1,4 +1,4 @@
-import { Phone } from "lucide-react";
+import { CalendarCheck, Phone } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DemoPage } from "@/lib/demos";
@@ -65,6 +65,32 @@ export function WhatsAppNumber({ className = "" }: { className?: string }) {
       <Phone aria-hidden strokeWidth={1.75} className="size-4 text-lotus-accent" />
       <span className="sr-only">WhatsApp</span> {clinic.phone}
     </a>
+  );
+}
+
+/**
+ * Desktop only: a round white button with a teal calendar, stacked 12px above the WhatsApp button, that opens the
+ * book page. A small "Book an Appointment" label slides out to its left on hover or keyboard focus.
+ */
+function FloatingBook({ href }: { href: string }) {
+  return (
+    <FloatingButton
+      href={href}
+      internal
+      delay={0.6}
+      data-lotus-float-book=""
+      className="group fixed right-6 bottom-[5.75rem] z-30 hidden size-14 items-center justify-center rounded-full bg-white text-lotus-accent shadow-lotus-lift ring-1 ring-lotus-hairline transition-colors hover:text-lotus-accent-hover lg:flex"
+    >
+      <CalendarCheck aria-hidden strokeWidth={1.75} className="size-6" />
+      <span
+        aria-hidden
+        data-tooltip=""
+        className="pointer-events-none absolute right-full mr-3 rounded-full bg-lotus-text px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white opacity-0 shadow-lotus transition-[opacity,translate] duration-200 ease-out translate-x-1 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 motion-reduce:translate-x-0 motion-reduce:transition-opacity"
+      >
+        Book an Appointment
+      </span>
+      <span className="sr-only">Book an Appointment</span>
+    </FloatingButton>
   );
 }
 
@@ -206,6 +232,7 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
               </span>
             </LotusContainer>
           </footer>
+          {bar ? <FloatingBook href={book.href} /> : null}
           {bar ? <FloatingCall /> : null}
           {bar ? <MobileBar bookHref={book.href} whatsapp={{ href: clinicWhatsAppHref, label: clinic.phone }} /> : null}
         </div>

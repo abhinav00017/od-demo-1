@@ -604,29 +604,42 @@ export function PillButton({
 }
 
 /**
- * The round WhatsApp button, bottom-right on desktops: scales in after the page settles and lifts a touch on hover.
- * With a desktop cursor it is magnetic instead: it follows the cursor a few px, and the hover only grows it.
+ * A round button, bottom-right on desktops (WhatsApp, and Book an Appointment above it): scales in after the page
+ * settles and lifts a touch on hover. With a desktop cursor it is magnetic instead: it follows the cursor a few px,
+ * and the hover only grows it. `internal` links stay in the site; otherwise it opens in a new tab.
  */
-export function FloatingButton({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+export function FloatingButton({
+  href,
+  className,
+  internal = false,
+  delay = 0.5,
+  children,
+  ...rest
+}: { href: string; className: string; internal?: boolean; delay?: number; children: ReactNode } & PassThrough) {
   const calm = useCalmMotion();
   const magnet = useMagnetic();
   const hover = magnet.style ? { scale: 1.04 } : { y: -2, scale: 1.04 };
+  const motion = {
+    "data-motion": "",
+    className,
+    initial: calm ? { opacity: 0 } : { opacity: 0, scale: 0.6 },
+    animate: { opacity: 1, scale: 1 },
+    transition: { opacity: { duration: 0.3, delay }, scale: { ...SOFT_SPRING, stiffness: 260, damping: 20, delay } },
+    whileHover: calm ? undefined : { ...hover, transition: { duration: 0.2, ease: EASE } },
+    whileTap: calm ? undefined : { scale: 0.96 },
+    style: magnet.style,
+    ...magnet.handlers,
+    ...rest,
+  };
+  if (internal) {
+    return (
+      <MotionLink href={href} {...motion}>
+        {children}
+      </MotionLink>
+    );
+  }
   return (
-    <m.a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      data-lotus-float=""
-      data-motion=""
-      className={className}
-      initial={calm ? { opacity: 0 } : { opacity: 0, scale: 0.6 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ opacity: { duration: 0.3, delay: 0.5 }, scale: { ...SOFT_SPRING, stiffness: 260, damping: 20, delay: 0.5 } }}
-      whileHover={calm ? undefined : { ...hover, transition: { duration: 0.2, ease: EASE } }}
-      whileTap={calm ? undefined : { scale: 0.96 }}
-      style={magnet.style}
-      {...magnet.handlers}
-    >
+    <m.a href={href} target="_blank" rel="noopener noreferrer" data-lotus-float="" {...motion}>
       {children}
     </m.a>
   );

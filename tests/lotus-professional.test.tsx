@@ -201,4 +201,19 @@ describe("Lotus airy layout and Krest touches", () => {
     renderPage(page);
     expect(document.querySelector("[data-lotus-float]")).toBeNull();
   });
+
+  it.each(["", "services", "about", "contact"] as DemoPage[])("stacks a round Book an Appointment button above the call button on desktop only on '%s'", (page) => {
+    renderPage(page);
+    const book = document.querySelector("[data-lotus-float-book]") as HTMLAnchorElement;
+    expect(book.getAttribute("href")).toBe("/clinic/website/book");
+    expect(book.getAttribute("target")).toBeNull();
+    for (const c of ["fixed", "rounded-full", "size-14", "right-6", "bottom-[5.75rem]", "hidden", "lg:flex"]) expect(book.className.split(/\s+/), c).toContain(c);
+    expect(book.querySelector(".sr-only")!.textContent).toBe("Book an Appointment");
+    expect(book.querySelector("[data-tooltip]")!.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it.each(["book", "admin"] as DemoPage[])("leaves the floating book button out on '%s'", (page) => {
+    renderPage(page);
+    expect(document.querySelector("[data-lotus-float-book]")).toBeNull();
+  });
 });
