@@ -57,6 +57,7 @@ export const requestReceivedText = (b: When) => patientText("request_received", 
 export const replies = {
   confirmed: (b: When) => `Thank you, see you on ${shortDate(b.date)}, ${b.slot}.`,
   change: (link: string) => `No problem. Pick another day or time here: ${link}`,
+  cancel: (link: string) => `To cancel or change your visit, open: ${link}`,
   stopped: () => `You won't get more WhatsApp messages from ${clinic.name}. Reply START to turn them back on.`,
   started: () => `You'll get WhatsApp messages from ${clinic.name} again. Reply STOP to stop them.`,
 };

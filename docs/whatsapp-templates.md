@@ -184,13 +184,15 @@ These menu names come from the brief and were not checked against the live conso
 
 What it does. The sender's booking is their newest open one (new or confirmed, today or later), preferring one waiting for them:
 
-- **STOP**, and Twilio's other opt-out words (STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT, REVOKE, OPTOUT): the phone is opted out of
-  every message. The first time, the reply is "You won't get more WhatsApp messages from Lotus Women's Clinic. Reply START to turn them back on."
+- **STOP**, and Twilio's other opt-out words (STOPALL, UNSUBSCRIBE, END, QUIT, REVOKE, OPTOUT): the phone is opted out of
+  every message. CANCEL is not an opt-out word here (see Cancel below). The first time, the reply is "You won't get more WhatsApp messages from Lotus Women's Clinic. Reply START to turn them back on."
 - **START** or UNSTOP: the opt-out is removed, with a short reply.
 - **Confirm** (or `confirm`, `c`, `yes`), only when staff moved the visit (`awaiting_patient`): the wait clears, the row loses
   "Waiting for patient", and the patient gets "Thank you, see you on <day>, <slot>."
 - **Change** (or `change`, `r`, `reschedule`), only when staff moved the visit: the reply is the patient's own page link.
-- Confirm or Change without a moved visit, anything else, or no open booking: one polite reply per sender per hour with the
+- **Cancel** (`cancel`, any case), with an upcoming open booking: the reply is "To cancel or change your visit, open: <patient page link>".
+  Nothing is cancelled and nothing is opted out. Without a booking it gets the polite reply below.
+- Confirm or Change without a moved visit, Cancel without a booking, anything else, or no open booking: one polite reply per sender per hour with the
   booking link and the clinic phone. Opted-out numbers get no auto-reply.
 
 The route checks Twilio's signature with `TWILIO_AUTH_TOKEN`, like the status callback, and answers 403 when it is wrong.

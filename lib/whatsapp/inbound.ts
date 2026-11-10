@@ -1,6 +1,7 @@
 /**
  * Patient replies on WhatsApp, as Twilio posts them to /api/whatsapp/twilio-inbound.
  * STOP (and Twilio's other opt-out words) opts the number out of every message; START opts it back in.
+ * "Cancel" is not an opt-out here: with an upcoming booking it gets that booking's patient page, where the visit is cancelled or changed.
  * Confirm and Change only mean something for a booking staff moved (awaiting_patient): Confirm clears the wait
  * and thanks the patient; Change sends the patient's own page. Anything else gets one polite auto-reply per sender per hour.
  * Replies go back as TwiML, inside the session the patient just opened.
@@ -15,15 +16,17 @@ import { replies } from "./texts";
 
 export const TWILIO_INBOUND_PATH = "/api/whatsapp/twilio-inbound";
 
-export type Intent = "CONFIRM" | "CHANGE" | "STOP" | "START" | "OTHER";
+export type Intent = "CONFIRM" | "CHANGE" | "CANCEL" | "STOP" | "START" | "OTHER";
 
 const CONFIRM_WORDS = new Set(["confirm", "c", "yes"]);
 const CHANGE_WORDS = new Set(["change", "change time", "r", "reschedule"]);
+const CANCEL_WORDS = new Set(["cancel"]);
 /**
- * Twilio's default opt-out keywords (STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT, and since May 2025 REVOKE and OPTOUT),
- * plus "opt out". https://support.twilio.com/hc/en-us/articles/223134027
+ * Twilio's default opt-out keywords (STOP, STOPALL, UNSUBSCRIBE, END, QUIT, and since May 2025 REVOKE and OPTOUT),
+ * plus "opt out". CANCEL is left out on purpose: a patient typing "cancel" means the visit, not the messages.
+ * https://support.twilio.com/hc/en-us/articles/223134027
  */
-export const STOP_WORDS = new Set(["stop", "stopall", "unsubscribe", "cancel", "end", "quit", "revoke", "optout", "opt out"]);
+export const STOP_WORDS = new Set(["stop", "stopall", "unsubscribe", "end", "quit", "revoke", "optout", "opt out"]);
 /** Twilio's opt-in keywords, START and UNSTOP. YES stays a Confirm here. */
 export const START_WORDS = new Set(["start", "unstop"]);
 
@@ -41,6 +44,7 @@ export function inboundIntent(params: URLSearchParams): Intent {
     if (START_WORDS.has(word)) return "START";
     if (CONFIRM_WORDS.has(word)) return "CONFIRM";
     if (CHANGE_WORDS.has(word)) return "CHANGE";
+    if (CANCEL_WORDS.has(word)) return "CANCEL";
     // A button was tapped but did not match: do not fall through to the body.
     if (field !== "Body") return "OTHER";
   }
@@ -72,10 +76,18 @@ export function confirmReply(b: Booking) {
   return replies.confirmed(b);
 }
 
+function bookingLink(b: Booking, publicUrl: string) {
+  return b.viewToken ? patientPageUrl(publicUrl, b.viewToken) : `${origin(publicUrl)}/clinic/website/book?type=${encodeURIComponent(b.visitType)}`;
+}
+
 /** The patient's own page, where they pick another day or slot. The booking page when the booking has no token. */
 export function changeReply(b: Booking, publicUrl: string) {
-  const link = b.viewToken ? patientPageUrl(publicUrl, b.viewToken) : `${origin(publicUrl)}/clinic/website/book?type=${encodeURIComponent(b.visitType)}`;
-  return replies.change(link);
+  return replies.change(bookingLink(b, publicUrl));
+}
+
+/** "To cancel or change your visit, open: {link}". The same page as Change. */
+export function cancelReply(b: Booking, publicUrl: string) {
+  return replies.cancel(bookingLink(b, publicUrl));
 }
 
 export function otherReply(publicUrl: string) {
@@ -105,6 +117,7 @@ export type InboundResult = { intent: Intent; bookingId: string | null; reply: s
 /**
  * Works out the intent, finds the sender's open booking (one waiting for them first), applies it and builds the TwiML reply.
  * Confirm and Change act only on a booking that is waiting for the patient; otherwise they count as OTHER.
+ * Cancel acts on any upcoming open booking (it sends the patient page link); without one it counts as OTHER.
  * Store errors in logging never block the reply. Logs one line, with the last 4 digits only and no message text.
  */
 export async function handleInbound(
@@ -120,7 +133,8 @@ export async function handleInbound(
 
   const booking = phone ? await store.findLatestByPhone(phone, clinicToday(now)) : null;
   // Confirm and Change answer "your visit has moved". Without a moved visit they are just a message.
-  const intent: Intent = (asked === "CONFIRM" || asked === "CHANGE") && !booking?.awaitingPatient ? "OTHER" : asked;
+  const intent: Intent =
+    ((asked === "CONFIRM" || asked === "CHANGE") && !booking?.awaitingPatient) || (asked === "CANCEL" && !booking) ? "OTHER" : asked;
 
   const log = async (kind: "inbound" | "patient_confirmed", template: string) => {
     if (!booking) return;
@@ -146,6 +160,8 @@ export async function handleInbound(
     reply = confirmReply(updated);
   } else if (booking && intent === "CHANGE") {
     reply = changeReply(booking, publicUrl);
+  } else if (booking && intent === "CANCEL") {
+    reply = cancelReply(booking, publicUrl);
   } else if (!optedOut && mayAutoReply(phone ?? from ?? "unknown", now.getTime())) {
     reply = otherReply(publicUrl);
   }

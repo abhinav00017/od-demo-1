@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as inbound } from "@/app/api/whatsapp/twilio-inbound/route";
 import { clinicTomorrow } from "@/lib/bookings";
 import { memoryStore, resetMemoryStore } from "@/lib/bookings/memory";
-import { inboundIntent, maskedSender, resetInboundReplies, senderPhone, twiml } from "@/lib/whatsapp/inbound";
+import { inboundIntent, maskedSender, resetInboundReplies, senderPhone, STOP_WORDS, twiml } from "@/lib/whatsapp/inbound";
 import { shortDate } from "@/lib/whatsapp/messages";
 import { twilioSignature } from "@/lib/whatsapp/twilioStatus";
 
@@ -28,7 +28,8 @@ describe("inbound helpers", () => {
     expect(intent({ ButtonPayload: "confirm", Body: "Confirm" })).toBe("CONFIRM");
     expect(intent({ ButtonText: "Change time", Body: "Change time" })).toBe("CHANGE");
     expect(intent({ ButtonPayload: "change", ButtonText: "Change" })).toBe("CHANGE");
-    for (const word of ["STOP", "stop", "Unsubscribe", "stopall", "CANCEL", "end", "Quit", "revoke", "optout", "Stop."]) expect(intent({ Body: word })).toBe("STOP");
+    for (const word of ["STOP", "stop", "Unsubscribe", "stopall", "end", "Quit", "revoke", "optout", "Stop."]) expect(intent({ Body: word })).toBe("STOP");
+    for (const word of ["CANCEL", "cancel", "  Cancel ", "Cancel."]) expect(intent({ Body: word })).toBe("CANCEL");
     for (const word of ["START", "start", "unstop"]) expect(intent({ Body: word })).toBe("START");
     expect(intent({ ButtonPayload: "change_time" })).toBe("CHANGE");
     expect(intent({ Body: "  C " })).toBe("CONFIRM");
@@ -38,6 +39,11 @@ describe("inbound helpers", () => {
     expect(intent({ Body: "Can I come at 4?" })).toBe("OTHER");
     expect(intent({ ButtonPayload: "something else", Body: "confirm" })).toBe("OTHER");
     expect(intent({})).toBe("OTHER");
+  });
+
+  it("keeps CANCEL out of the opt-out words, and keeps the rest", () => {
+    expect(STOP_WORDS.has("cancel")).toBe(false);
+    for (const word of ["stop", "stopall", "unsubscribe", "end", "quit", "revoke", "optout"]) expect(STOP_WORDS.has(word)).toBe(true);
   });
 
   it("builds TwiML and escapes the message", () => {
@@ -142,6 +148,26 @@ describe("POST /api/whatsapp/twilio-inbound", () => {
     const xml = await (await signed(msg({ Body: "Change time" }))).text();
     expect(xml).toContain("Thanks for your message.");
     expect((await current(b.id)).wantsNewTime).toBe(false);
+  });
+
+  it("CANCEL with an upcoming booking replies with its patient page link, and neither cancels nor opts out", async () => {
+    const b = await seed();
+    const xml = await (await signed(msg({ Body: "  CANCEL " }))).text();
+    expect(xml).toContain(`<Message>To cancel or change your visit, open: ${PUBLIC}/clinic/website/v/${b.viewToken}</Message>`);
+    expect((await current(b.id)).status).toBe("new");
+    expect((await memoryStore.whatsappBlocks(["9876543210"])).optedOut).toEqual([]);
+    expect((await memoryStore.listMessagesForBookings([b.id]))[0]).toMatchObject({ kind: "inbound", template: "CANCEL" });
+    expect(logs.some((l) => /^twilio inbound: CANCEL from ••••3210, booking [0-9A-F]{8}$/.test(l))).toBe(true);
+  });
+
+  it("CANCEL with no upcoming booking is just a message: the polite reply, not opted out", async () => {
+    const past = await seed({ date: "2020-01-01" });
+    const xml = await (await signed(msg({ Body: "cancel" }))).text();
+    expect(xml).toContain("Thanks for your message.");
+    expect(xml).not.toContain("won't get more WhatsApp messages");
+    expect((await current(past.id)).status).toBe("new");
+    expect((await memoryStore.whatsappBlocks(["9876543210"])).optedOut).toEqual([]);
+    expect(logs).toContain("twilio inbound: OTHER from ••••3210, booking none");
   });
 
   it("acts on the sender's booking that waits for them, before a newer one", async () => {
