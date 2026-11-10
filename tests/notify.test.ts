@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { bookingEmail, notifyClinic } from "@/lib/bookings/notify";
-import type { Booking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking } from "@/lib/bookings/types";
 
 const booking: Booking = {
   id: "3f2a9c1e-0000-4000-8000-000000000000",
@@ -20,6 +20,7 @@ const booking: Booking = {
   campaign: null,
   utm: null,
   isDemo: false,
+  ...BOOKING_FLAG_DEFAULTS,
 };
 
 afterEach(() => vi.restoreAllMocks());

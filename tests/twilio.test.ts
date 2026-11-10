@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as twilioStatus } from "@/app/api/whatsapp/twilio-status/route";
 import { memoryStore, resetMemoryStore } from "@/lib/bookings/memory";
-import type { Booking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking } from "@/lib/bookings/types";
 import { getWhatsApp, isConfigured, providerName, providerProblem } from "@/lib/whatsapp";
 import { sendBookingMessage } from "@/lib/whatsapp/notify";
 import { buildMessage, CONTENT_VARIABLES, contentVariablesFor } from "@/lib/whatsapp/messages";
@@ -27,6 +27,11 @@ const booking: Booking = {
   campaign: null,
   utm: null,
   isDemo: false,
+  ...BOOKING_FLAG_DEFAULTS,
+  viewToken: "Xk3v9QmT0bLr2aWc8YpE5nHd",
+  consentAt: "2026-10-20T04:30:00.000Z",
+  consentText: "By booking, you agree that Lotus Women's Clinic may message you on WhatsApp about this visit.",
+  consentSource: "website",
 };
 
 const SID = "AC00000000000000000000000000000000";
@@ -164,10 +169,13 @@ describe("sendBookingMessage via Twilio", () => {
       providerMessageId: "SM11111111111111111111111111111111",
     });
     const form = new URLSearchParams(String(call(fetchImpl)[1].body));
+    // No buttons in plain text, so the link goes in the body.
     expect(form.get("Body")).toBe(
-      "Hello Priya, your visit at Lotus Women's Clinic is confirmed for Sat 24 Oct, Morning, 10 am – 1 pm. Visit type: Clinic visit. Reply to this message if you need to change it.",
+      "Your visit at Lotus Women's Clinic is confirmed for Sat 24 Oct, Morning, 10 am – 1 pm. You can come any time in this window.\nView or change: https://od-demo-lyart.vercel.app/clinic/website/v/Xk3v9QmT0bLr2aWc8YpE5nHd",
     );
-    expect(logs.join("\n")).toContain("sent as text via twilio (no TWILIO_CONTENT_SID_CONFIRM): Hello [first name], your visit");
+    expect(logs.join("\n")).toContain("sent as text via twilio (no TWILIO_CONTENT_SID_CONFIRM): Your visit at Lotus Women's Clinic is confirmed");
+    expect(logs.join("\n")).toContain("View or change: [patient link]");
+    expect(logs.join("\n")).not.toContain("Xk3v9QmT0bLr2aWc8YpE5nHd");
     expect(logs.join("\n")).not.toMatch(/Priya|9876543210|hello_world/);
   });
 
@@ -233,9 +241,22 @@ describe("twilio content templates", () => {
   });
 
   it("builds the variable map per kind", () => {
-    expect(CONTENT_VARIABLES).toEqual({ confirmation: ["date", "slot"], reminder: ["date", "slot"], clinic_alert: ["firstNameAndVisit", "dateAndSlot"] });
-    expect(contentVariablesFor("confirmation", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
-    expect(contentVariablesFor("reminder", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
+    expect(CONTENT_VARIABLES).toEqual({
+      request_received: ["date", "slot"],
+      confirmation: ["date", "slot", "token"],
+      reminder: ["date", "slot", "link"],
+      visit_moved: ["date", "slot"],
+      clinic_alert: ["firstNameAndVisit", "dateAndSlot"],
+    });
+    expect(contentVariablesFor("confirmation", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm", "3": "Xk3v9QmT0bLr2aWc8YpE5nHd" });
+    expect(contentVariablesFor("confirmation", booking, true)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm", "3": "[token]" });
+    expect(contentVariablesFor("reminder", booking, false, { WHATSAPP_PUBLIC_URL: "https://example.test/" })).toEqual({
+      "1": "Sat 24 Oct",
+      "2": "Morning, 10 am – 1 pm",
+      "3": "https://example.test/clinic/website/v/Xk3v9QmT0bLr2aWc8YpE5nHd",
+    });
+    expect(contentVariablesFor("request_received", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
+    expect(contentVariablesFor("visit_moved", booking)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
     expect(contentVariablesFor("clinic_alert", booking)).toEqual({ "1": "Priya (Clinic visit)", "2": "Sat 24 Oct, Morning, 10 am – 1 pm" });
     expect(contentVariablesFor("clinic_alert", booking, true)).toEqual({ "1": "[first name] (Clinic visit)", "2": "Sat 24 Oct, Morning, 10 am – 1 pm" });
     const online = buildMessage("clinic_alert", { ...booking, visitType: "online", date: "2026-10-22" }, { TWILIO_CONTENT_SID_CONFIRM: HX });
@@ -266,7 +287,7 @@ describe("twilio content templates", () => {
     expect(row).toMatchObject({ provider: "twilio", template: HX, status: "sent", providerMessageId: "SM11111111111111111111111111111111" });
     const form = new URLSearchParams(String(call(fetchImpl)[1].body));
     expect(form.get("ContentSid")).toBe(HX);
-    expect(JSON.parse(form.get("ContentVariables")!)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm" });
+    expect(JSON.parse(form.get("ContentVariables")!)).toEqual({ "1": "Sat 24 Oct", "2": "Morning, 10 am – 1 pm", "3": "Xk3v9QmT0bLr2aWc8YpE5nHd" });
     expect(form.has("Body")).toBe(false);
 
     const alert = await sendBookingMessage(booking, "clinic_alert", { store: memoryStore, sender, env });

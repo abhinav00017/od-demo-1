@@ -1,12 +1,14 @@
 import type { NextRequest } from "next/server";
 import { getStore } from "@/lib/bookings";
 import { TWILIO_STATUS_PATH } from "@/lib/whatsapp/twilio";
+import { isNoWhatsAppError, markNoWhatsApp } from "@/lib/whatsapp/reachability";
 import { mapTwilioStatus, twilioSignedUrls, twilioStatusError, validTwilioSignature } from "@/lib/whatsapp/twilioStatus";
 
 /**
  * Twilio status callback for WhatsApp sends: queued, sent, delivered, read, failed, undelivered.
  * Form-encoded POST. Checks X-Twilio-Signature with TWILIO_AUTH_TOKEN when it is set (bad = 403).
- * Updates the message log by Twilio's message sid, forward only. Answers 200 fast otherwise.
+ * Updates the message log by Twilio's message sid, forward only. A failure that means "not on WhatsApp" (63024, 63003)
+ * marks the booking No WhatsApp and remembers the phone. Answers 200 fast otherwise.
  */
 
 const ok = () => new Response(null, { status: 200 });
@@ -31,8 +33,10 @@ export async function POST(req: NextRequest) {
     return ok();
   }
   try {
-    const row = await getStore().updateMessageStatus(sid, status, status === "failed" ? twilioStatusError(params) : null);
+    const store = getStore();
+    const row = await store.updateMessageStatus(sid, status, status === "failed" ? twilioStatusError(params) : null);
     console.log(`twilio status: ${raw} -> ${status}${row ? "" : " (no newer log row)"}`);
+    if (row && status === "failed" && isNoWhatsAppError("twilio", params.get("ErrorCode"))) await markNoWhatsApp(store, row);
   } catch (err) {
     console.error(`twilio status update failed: ${err instanceof Error ? err.message : "unknown error"}`);
   }

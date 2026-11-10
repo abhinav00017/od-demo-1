@@ -11,15 +11,27 @@ type Env = Record<string, string | undefined>;
 /** The pre-approved template every WhatsApp test number has. It takes no parameters. */
 export const HELLO_WORLD = "hello_world";
 
+/** Where message links point when WHATSAPP_PUBLIC_URL is unset: the live demo. */
+export const DEFAULT_PUBLIC_URL = "https://od-demo-lyart.vercel.app";
+
+/** WHATSAPP_PUBLIC_URL without a trailing slash, or the live demo's origin. */
+export function publicOrigin(env: Env = process.env) {
+  return (env.WHATSAPP_PUBLIC_URL?.trim() || DEFAULT_PUBLIC_URL).replace(/\/+$/, "");
+}
+
 /** Settings read from env. Template names fall back to hello_world until custom ones are approved. */
 export function whatsappSettings(env: Env = process.env) {
   return {
     phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID || DEFAULT_PHONE_NUMBER_ID,
     templates: {
+      request_received: env.WHATSAPP_TEMPLATE_REQUEST_RECEIVED || HELLO_WORLD,
       confirmation: env.WHATSAPP_TEMPLATE_CONFIRM || HELLO_WORLD,
       reminder: env.WHATSAPP_TEMPLATE_REMINDER || HELLO_WORLD,
+      visit_moved: env.WHATSAPP_TEMPLATE_VISIT_MOVED || HELLO_WORLD,
       clinic_alert: env.WHATSAPP_TEMPLATE_CLINIC_ALERT || HELLO_WORLD,
     },
+    /** This site's public origin. Every link in a message starts with it. */
+    publicUrl: publicOrigin(env),
     /** The clinic's own WhatsApp number, E.164 digits without the plus. No default: unset means no clinic alert. */
     clinicNumber: (env.CLINIC_WHATSAPP ?? "").replace(/\D/g, ""),
     language: env.WHATSAPP_TEMPLATE_LANG || "en_US",

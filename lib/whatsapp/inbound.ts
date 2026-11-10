@@ -1,26 +1,35 @@
 /**
  * Patient replies on WhatsApp, as Twilio posts them to /api/whatsapp/twilio-inbound.
- * A "Confirm" tap confirms the booking. A "Change time" tap flags it and sends the booking link.
- * Anything else gets one polite auto-reply per sender per hour.
+ * STOP (and Twilio's other opt-out words) opts the number out of every message; START opts it back in.
+ * Confirm and Change only mean something for a booking staff moved (awaiting_patient): Confirm clears the wait
+ * and thanks the patient; Change sends the patient's own page. Anything else gets one polite auto-reply per sender per hour.
  * Replies go back as TwiML, inside the session the patient just opened.
  */
 import { clinic } from "@/demos/lotus-clinic/data";
 import { normalisePhone, shortBookingId } from "@/demos/lotus-clinic/booking";
 import { clinicToday } from "@/lib/bookings/clinicDay";
 import type { Booking, BookingStore } from "@/lib/bookings/types";
+import { patientPageUrl } from "@/lib/bookings/viewToken";
 import { maskNumber } from "./client";
-import { shortDate } from "./messages";
+import { replies } from "./texts";
 
 export const TWILIO_INBOUND_PATH = "/api/whatsapp/twilio-inbound";
 
-export type Intent = "CONFIRM" | "CHANGE" | "OTHER";
+export type Intent = "CONFIRM" | "CHANGE" | "STOP" | "START" | "OTHER";
 
 const CONFIRM_WORDS = new Set(["confirm", "c", "yes"]);
-const CHANGE_WORDS = new Set(["change time", "change", "r", "reschedule"]);
+const CHANGE_WORDS = new Set(["change", "change time", "r", "reschedule"]);
+/**
+ * Twilio's default opt-out keywords (STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT, and since May 2025 REVOKE and OPTOUT),
+ * plus "opt out". https://support.twilio.com/hc/en-us/articles/223134027
+ */
+export const STOP_WORDS = new Set(["stop", "stopall", "unsubscribe", "cancel", "end", "quit", "revoke", "optout", "opt out"]);
+/** Twilio's opt-in keywords, START and UNSTOP. YES stays a Confirm here. */
+export const START_WORDS = new Set(["start", "unstop"]);
 
 /** "  Change_Time " -> "change time". Button ids may use _ or - for spaces. */
 function clean(text: string | null | undefined) {
-  return (text ?? "").trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return (text ?? "").trim().toLowerCase().replace(/[_-]+/g, " ").replace(/[.!]+$/, "").replace(/\s+/g, " ");
 }
 
 /** The button payload wins, then the button text, then the typed body. */
@@ -28,6 +37,8 @@ export function inboundIntent(params: URLSearchParams): Intent {
   for (const field of ["ButtonPayload", "ButtonText", "Body"]) {
     const word = clean(params.get(field));
     if (!word) continue;
+    if (STOP_WORDS.has(word)) return "STOP";
+    if (START_WORDS.has(word)) return "START";
     if (CONFIRM_WORDS.has(word)) return "CONFIRM";
     if (CHANGE_WORDS.has(word)) return "CHANGE";
     // A button was tapped but did not match: do not fall through to the body.
@@ -56,12 +67,15 @@ export function twiml(message?: string) {
 
 const origin = (publicUrl: string) => publicUrl.replace(/\/+$/, "");
 
+/** "Thank you, see you on Fri 23 Oct, Morning, 10 am – 1 pm." */
 export function confirmReply(b: Booking) {
-  return `Thank you. Your visit is confirmed for ${shortDate(b.date)}, ${b.slot}. ${clinic.name}.`;
+  return replies.confirmed(b);
 }
 
+/** The patient's own page, where they pick another day or slot. The booking page when the booking has no token. */
 export function changeReply(b: Booking, publicUrl: string) {
-  return `No problem. Pick a new time here: ${origin(publicUrl)}/clinic/website/book?type=${encodeURIComponent(b.visitType)} and we will confirm on WhatsApp.`;
+  const link = b.viewToken ? patientPageUrl(publicUrl, b.viewToken) : `${origin(publicUrl)}/clinic/website/book?type=${encodeURIComponent(b.visitType)}`;
+  return replies.change(link);
 }
 
 export function otherReply(publicUrl: string) {
@@ -89,7 +103,8 @@ export function resetInboundReplies() {
 export type InboundResult = { intent: Intent; bookingId: string | null; reply: string | null; xml: string };
 
 /**
- * Works out the intent, finds the sender's open booking, applies it and builds the TwiML reply.
+ * Works out the intent, finds the sender's open booking (one waiting for them first), applies it and builds the TwiML reply.
+ * Confirm and Change act only on a booking that is waiting for the patient; otherwise they count as OTHER.
  * Store errors in logging never block the reply. Logs one line, with the last 4 digits only and no message text.
  */
 export async function handleInbound(
@@ -101,9 +116,11 @@ export async function handleInbound(
   const from = params.get("From");
   const masked = maskedSender(from);
   const phone = senderPhone(from);
-  const intent = inboundIntent(params);
+  const asked = inboundIntent(params);
 
   const booking = phone ? await store.findLatestByPhone(phone, clinicToday(now)) : null;
+  // Confirm and Change answer "your visit has moved". Without a moved visit they are just a message.
+  const intent: Intent = (asked === "CONFIRM" || asked === "CHANGE") && !booking?.awaitingPatient ? "OTHER" : asked;
 
   const log = async (kind: "inbound" | "patient_confirmed", template: string) => {
     if (!booking) return;
@@ -116,15 +133,20 @@ export async function handleInbound(
   await log("inbound", intent);
 
   let reply: string | null = null;
-  if (booking && intent === "CONFIRM") {
-    // The store directly, not the dashboard's PATCH: the patient already has the confirmation template.
-    const updated = (await store.updateStatus(booking.id, "confirmed")) ?? booking;
+  const optedOut = phone ? (await store.whatsappBlocks([phone]).catch(() => ({ optedOut: [phone] }))).optedOut.includes(phone) : false;
+  if (intent === "STOP") {
+    // Reply once: a second STOP from an opted-out number gets nothing.
+    if (phone && (await store.optOut(phone, "whatsapp"))) reply = replies.stopped();
+  } else if (intent === "START") {
+    if (phone && (await store.optIn(phone))) reply = replies.started();
+  } else if (booking && intent === "CONFIRM") {
+    // The store directly, not the dashboard's PATCH: nothing else is sent.
+    const updated = (await store.setAwaitingPatient(booking.id, false)) ?? booking;
     await log("patient_confirmed", "patient_confirmed");
     reply = confirmReply(updated);
   } else if (booking && intent === "CHANGE") {
-    await store.setWantsNewTime(booking.id, true);
     reply = changeReply(booking, publicUrl);
-  } else if (mayAutoReply(phone ?? from ?? "unknown", now.getTime())) {
+  } else if (!optedOut && mayAutoReply(phone ?? from ?? "unknown", now.getTime())) {
     reply = otherReply(publicUrl);
   }
 

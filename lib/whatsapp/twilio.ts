@@ -37,24 +37,30 @@ export function twilioStatusUrl(publicUrl: string) {
 }
 
 type Env = Record<string, string | undefined>;
-type ContentKind = "confirmation" | "reminder" | "clinic_alert";
+type ContentKind = "request_received" | "confirmation" | "reminder" | "visit_moved" | "clinic_alert";
 
 /** The env var holding the Twilio Content Template sid (HX...) for each message kind. */
 export const TWILIO_CONTENT_SID_VARS: Record<ContentKind, string> = {
+  request_received: "TWILIO_CONTENT_SID_REQUEST_RECEIVED",
   confirmation: "TWILIO_CONTENT_SID_CONFIRM",
   reminder: "TWILIO_CONTENT_SID_REMINDER",
+  visit_moved: "TWILIO_CONTENT_SID_VISIT_MOVED",
   clinic_alert: "TWILIO_CONTENT_SID_CLINIC_ALERT",
 };
 
+/** Kinds that borrow the confirmation sid when their own is unset, as before the patient-messages build. */
+const REUSES_CONFIRM: readonly ContentKind[] = ["reminder", "clinic_alert"];
+
 /**
  * The Content Template sid for a kind. Reminder and clinic alert reuse the confirmation sid when their own
- * var is unset, so the demo runs on one sample template. `reused` says that happened. No sid = send Body.
+ * var is unset, so the demo runs on one sample template. `reused` says that happened. No sid = send Body
+ * (request received and visit moved never borrow: the confirmation's words would be wrong for them).
  */
 export function twilioContentSid(kind: ContentKind, env: Env = process.env): { sid?: string; reused: boolean } {
   const own = env[TWILIO_CONTENT_SID_VARS[kind]]?.trim();
   if (own) return { sid: own, reused: false };
   const confirm = env.TWILIO_CONTENT_SID_CONFIRM?.trim();
-  if (kind !== "confirmation" && confirm) return { sid: confirm, reused: true };
+  if (REUSES_CONFIRM.includes(kind) && confirm) return { sid: confirm, reused: true };
   return { reused: false };
 }
 

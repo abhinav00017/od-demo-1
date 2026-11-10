@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { normalisePhone, parseDay, validateBooking, type BookingInput } from "@/demos/lotus-clinic/booking";
 import { CLINIC_SLUG, clinicToday, getStore, isBookingStatus, STAFF_SOURCES, type Booking } from "@/lib/bookings";
 import { isAdmin, isDay, readJson } from "@/lib/bookings/adminHttp";
+import { consentNow } from "@/lib/bookings/consent";
 import { json, NOT_LOGGED_IN } from "@/lib/bookings/http";
 import { runAfterResponse } from "@/lib/bookings/notify";
 import { withWhatsApp } from "@/lib/bookings/whatsappSummary";
@@ -36,7 +37,8 @@ export async function GET(req: NextRequest) {
 
 /**
  * A booking staff enter themselves: a walk-in, a phone call, a referral. Admin only.
- * Same checks as the website form. Starts confirmed. Sends nothing on WhatsApp unless sendWhatsApp is true.
+ * Same checks as the website form. Starts confirmed. sendWhatsApp true = the patient agreed at the desk: the booking stores
+ * staff consent (STAFF_CONSENT_TEXT_V1) and gets the confirmation. Otherwise no consent, and no WhatsApp is ever sent for it.
  */
 export async function POST(req: NextRequest) {
   if (!isAdmin(req)) return json(NOT_LOGGED_IN, 401);
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
   if (!(STAFF_SOURCES as readonly unknown[]).includes(source)) fieldErrors.source = "Choose where this booking came from.";
   if (Object.keys(fieldErrors).length) return json({ ok: false, error: "Please check the highlighted fields.", fieldErrors }, 400);
 
+  const sendWhatsApp = body.sendWhatsApp === true;
   let booking: Booking;
   try {
     booking = await getStore().create({
@@ -69,12 +72,12 @@ export async function POST(req: NextRequest) {
       reason: input.reason,
       status: "confirmed",
       source: source as (typeof STAFF_SOURCES)[number],
+      consent: sendWhatsApp ? consentNow("staff") : null,
     });
   } catch (err) {
     console.error(`staff booking save failed: ${err instanceof Error ? err.message : "unknown error"}`);
     return json({ ok: false, error: "Could not save the booking. Try again." }, 500);
   }
-  const sendWhatsApp = body.sendWhatsApp === true;
   if (sendWhatsApp) runAfterResponse(() => sendBookingMessage(booking, "confirmation", { store: getStore() }));
   return json({ ok: true, booking: { ...booking, whatsapp: null }, sendWhatsApp }, 201);
 }

@@ -26,6 +26,7 @@ const base: NewBooking = {
   date: TODAY,
   slot: "Morning, 10 am – 1 pm",
   reason: "Pregnancy care",
+  consent: { at: "2026-10-19T04:30:00.000Z", text: "By booking, you agree that Lotus Women's Clinic may message you on WhatsApp about this visit.", source: "website" },
 };
 
 const staff = {
@@ -128,15 +129,17 @@ describe("status changes", () => {
     expect(await memoryStore.listMessagesForBookings([today.id, past.id])).toEqual([]);
   });
 
-  it("reschedules a booking that wants a new time: moves, confirms, clears the flag and sends a confirmation", async () => {
+  it("changes the day or slot of a booking that wants a new time: moves, stays confirmed, clears the flag, sends visit moved and waits for the patient", async () => {
     const b = await memoryStore.create({ ...base, date: "2026-10-22" });
     await memoryStore.updateStatus(b.id, "confirmed");
     await memoryStore.setWantsNewTime(b.id, true);
     await memoryStore.logMessage({ bookingId: b.id, kind: "confirmation", provider: "fake", toMasked: "••••3210", template: "t", status: "sent" });
     const res = await PATCH(req(`/api/bookings/${b.id}`, { method: "PATCH", body: { date: "2026-10-23", slot: "Evening, 5 pm – 7 pm" }, cookie: cookie() }), idCtx(b.id));
     expect(res.status).toBe(200);
-    expect((await res.json()).booking).toMatchObject({ date: "2026-10-23", slot: "Evening, 5 pm – 7 pm", status: "confirmed", wantsNewTime: false });
-    await vi.waitFor(async () => expect((await memoryStore.listMessagesForBookings([b.id])).filter((m) => m.kind === "confirmation")).toHaveLength(2));
+    expect((await res.json()).booking).toMatchObject({ date: "2026-10-23", slot: "Evening, 5 pm – 7 pm", status: "confirmed", wantsNewTime: false, awaitingPatient: true });
+    await vi.waitFor(async () => expect((await memoryStore.listMessagesForBookings([b.id])).filter((m) => m.kind === "visit_moved")).toHaveLength(1));
+    // No second confirmation: the patient is asked to confirm the new time instead.
+    expect((await memoryStore.listMessagesForBookings([b.id])).filter((m) => m.kind === "confirmation")).toHaveLength(1);
   });
 
   it("refuses a reschedule to the past, a Sunday clinic visit or an unknown slot", async () => {
@@ -282,7 +285,7 @@ describe("POST /api/admin/demo/reset", () => {
     expect(await memoryStore.list({})).toHaveLength(46);
     // Dates are relative to today in clinic time.
     const live = await (await GET(req("/api/bookings", { cookie: cookie() }))).json();
-    expect(live.needsAction).toHaveLength(3);
+    expect(live.needsAction).toHaveLength(4);
     expect(live.bookings.filter((b: { date: string; isDemo: boolean }) => b.date === TODAY && b.isDemo)).toHaveLength(5);
   });
 

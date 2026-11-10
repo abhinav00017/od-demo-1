@@ -21,6 +21,7 @@ const base: NewBooking = {
   date: "2026-10-22",
   slot: "Morning, 10 am – 1 pm",
   reason: "Pregnancy care",
+  consent: { at: "2026-10-20T10:00:00.000Z", text: "By booking, you agree that Lotus Women's Clinic may message you on WhatsApp about this visit.", source: "website" },
 };
 
 function req(url: string, init: { method?: string; body?: string; headers?: Record<string, string> } = {}) {
@@ -133,19 +134,22 @@ describe("new booking alerts the clinic on WhatsApp", () => {
     const res = await post("203.0.113.21");
     expect(res.status).toBe(201);
     const { id } = await res.json();
-    await vi.waitFor(async () => expect(await messagesFor(id)).toHaveLength(1));
-    expect((await messagesFor(id))[0]).toMatchObject({ kind: "clinic_alert", status: "sent", toMasked: "••••7890" });
+    await vi.waitFor(async () => expect(await messagesFor(id)).toHaveLength(2));
+    const alert = (await messagesFor(id)).find((m) => m.kind === "clinic_alert");
+    expect(alert).toMatchObject({ kind: "clinic_alert", status: "sent", toMasked: "••••7890" });
     expect(logs).toContain("whatsapp (fake): template hello_world to ••••7890");
     expect(logs.join("\n")).not.toMatch(/9876543210|1234567890|Priya|Pregnancy/);
+    // The row shows what the patient got ("request received"), never the clinic's own alert.
     const data = await (await list(req("/api/bookings", { headers: { cookie: adminCookie() } }))).json();
-    expect(data.bookings[0].whatsapp).toBeNull();
+    expect(data.bookings[0].whatsapp).toMatchObject({ kind: "request_received", status: "sent" });
   });
 
   it("skips with one log line when CLINIC_WHATSAPP is unset", async () => {
     const res = await post("203.0.113.22");
     expect(res.status).toBe(201);
     await vi.waitFor(() => expect(logs).toContain("whatsapp clinic alert skipped: CLINIC_WHATSAPP not set"));
-    expect(await messagesFor((await res.json()).id)).toHaveLength(0);
+    const id = (await res.json()).id;
+    await vi.waitFor(async () => expect((await messagesFor(id)).map((m) => m.kind)).toEqual(["request_received"]));
   });
 
   it("still saves the booking when the alert send and the log both fail", async () => {
@@ -229,7 +233,7 @@ describe("reminder cron", () => {
 
     const res = await run("Bearer cron-secret");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, date: "2026-10-21", due: 2, sent: 1, failed: 0, skipped: 1 });
+    expect(await res.json()).toEqual({ ok: true, date: "2026-10-21", due: 2, sent: 1, failed: 0, skipped: 1, blocked: 0, noWhatsApp: 0 });
     expect((await messagesFor(tomorrow.id)).map((m) => m.kind)).toEqual(["reminder"]);
     expect(await messagesFor(tomorrowNew.id)).toHaveLength(0);
     expect(await messagesFor(later.id)).toHaveLength(0);

@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
 import { HONEYPOT_FIELD, normalisePhone, parseBookingBody, parseDay, validateBooking } from "@/demos/lotus-clinic/booking";
 import { ADMIN_COOKIE, isAdminRequest } from "@/lib/admin/auth";
-import { CLINIC_SLUG, clinicToday, getStore, type Booking } from "@/lib/bookings";
+import { BOOKING_FLAG_DEFAULTS, CLINIC_SLUG, clinicToday, getStore, type Booking } from "@/lib/bookings";
 import { parseAttribution } from "@/lib/bookings/attribution";
+import { consentNow } from "@/lib/bookings/consent";
 import { json, NOT_LOGGED_IN } from "@/lib/bookings/http";
 import { withWhatsApp } from "@/lib/bookings/whatsappSummary";
 import { notifyClinic, runAfterResponse } from "@/lib/bookings/notify";
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
       campaign: null,
       utm: null,
       isDemo: false,
+      ...BOOKING_FLAG_DEFAULTS,
     };
     return json({ ok: true, id: fake.id, booking: fake }, 201);
   }
@@ -68,6 +70,8 @@ export async function POST(req: NextRequest) {
       date: input.date,
       slot: input.slot,
       reason: input.reason,
+      // The patient booked under the line CONSENT_TEXT_V1 (validateBooking refuses a request without consent: true).
+      consent: consentNow("website"),
     });
   } catch (err) {
     console.error(`booking save failed: ${err instanceof Error ? err.message : "unknown error"}`);
@@ -78,6 +82,8 @@ export async function POST(req: NextRequest) {
   runAfterResponse(() => notifyClinic(booking, { dashboardUrl }));
   // WhatsApp alert to the clinic's own number. Skipped with one log line when CLINIC_WHATSAPP is unset.
   runAfterResponse(() => sendBookingMessage(booking, "clinic_alert"));
+  // "We've received your request": the same words the success screen shows. No buttons.
+  runAfterResponse(() => sendBookingMessage(booking, "request_received"));
 
   return json({ ok: true, id: booking.id, booking }, 201);
 }
@@ -87,7 +93,7 @@ const SOURCE_WINDOW_DAYS = 30;
 
 /**
  * The dashboard's live data, polled every 5 s. Admin only.
- * `bookings`: today (clinic time) onward. `needsAction`: status new on any day, or wants a new time.
+ * `bookings`: today (clinic time) onward. `needsAction`: status new on any day, wants a new time, or No WhatsApp still to call.
  * `sources`: bookings created in the last 30 days, by source. Each booking carries its latest WhatsApp message.
  */
 export async function GET(req: NextRequest) {
@@ -95,7 +101,7 @@ export async function GET(req: NextRequest) {
   const store = getStore();
   const today = clinicToday();
   try {
-    const [list, waiting] = await Promise.all([store.list({ from: today, clinicSlug: CLINIC_SLUG }), store.needsAction({ clinicSlug: CLINIC_SLUG })]);
+    const [list, waiting] = await Promise.all([store.list({ from: today, clinicSlug: CLINIC_SLUG }), store.needsAction({ clinicSlug: CLINIC_SLUG, today })]);
     // Sources are extra: if the query fails (say the column is not migrated yet), the bookings still load.
     const since = new Date(Date.now() - SOURCE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const sources = await store.sourceCounts({ clinicSlug: CLINIC_SLUG, since }).catch((err: unknown) => {

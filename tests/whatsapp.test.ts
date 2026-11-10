@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { memoryStore, resetMemoryStore } from "@/lib/bookings/memory";
-import type { Booking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking } from "@/lib/bookings/types";
 import { cloudSender, fakeSender, getWhatsApp, isConfigured, maskNumber, scrubDigits, whatsappSettings } from "@/lib/whatsapp";
 import { clinicAlertFor, confirmationFor, reminderFor, shortDate, whatsappNumber } from "@/lib/whatsapp/messages";
 import { sendBookingMessage } from "@/lib/whatsapp/notify";
@@ -23,6 +23,11 @@ const booking: Booking = {
   campaign: null,
   utm: null,
   isDemo: false,
+  ...BOOKING_FLAG_DEFAULTS,
+  viewToken: "Xk3v9QmT0bLr2aWc8YpE5nHd",
+  consentAt: "2026-10-20T04:30:00.000Z",
+  consentText: "By booking, you agree that Lotus Women's Clinic may message you on WhatsApp about this visit.",
+  consentSource: "website",
 };
 
 afterEach(() => {
@@ -97,7 +102,8 @@ describe("picking a sender", () => {
   it("falls back to the test number and hello_world", () => {
     expect(whatsappSettings({})).toEqual({
       phoneNumberId: "1300202886519854",
-      templates: { confirmation: "hello_world", reminder: "hello_world", clinic_alert: "hello_world" },
+      templates: { request_received: "hello_world", confirmation: "hello_world", reminder: "hello_world", visit_moved: "hello_world", clinic_alert: "hello_world" },
+      publicUrl: "https://od-demo-lyart.vercel.app",
       clinicNumber: "",
       language: "en_US",
     });
@@ -113,20 +119,23 @@ describe("picking a sender", () => {
 });
 
 describe("message builders", () => {
-  it("fills the five body parameters for a custom template", () => {
-    const env = { WHATSAPP_TEMPLATE_CONFIRM: "lotus_booking_confirmed", WHATSAPP_TEMPLATE_LANG: "en" };
+  it("fills the body parameters and the View or change URL button for a custom confirmation", () => {
+    const env = { WHATSAPP_TEMPLATE_CONFIRM: "lotus_visit_confirmed", WHATSAPP_TEMPLATE_LANG: "en" };
     const m = confirmationFor(booking, env);
-    expect(m.template).toBe("lotus_booking_confirmed");
+    expect(m.template).toBe("lotus_visit_confirmed");
     expect(m.language).toBe("en");
-    expect(m.params).toEqual(["Priya", "Lotus Women's Clinic", "Sat 24 Oct", "Morning, 10 am – 1 pm", "Clinic visit"]);
-    expect(m.components).toEqual([{ type: "body", parameters: m.params.map((text) => ({ type: "text", text })) }]);
-    expect(m.preview).toBe("Hello Priya, your visit at Lotus Women's Clinic is confirmed for Sat 24 Oct, Morning, 10 am – 1 pm. Visit type: Clinic visit. Reply to this message if you need to change it.");
+    expect(m.params).toEqual(["Sat 24 Oct", "Morning, 10 am – 1 pm"]);
+    expect(m.components).toEqual([
+      { type: "body", parameters: m.params.map((text) => ({ type: "text", text })) },
+      { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: "Xk3v9QmT0bLr2aWc8YpE5nHd" }] },
+    ]);
+    expect(m.preview).toBe("Your visit at Lotus Women's Clinic is confirmed for Sat 24 Oct, Morning, 10 am – 1 pm. You can come any time in this window.");
   });
 
   it("sends hello_world with no components and en_US", () => {
     const m = reminderFor({ ...booking, visitType: "online" }, { WHATSAPP_TEMPLATE_LANG: "en" });
     expect(m).toMatchObject({ kind: "reminder", template: "hello_world", language: "en_US", components: [] });
-    expect(m.preview).toContain("Visit type: Online consultation");
+    expect(m.preview).toContain("See you tomorrow, Sat 24 Oct, Morning, 10 am – 1 pm.");
   });
 
   it("builds the clinic alert with full name, visit type and reason, and a log preview without them", () => {
@@ -151,7 +160,7 @@ describe("sendBookingMessage", () => {
     const row = await sendBookingMessage(booking, "confirmation", { store: memoryStore, env: {} });
     expect(row).toMatchObject({ bookingId: booking.id, kind: "confirmation", status: "sent", toMasked: "••••3210", template: "hello_world" });
     expect(row?.providerMessageId).toMatch(/^wamid\.fake-/);
-    expect(logs.join("\n")).toContain("custom template would say: Hello [first name], your visit at Lotus Women's Clinic");
+    expect(logs.join("\n")).toContain("custom template would say: Your visit at Lotus Women's Clinic is confirmed for Sat 24 Oct");
     expect(logs.join("\n")).not.toMatch(/Priya|9876543210/);
   });
 

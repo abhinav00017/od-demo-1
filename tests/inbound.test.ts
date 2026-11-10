@@ -27,6 +27,9 @@ describe("inbound helpers", () => {
     const intent = (f: Record<string, string>) => inboundIntent(new URLSearchParams(f));
     expect(intent({ ButtonPayload: "confirm", Body: "Confirm" })).toBe("CONFIRM");
     expect(intent({ ButtonText: "Change time", Body: "Change time" })).toBe("CHANGE");
+    expect(intent({ ButtonPayload: "change", ButtonText: "Change" })).toBe("CHANGE");
+    for (const word of ["STOP", "stop", "Unsubscribe", "stopall", "CANCEL", "end", "Quit", "revoke", "optout", "Stop."]) expect(intent({ Body: word })).toBe("STOP");
+    for (const word of ["START", "start", "unstop"]) expect(intent({ Body: word })).toBe("START");
     expect(intent({ ButtonPayload: "change_time" })).toBe("CHANGE");
     expect(intent({ Body: "  C " })).toBe("CONFIRM");
     expect(intent({ Body: "YES" })).toBe("CONFIRM");
@@ -89,14 +92,20 @@ describe("POST /api/whatsapp/twilio-inbound", () => {
     expect(res.status).toBe(200);
   });
 
-  it("CONFIRM by button payload confirms the booking, logs it, sends no template, and replies with the date and slot", async () => {
-    const b = await seed();
+  /** A booking staff moved: confirmed, waiting for the patient. */
+  const moved = async (over: Partial<{ phone: string; date: string; visitType: string }> = {}) => {
+    const b = await seed(over);
+    return (await memoryStore.reschedule(b.id, b.date, "Evening, 5 pm – 7 pm", { awaitingPatient: true }))!;
+  };
+
+  it("CONFIRM by button payload on a moved visit clears the wait, logs it, sends no template, and thanks the patient", async () => {
+    const b = await moved();
     const res = await signed(msg({ ButtonPayload: "confirm", ButtonText: "Confirm", Body: "Confirm" }));
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/xml");
     const xml = await res.text();
-    expect(xml).toContain(`<Message>Thank you. Your visit is confirmed for ${shortDate(day)}, Morning, 10 am – 1 pm. Lotus Women&apos;s Clinic.</Message>`);
-    expect((await current(b.id)).status).toBe("confirmed");
+    expect(xml).toContain(`<Message>Thank you, see you on ${shortDate(day)}, Evening, 5 pm – 7 pm.</Message>`);
+    expect(await current(b.id)).toMatchObject({ status: "confirmed", awaitingPatient: false });
     const log = await memoryStore.listMessagesForBookings([b.id]);
     expect(log.map((m) => m.kind)).toEqual(["patient_confirmed", "inbound"]);
     expect(log[1]).toMatchObject({ template: "CONFIRM", toMasked: "••••3210", status: "delivered", provider: "twilio" });
@@ -105,29 +114,43 @@ describe("POST /api/whatsapp/twilio-inbound", () => {
     expect(logs.join("\n")).not.toContain("9876543210");
   });
 
-  it("CONFIRM by a plain 'C' works too", async () => {
-    const b = await seed();
+  it("CONFIRM by a plain 'C' works too on a moved visit", async () => {
+    const b = await moved();
     const xml = await (await signed(msg({ Body: "C" }))).text();
-    expect(xml).toContain("Thank you. Your visit is confirmed");
-    expect((await current(b.id)).status).toBe("confirmed");
+    expect(xml).toContain("Thank you, see you on");
+    expect((await current(b.id)).awaitingPatient).toBe(false);
   });
 
-  it("CHANGE flags the booking and replies with the booking link for its visit type", async () => {
-    const b = await seed({ visitType: "online" });
-    const xml = await (await signed(msg({ ButtonText: "Change time", Body: "Change time" }))).text();
-    expect(xml).toContain(`<Message>No problem. Pick a new time here: ${PUBLIC}/clinic/website/book?type=online and we will confirm on WhatsApp.</Message>`);
-    const after = await current(b.id);
-    expect(after).toMatchObject({ status: "new", wantsNewTime: true });
+  it("CONFIRM or C without a moved visit is just a message: no status change, the polite reply", async () => {
+    const b = await seed();
+    const xml = await (await signed(msg({ Body: "C" }))).text();
+    expect(xml).toContain("Thanks for your message.");
+    expect(await current(b.id)).toMatchObject({ status: "new", awaitingPatient: false });
+    expect((await memoryStore.listMessagesForBookings([b.id]))[0]).toMatchObject({ kind: "inbound", template: "OTHER" });
+  });
+
+  it("CHANGE on a moved visit replies with the patient's own page link and changes nothing else", async () => {
+    const b = await moved({ visitType: "online" });
+    const xml = await (await signed(msg({ ButtonPayload: "change", ButtonText: "Change" }))).text();
+    expect(xml).toContain(`<Message>No problem. Pick another day or time here: ${PUBLIC}/clinic/website/v/${b.viewToken}</Message>`);
+    expect(await current(b.id)).toMatchObject({ status: "confirmed", wantsNewTime: false, awaitingPatient: true });
     expect((await memoryStore.listMessagesForBookings([b.id]))[0]).toMatchObject({ kind: "inbound", template: "CHANGE" });
   });
 
-  it("acts on the sender's newest open booking only", async () => {
-    const older = await seed();
+  it("CHANGE without a moved visit is just a message", async () => {
+    const b = await seed();
+    const xml = await (await signed(msg({ Body: "Change time" }))).text();
+    expect(xml).toContain("Thanks for your message.");
+    expect((await current(b.id)).wantsNewTime).toBe(false);
+  });
+
+  it("acts on the sender's booking that waits for them, before a newer one", async () => {
+    const waiting = await moved();
     const newer = await seed();
     await seed({ phone: "9123456789" });
     await signed(msg({ Body: "confirm" }));
-    expect((await current(newer.id)).status).toBe("confirmed");
-    expect((await current(older.id)).status).toBe("new");
+    expect((await current(waiting.id)).awaitingPatient).toBe(false);
+    expect((await memoryStore.listMessagesForBookings([newer.id])).length).toBe(0);
   });
 
   it("OTHER with a booking: one auto-reply per hour, logged as inbound", async () => {
@@ -148,7 +171,7 @@ describe("POST /api/whatsapp/twilio-inbound", () => {
     expect(xml).toContain("Thanks for your message.");
     expect((await current(past.id)).status).toBe("new");
     expect(await memoryStore.listMessagesForBookings([past.id])).toEqual([]);
-    expect(logs).toContain("twilio inbound: CONFIRM from ••••3210, booking none");
+    expect(logs).toContain("twilio inbound: OTHER from ••••3210, booking none");
   });
 
   it("skips the check with one log line when TWILIO_AUTH_TOKEN is unset, and answers 200 to an empty form", async () => {

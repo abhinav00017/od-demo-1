@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getStore, isMessageStatus } from "@/lib/bookings";
+import { isNoWhatsAppError, markNoWhatsApp } from "@/lib/whatsapp/reachability";
 import { parseWebhook, statusError, validSignature, type WebhookPayload } from "@/lib/whatsapp/webhook";
 
 /**
@@ -45,6 +46,8 @@ export async function POST(req: NextRequest) {
     try {
       const row = await store.updateMessageStatus(s.id, s.status, s.status === "failed" ? statusError(s) : null);
       console.log(`whatsapp status: ${s.status}${row ? "" : " (no newer log row)"}`);
+      // 131026: not on WhatsApp. The booking is marked and the phone remembered, so staff call instead.
+      if (row && s.status === "failed" && isNoWhatsAppError("meta", s.errors?.[0]?.code ?? null)) await markNoWhatsApp(store, row);
     } catch (err) {
       console.error(`whatsapp status update failed: ${err instanceof Error ? err.message : "unknown error"}`);
     }

@@ -11,8 +11,14 @@ export const DEFAULT_PHONE_NUMBER_ID = "1300202886519854";
 
 export type SendResult = { ok: boolean; messageId?: string; error?: string };
 
-/** A body parameter list for a template, as the Cloud API expects it. */
-export type TemplateComponent = { type: "body"; parameters: { type: "text"; text: string }[] };
+/**
+ * A template component, as the Cloud API expects it: the body parameters, a URL button's dynamic suffix
+ * (the patient page token), or a quick-reply button's payload.
+ */
+export type TemplateComponent =
+  | { type: "body"; parameters: { type: "text"; text: string }[] }
+  | { type: "button"; sub_type: "url"; index: string; parameters: { type: "text"; text: string }[] }
+  | { type: "button"; sub_type: "quick_reply"; index: string; parameters: { type: "payload"; payload: string }[] };
 
 export type TemplateRequest = {
   to: string;
