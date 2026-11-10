@@ -427,3 +427,8 @@ Append only. Newest at the bottom.
 - Floating book button added on desktop: round white button with a teal calendar, 12px above the WhatsApp call button, links to the book page, "Book an Appointment" tooltip on hover/focus, same scale-in and magnetic hover, hidden on book and admin. Below lg unchanged.
 - WhatsApp opt-in removed by unsetting TWILIO_JOIN_KEYWORD on Vercel. Code kept; setting it again brings the "Get updates on WhatsApp" block and dashboard QR back. Without the join step, only numbers that already joined the Twilio sender receive messages.
 - 10 Nov 2026: sticky desktop header, two booking strips and the floating book button deployed and verified live (clean-worktree lint, typecheck, 498 tests; Vercel build; at 1440 the header stays at top 0 with the Book button visible after scrolling 3000px; calendar button sits above the call button; at 375 header not sticky, bottom bar has Book, no sideways scroll; no console errors). Opt-in block and QR gone live. Local `npm run build` in a worktree fails if node_modules is a symlink (Turbopack cannot find next); deploying from the worktree without node_modules works because Vercel installs its own.
+
+## 2026-11-10 (batching from here on)
+
+- No deploys until Abhinav asks for the final one. Undeployed changes so far: none (everything up to 886adea is live).
+- Open question to Abhinav: the booking form's consent checkbox "The clinic may message me on WhatsApp about this visit". Recommendation given: replace the checkbox with a line under the submit button; keep consent for real clinics.
