@@ -424,3 +424,5 @@ Append only. Newest at the bottom.
 ## 2026-11-10 (sticky header build)
 
 - Built: Lotus header sticks from lg (new SiteHeader.tsx); after 24px scroll it slims (py-3.5 to py-2.5, 75.5px to 67.5px), white/95, lg-only backdrop blur and shadow-lotus, 200 ms CSS transition, off under reduced motion. Below lg unchanged. Scroll progress line stays at the very top above it (z-40 over header z-30). Home sections get lg:scroll-mt-[4.25rem]; services cards lg:scroll-mt-24. Two BookingStrips (tinted, 104px on desktop) end the Specialities and Patient Stories sections. Not deployed.
+- Floating book button added on desktop: round white button with a teal calendar, 12px above the WhatsApp call button, links to the book page, "Book an Appointment" tooltip on hover/focus, same scale-in and magnetic hover, hidden on book and admin. Below lg unchanged.
+- WhatsApp opt-in removed by unsetting TWILIO_JOIN_KEYWORD on Vercel. Code kept; setting it again brings the "Get updates on WhatsApp" block and dashboard QR back. Without the join step, only numbers that already joined the Twilio sender receive messages.
