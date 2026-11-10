@@ -16,7 +16,7 @@ describe("schema.sql", () => {
       "CREATE UNIQUE INDEX IF NOT EXISTS messages_provider_id_idx ON messages (provider_message_id) WHERE provider_message_id IS NOT NULL",
       "ALTER TABLE messages ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'meta' CHECK (provider IN ('meta', 'twilio', 'fake'))",
       "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS wants_new_time boolean NOT NULL DEFAULT false",
-      "ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed', 'quote_sent', 'crm_reminder'))",
+      "ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed', 'quote_sent', 'crm_reminder', 'request_received', 'visit_moved'))",
       "CREATE TABLE IF NOT EXISTS crm_products (",
       "CREATE TABLE IF NOT EXISTS crm_leads (",
       "CREATE TABLE IF NOT EXISTS crm_quotes (",
@@ -38,8 +38,37 @@ describe("schema.sql", () => {
       "ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check, ADD CONSTRAINT bookings_status_check CHECK (status IN ('new', 'confirmed', 'cancelled', 'visited', 'no_show'))",
       "CREATE INDEX IF NOT EXISTS bookings_clinic_phone_idx ON bookings (clinic_slug, phone)",
       "CREATE TABLE IF NOT EXISTS patient_notes (",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS view_token text",
+      "UPDATE bookings SET view_token = translate(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') WHERE view_token IS NULL",
+      "CREATE UNIQUE INDEX IF NOT EXISTS bookings_view_token_idx ON bookings (view_token) WHERE view_token IS NOT NULL",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS awaiting_patient boolean NOT NULL DEFAULT false",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS no_whatsapp boolean NOT NULL DEFAULT false",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS phone_confirmed_at timestamptz",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS requested_date date",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS requested_slot text",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS consent_at timestamptz",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS consent_text text",
+      "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS consent_source text CHECK (consent_source IN ('website', 'staff'))",
+      "UPDATE bookings SET consent_at = created_at, consent_text = 'The clinic may message me on WhatsApp about this visit.', consent_source = 'website'",
+      "CREATE TABLE IF NOT EXISTS whatsapp_optouts (",
+      "CREATE TABLE IF NOT EXISTS whatsapp_unreachable (",
     ]);
-    expect(statements.every((s) => /IF (NOT )?EXISTS/.test(s) && !s.includes(";"))).toBe(true);
+    // Every statement is safe to rerun: IF [NOT] EXISTS, or an UPDATE that only touches rows still unset.
+    expect(statements.every((s) => (/IF (NOT )?EXISTS/.test(s) || (s.startsWith("UPDATE bookings SET") && /IS NULL/.test(s))) && !s.includes(";"))).toBe(true);
+  });
+
+  it("backfills tokens and consent only where unset, and consent only on old website rows", () => {
+    const consent = statements.find((s) => s.startsWith("UPDATE bookings SET consent_at"))!;
+    expect(consent).toContain("consent_source IS NULL");
+    expect(consent).toContain("is_demo = false");
+    // Rows the app creates have 24-character tokens, so a rerun never gives consent to a later staff booking.
+    expect(consent).toContain("length(view_token) = 64");
+    expect(consent).not.toMatch(/'walk_in'|'phone'|'referral'/);
+    expect(statements.indexOf(consent)).toBeGreaterThan(statements.findIndex((s) => s.startsWith("UPDATE bookings SET view_token")));
+    const optouts = statements.find((s) => s.startsWith("CREATE TABLE IF NOT EXISTS whatsapp_optouts"))!;
+    expect(optouts).toMatch(/phone\s+text\s+PRIMARY KEY/);
+    expect(optouts).toMatch(/opted_out_at\s+timestamptz NOT NULL DEFAULT now\(\)/);
+    expect(optouts).toMatch(/source\s+text/);
   });
 
   it("creates the messages table with the agreed columns and checks", () => {

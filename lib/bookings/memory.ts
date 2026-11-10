@@ -1,5 +1,6 @@
 import { clinicToday } from "./clinicDay";
 import { isDemoPhone } from "./demoPhones";
+import { newViewToken } from "./viewToken";
 import {
   byDayThenCreated,
   MESSAGE_STATUS_RANK,
@@ -7,6 +8,7 @@ import {
   type BookingStore,
   type DemoData,
   type MessageLog,
+  type OptOutSource,
   type NewBooking,
   type PatientNotes,
   type PatientSummary,
@@ -19,6 +21,8 @@ const g = globalThis as typeof globalThis & {
   __lotusBookings?: Booking[];
   __lotusMessages?: MessageLog[];
   __lotusNotes?: Map<string, PatientNotes>;
+  __lotusOptOuts?: Map<string, { at: string; source: OptOutSource }>;
+  __lotusUnreachable?: Map<string, { at: string; reason: string }>;
   __lotusDemoSeeded?: boolean;
 };
 
@@ -35,6 +39,24 @@ function messages(): MessageLog[] {
 function notes(): Map<string, PatientNotes> {
   g.__lotusNotes ??= new Map();
   return g.__lotusNotes;
+}
+
+function optOuts() {
+  g.__lotusOptOuts ??= new Map();
+  return g.__lotusOptOuts;
+}
+
+function unreachable() {
+  g.__lotusUnreachable ??= new Map();
+  return g.__lotusUnreachable;
+}
+
+/** A booking still in play: new or confirmed. */
+const isOpen = (b: Booking) => b.status === "new" || b.status === "confirmed";
+
+/** The No-WhatsApp bookings staff still have to call: open, from today on, not confirmed by phone yet. */
+export function needsCall(b: Booking, today: string) {
+  return b.noWhatsApp && isOpen(b) && b.date >= today && !b.phoneConfirmedAt;
 }
 
 const noteKey = (clinicSlug: string, phone: string) => `${clinicSlug}:${phone}`;
@@ -54,9 +76,12 @@ function replaceDemo(clinicSlug: string, data: DemoData) {
   }
   for (const b of data.bookings) rows().push({ ...b, clinicSlug, isDemo: true });
   for (const m of data.messages) {
-    messages().push({ ...m, id: crypto.randomUUID(), channel: "whatsapp", providerMessageId: null, error: null });
+    messages().push({ ...m, id: crypto.randomUUID(), channel: "whatsapp", providerMessageId: null, error: m.error ?? null });
   }
   for (const n of data.notes) notes().set(noteKey(clinicSlug, n.phone), { notes: n.notes, updatedAt: n.updatedAt });
+  // Opt-outs and No-WhatsApp marks on demo phones go with the demo data. Real phones are never touched.
+  for (const map of [optOuts(), unreachable()]) for (const phone of [...map.keys()]) if (isDemoPhone(phone)) map.delete(phone);
+  for (const o of data.optOuts ?? []) if (isDemoPhone(o.phone)) optOuts().set(o.phone, { at: o.optedOutAt, source: "demo" });
   return { deleted: gone.size, inserted: data.bookings.length };
 }
 
@@ -82,6 +107,15 @@ export const memoryStore: BookingStore = {
       campaign: input.campaign ?? null,
       utm: input.utm ?? null,
       isDemo: false,
+      viewToken: newViewToken(),
+      awaitingPatient: false,
+      noWhatsApp: false,
+      phoneConfirmedAt: null,
+      requestedDate: null,
+      requestedSlot: null,
+      consentAt: input.consent?.at ?? null,
+      consentText: input.consent?.text ?? null,
+      consentSource: input.consent?.source ?? null,
     };
     rows().push(booking);
     return copy(booking);
@@ -105,9 +139,9 @@ export const memoryStore: BookingStore = {
       .map(copy);
   },
 
-  async needsAction({ clinicSlug }) {
+  async needsAction({ clinicSlug, today = clinicToday() }) {
     return rows()
-      .filter((b) => b.clinicSlug === clinicSlug && (b.status === "new" || b.wantsNewTime))
+      .filter((b) => b.clinicSlug === clinicSlug && (b.status === "new" || b.wantsNewTime || needsCall(b, today)))
       .sort(byDayThenCreated)
       .map(copy);
   },
@@ -173,18 +207,85 @@ export const memoryStore: BookingStore = {
     const found = rows().find((b) => b.id === id);
     if (!found) return null;
     found.status = status;
-    if (status !== "new") found.wantsNewTime = false;
+    if (status !== "new") {
+      found.wantsNewTime = false;
+      found.requestedDate = null;
+      found.requestedSlot = null;
+    }
+    if (status === "cancelled") found.awaitingPatient = false;
     return copy(found);
   },
 
-  async reschedule(id, date, slot) {
+  async reschedule(id, date, slot, { awaitingPatient = false } = {}) {
     const found = rows().find((b) => b.id === id);
     if (!found) return null;
     found.date = date;
     found.slot = slot;
     found.status = "confirmed";
     found.wantsNewTime = false;
+    found.requestedDate = null;
+    found.requestedSlot = null;
+    found.awaitingPatient = awaitingPatient;
     return copy(found);
+  },
+
+  async getByViewToken(token) {
+    const found = rows().find((b) => b.viewToken !== null && b.viewToken === token);
+    return found ? copy(found) : null;
+  },
+
+  async requestNewTime(id, date, slot) {
+    const found = rows().find((b) => b.id === id);
+    if (!found) return null;
+    found.wantsNewTime = true;
+    found.requestedDate = date;
+    found.requestedSlot = slot;
+    found.awaitingPatient = false;
+    return copy(found);
+  },
+
+  async setAwaitingPatient(id, value) {
+    const found = rows().find((b) => b.id === id);
+    if (!found) return null;
+    found.awaitingPatient = value;
+    return copy(found);
+  },
+
+  async setNoWhatsApp(id, value) {
+    const found = rows().find((b) => b.id === id);
+    if (!found) return null;
+    found.noWhatsApp = value;
+    return copy(found);
+  },
+
+  async confirmByPhone(id) {
+    const found = rows().find((b) => b.id === id);
+    if (!found) return null;
+    found.status = "confirmed";
+    found.wantsNewTime = false;
+    found.requestedDate = null;
+    found.requestedSlot = null;
+    found.phoneConfirmedAt = stamp();
+    return copy(found);
+  },
+
+  async optOut(phone, source) {
+    if (optOuts().has(phone)) return false;
+    optOuts().set(phone, { at: stamp(), source });
+    return true;
+  },
+
+  async optIn(phone) {
+    return optOuts().delete(phone);
+  },
+
+  async markUnreachable(phone, reason) {
+    if (!unreachable().has(phone)) unreachable().set(phone, { at: stamp(), reason });
+  },
+
+  async whatsappBlocks(phones) {
+    const wanted = [...new Set(phones)];
+    return { optedOut: wanted.filter((p) => optOuts().has(p)), unreachable: wanted.filter((p) => unreachable().has(p)) };
   },
 
   async setWantsNewTime(id, value) {
@@ -195,11 +296,11 @@ export const memoryStore: BookingStore = {
   },
 
   async findLatestByPhone(phone, today = clinicToday()) {
-    // Newest created first. Same-millisecond rows keep insertion order, later first.
+    // Waiting for the patient first, then newest created. Same-millisecond rows keep insertion order, later first.
     const found = rows()
       .map((b, i) => ({ b, i }))
-      .filter(({ b }) => b.phone === phone && (b.status === "new" || b.status === "confirmed") && b.date >= today)
-      .sort((x, y) => y.b.createdAt.localeCompare(x.b.createdAt) || y.i - x.i)[0];
+      .filter(({ b }) => b.phone === phone && isOpen(b) && b.date >= today)
+      .sort((x, y) => Number(y.b.awaitingPatient) - Number(x.b.awaitingPatient) || y.b.createdAt.localeCompare(x.b.createdAt) || y.i - x.i)[0];
     return found ? copy(found.b) : null;
   },
 
@@ -274,5 +375,7 @@ export function resetMemoryStore({ seed = false }: { seed?: boolean } = {}) {
   rows().length = 0;
   messages().length = 0;
   notes().clear();
+  optOuts().clear();
+  unreachable().clear();
   g.__lotusDemoSeeded = !seed;
 }

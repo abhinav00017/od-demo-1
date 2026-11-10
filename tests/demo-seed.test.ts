@@ -4,7 +4,7 @@ import { clinic } from "@/demos/lotus-clinic/data";
 import { isDemoPhone } from "@/lib/bookings/demoPhones";
 import { addDays, generateDemoData } from "@/lib/bookings/demoSeed";
 import { memoryStore, resetMemoryStore } from "@/lib/bookings/memory";
-import type { Booking } from "@/lib/bookings/types";
+import { BOOKING_FLAG_DEFAULTS, type Booking } from "@/lib/bookings/types";
 import { twilioSender } from "@/lib/whatsapp";
 import { sendBookingMessage } from "@/lib/whatsapp/notify";
 
@@ -13,10 +13,19 @@ const TODAY = "2026-11-10"; // Tuesday
 describe("generateDemoData", () => {
   const data = generateDemoData(TODAY);
   const { bookings } = data;
+  const fixed = () => {
+    let n = 0;
+    return () => `demo-token-${String(n++).padStart(12, "0")}`;
+  };
 
-  it("is deterministic: the same today and seed give the same rows, ids included", () => {
-    expect(generateDemoData(TODAY)).toEqual(data);
-    expect(generateDemoData(TODAY, 7)).not.toEqual(data);
+  it("is deterministic apart from the random view tokens: the same today and seed give the same rows, ids included", () => {
+    expect(generateDemoData(TODAY, undefined, { token: fixed() })).toEqual(generateDemoData(TODAY, undefined, { token: fixed() }));
+    expect(generateDemoData(TODAY, 7, { token: fixed() })).not.toEqual(generateDemoData(TODAY, undefined, { token: fixed() }));
+    // Real links are random: nobody can work a demo patient's link out from the seed.
+    const tokens = new Set(bookings.map((b) => b.viewToken));
+    expect(tokens.size).toBe(bookings.length);
+    expect(generateDemoData(TODAY).bookings[0].viewToken).not.toBe(bookings[0].viewToken);
+    for (const t of tokens) expect(t).toMatch(/^[A-Za-z0-9_-]{24}$/);
   });
 
   it("builds about 45 bookings over the past 60 days, today and the next 7 days", () => {
@@ -46,8 +55,8 @@ describe("generateDemoData", () => {
     expect(future.every((b) => b.status === "new" || b.status === "confirmed")).toBe(true);
     // Visited and no-show never on a future day.
     expect(bookings.filter((b) => (b.status === "visited" || b.status === "no_show") && b.date > TODAY)).toEqual([]);
-    const waiting = bookings.filter((b) => b.status === "new" || b.wantsNewTime);
-    expect(waiting).toHaveLength(3);
+    const waiting = bookings.filter((b) => b.status === "new" || b.wantsNewTime || b.noWhatsApp);
+    expect(waiting).toHaveLength(4);
     expect(waiting.filter((b) => b.wantsNewTime)).toHaveLength(1);
   });
 
@@ -101,14 +110,39 @@ describe("generateDemoData", () => {
     }
   });
 
+  it("shows each new state at least once: waiting for patient, No WhatsApp tomorrow, opted out, requested time, consent", () => {
+    const awaiting = bookings.filter((b) => b.awaitingPatient);
+    expect(awaiting).toHaveLength(1);
+    expect(awaiting[0]).toMatchObject({ status: "confirmed" });
+    expect(data.messages.filter((m) => m.bookingId === awaiting[0].id).map((m) => m.kind)).toContain("visit_moved");
+    const noWa = bookings.filter((b) => b.noWhatsApp);
+    expect(noWa).toHaveLength(1);
+    expect(noWa[0]).toMatchObject({ status: "confirmed", date: addDays(TODAY, 1), phoneConfirmedAt: null });
+    expect(data.messages.find((m) => m.bookingId === noWa[0].id)).toMatchObject({ status: "failed", error: "63024: Invalid message recipient" });
+    expect(data.optOuts).toHaveLength(1);
+    const stopper = data.optOuts![0].phone;
+    expect(isDemoPhone(stopper)).toBe(true);
+    expect(bookings.some((b) => b.phone === stopper && b.date > TODAY)).toBe(true);
+    expect([awaiting[0].phone, noWa[0].phone]).not.toContain(stopper);
+    const asked = bookings.find((b) => b.wantsNewTime)!;
+    expect(asked.requestedDate! > asked.date).toBe(true);
+    expect(clinic.booking.slots).toContain(asked.requestedSlot);
+    for (const b of bookings.filter((x) => ["website", "google_ads", "meta_ads", "google_maps"].includes(x.source))) {
+      expect(b).toMatchObject({ consentSource: "website", consentAt: b.createdAt });
+      expect(b.consentText).toContain("may message you on WhatsApp");
+    }
+    expect(bookings.some((b) => b.consentSource === null)).toBe(true);
+  });
+
   it("adds a few WhatsApp confirmations (delivered or read) on confirmed and visited bookings, and a few notes", () => {
     expect(data.messages.length).toBeGreaterThanOrEqual(5);
     const ids = new Map(bookings.map((b) => [b.id, b]));
     for (const m of data.messages) {
       const b = ids.get(m.bookingId)!;
       expect(["confirmed", "visited"]).toContain(b.status);
+      if (b.noWhatsApp) continue;
       expect(["delivered", "read"]).toContain(m.status);
-      expect(m.kind).toBe("confirmation");
+      expect(m.kind).toBe(b.awaitingPatient && m.kind !== "confirmation" ? "visit_moved" : "confirmation");
       expect(m.toMasked).toBe(`••••${b.phone.slice(-4)}`);
     }
     expect(data.notes.length).toBeGreaterThanOrEqual(3);
@@ -148,6 +182,10 @@ describe("demo guard: no provider call for demo bookings", () => {
     campaign: null,
     utm: null,
     isDemo: false,
+    ...BOOKING_FLAG_DEFAULTS,
+    consentAt: "2026-11-09T04:30:00.000Z",
+    consentText: "By booking, you agree that Lotus Women's Clinic may message you on WhatsApp about this visit.",
+    consentSource: "website",
   };
 
   it("isDemoPhone matches only 90000 2xxxx, with or without +91", () => {

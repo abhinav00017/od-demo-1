@@ -48,7 +48,8 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS wants_new_time boolean NOT NULL DE
 -- One statement, so the drop and the add happen together. Safe to rerun.
 -- The CRM build added quote_sent (a quote on WhatsApp) and crm_reminder (the 2-day nudge) here, not in a second statement,
 -- so a rerun never re-adds a narrower check over rows that already use the new kinds.
-ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed', 'quote_sent', 'crm_reminder'));
+-- The patient-messages build added request_received (on booking) and visit_moved (staff changed the day or slot) here too.
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_kind_check, ADD CONSTRAINT messages_kind_check CHECK (kind IN ('confirmation', 'reminder', 'cancellation', 'clinic_alert', 'inbound', 'patient_confirmed', 'quote_sent', 'crm_reminder', 'request_received', 'visit_moved'));
 
 -- CRM for tile showrooms (phase 1). Every table carries shop_slug, so one database can hold several shops later.
 -- Money is in paise (integer rupees * 100). Safe to rerun.
@@ -173,4 +174,57 @@ CREATE TABLE IF NOT EXISTS patient_notes (
   notes       text        NOT NULL DEFAULT '',
   updated_at  timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (clinic_slug, phone)
+);
+
+-- Patient messages build (10 Nov 2026): the patient's private page, visit moved, No WhatsApp, opt-out and consent records.
+-- Every statement is safe to rerun.
+
+-- The patient's private link /clinic/website/v/<view_token>. The app writes 24 url-safe characters on create.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS view_token text;
+
+-- Rows from before the patient page get a token too (64 hex characters, two random uuids), so their links work.
+UPDATE bookings SET view_token = translate(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') WHERE view_token IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS bookings_view_token_idx ON bookings (view_token) WHERE view_token IS NOT NULL;
+
+-- Staff moved the visit and asked the patient to confirm on WhatsApp. Cleared when the patient taps Confirm.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS awaiting_patient boolean NOT NULL DEFAULT false;
+
+-- A WhatsApp send came back "not on WhatsApp" (Meta 131026, Twilio 63024 or 63003). Staff call instead.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS no_whatsapp boolean NOT NULL DEFAULT false;
+
+-- When staff marked a No-WhatsApp booking "Confirmed by phone".
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS phone_confirmed_at timestamptz;
+
+-- The day and slot the patient asked for on their page (with wants_new_time).
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS requested_date date;
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS requested_slot text;
+
+-- WhatsApp consent: when, the exact line shown, and where (website form, or staff with "Send on WhatsApp" ticked).
+-- All null = no consent, and the booking never gets a WhatsApp message.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS consent_at timestamptz;
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS consent_text text;
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS consent_source text CHECK (consent_source IN ('website', 'staff'));
+
+-- Website bookings made before consent records all ticked the old consent checkbox (the API refused them without it),
+-- so they keep getting WhatsApp. Only rows whose token came from the backfill above (64 characters; the app writes 24),
+-- so a rerun never gives consent to a later staff booking. Staff sources stay without consent. Real rows only.
+UPDATE bookings SET consent_at = created_at, consent_text = 'The clinic may message me on WhatsApp about this visit.', consent_source = 'website'
+WHERE consent_source IS NULL AND is_demo = false AND length(view_token) = 64 AND source IN ('website', 'google_ads', 'meta_ads', 'google_maps', 'google_search', 'whatsapp');
+
+-- Phones (10 digits) that sent STOP. Every send checks this first. START removes the row.
+CREATE TABLE IF NOT EXISTS whatsapp_optouts (
+  phone        text        PRIMARY KEY,
+  opted_out_at timestamptz NOT NULL DEFAULT now(),
+  source       text        NOT NULL DEFAULT 'whatsapp' CHECK (source IN ('whatsapp', 'staff', 'demo'))
+);
+
+-- Phones (10 digits) that are not on WhatsApp, so later bookings skip WhatsApp and staff call instead.
+CREATE TABLE IF NOT EXISTS whatsapp_unreachable (
+  phone     text        PRIMARY KEY,
+  marked_at timestamptz NOT NULL DEFAULT now(),
+  reason    text
 );

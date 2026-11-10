@@ -44,7 +44,10 @@ describe("postgres store (driver mocked)", () => {
     const [text, params] = query.mock.calls[0];
     expect(text).toMatch(/^INSERT INTO bookings/);
     expect(text).toContain("date::text AS date");
-    expect(params).toEqual(["lotus-clinic", "Priya Sharma", "9876543210", "clinic", "2026-10-22", "Morning, 10 am – 1 pm", "Pregnancy care", null, "new", "website", null, null]);
+    expect(params.slice(0, 12)).toEqual(["lotus-clinic", "Priya Sharma", "9876543210", "clinic", "2026-10-22", "Morning, 10 am – 1 pm", "Pregnancy care", null, "new", "website", null, null]);
+    // A fresh 24-character view token, and no consent.
+    expect(params[12]).toMatch(/^[A-Za-z0-9_-]{24}$/);
+    expect(params.slice(13)).toEqual([null, null, null]);
     expect(b).toEqual({
       id: row.id,
       createdAt: "2026-10-21T04:30:00.000Z",
@@ -62,7 +65,96 @@ describe("postgres store (driver mocked)", () => {
       campaign: null,
       utm: null,
       isDemo: false,
+      viewToken: null,
+      awaitingPatient: false,
+      noWhatsApp: false,
+      phoneConfirmedAt: null,
+      requestedDate: null,
+      requestedSlot: null,
+      consentAt: null,
+      consentText: null,
+      consentSource: null,
     });
+  });
+
+  it("stores consent on create and maps the new columns back", async () => {
+    query.mockResolvedValue([
+      {
+        ...row,
+        view_token: "Xk3v9QmT0bLr2aWc8YpE5nHd",
+        awaiting_patient: true,
+        no_whatsapp: true,
+        phone_confirmed_at: new Date("2026-10-21T06:00:00Z"),
+        requested_date: "2026-10-24",
+        requested_slot: "Evening, 5 pm – 7 pm",
+        consent_at: new Date("2026-10-21T04:30:00Z"),
+        consent_text: "line",
+        consent_source: "website",
+      },
+    ]);
+    const b = await postgresStore("postgres://x").create({
+      clinicSlug: "lotus-clinic",
+      name: "Priya Sharma",
+      phone: "9876543210",
+      visitType: "clinic",
+      date: "2026-10-22",
+      slot: "Morning, 10 am – 1 pm",
+      reason: "Pregnancy care",
+      consent: { at: "2026-10-21T04:30:00.000Z", text: "line", source: "website" },
+    });
+    const [text, params] = query.mock.calls[0];
+    expect(text).toContain("view_token, consent_at, consent_text, consent_source");
+    expect(params.slice(13)).toEqual(["2026-10-21T04:30:00.000Z", "line", "website"]);
+    expect(b).toMatchObject({
+      viewToken: "Xk3v9QmT0bLr2aWc8YpE5nHd",
+      awaitingPatient: true,
+      noWhatsApp: true,
+      phoneConfirmedAt: "2026-10-21T06:00:00.000Z",
+      requestedDate: "2026-10-24",
+      requestedSlot: "Evening, 5 pm – 7 pm",
+      consentAt: "2026-10-21T04:30:00.000Z",
+      consentText: "line",
+      consentSource: "website",
+    });
+  });
+
+  it("finds a booking by view token, and the patient-page and staff updates send the right SQL", async () => {
+    query.mockResolvedValue([row]);
+    const store = postgresStore("postgres://x");
+    await store.getByViewToken("Xk3v9QmT0bLr2aWc8YpE5nHd");
+    expect(query.mock.calls[0][0]).toMatch(/WHERE view_token = \$1$/);
+    expect(query.mock.calls[0][1]).toEqual(["Xk3v9QmT0bLr2aWc8YpE5nHd"]);
+    await store.requestNewTime(row.id, "2026-10-24", "Evening, 5 pm – 7 pm");
+    expect(query.mock.calls[1][0]).toContain("SET wants_new_time = true, requested_date = $2::date, requested_slot = $3, awaiting_patient = false");
+    await store.setAwaitingPatient(row.id, false);
+    expect(query.mock.calls[2][0]).toContain("SET awaiting_patient = $2");
+    await store.setNoWhatsApp(row.id, true);
+    expect(query.mock.calls[3][0]).toContain("SET no_whatsapp = $2");
+    await store.confirmByPhone(row.id);
+    expect(query.mock.calls[4][0]).toContain("status = 'confirmed'");
+    expect(query.mock.calls[4][0]).toContain("phone_confirmed_at = now()");
+  });
+
+  it("opt-outs and unreachable phones: insert once, delete, and look up in one query", async () => {
+    const store = postgresStore("postgres://x");
+    query.mockResolvedValueOnce([{ phone: "9876543210" }]).mockResolvedValueOnce([]);
+    expect(await store.optOut("9876543210", "whatsapp")).toBe(true);
+    expect(await store.optOut("9876543210", "whatsapp")).toBe(false);
+    expect(query.mock.calls[0][0]).toContain("ON CONFLICT (phone) DO NOTHING RETURNING phone");
+    query.mockResolvedValueOnce([{ phone: "9876543210" }]);
+    expect(await store.optIn("9876543210")).toBe(true);
+    expect(query.mock.calls[2][0]).toBe("DELETE FROM whatsapp_optouts WHERE phone = $1 RETURNING phone");
+    query.mockResolvedValueOnce([]);
+    await store.markUnreachable("9876543210", "63024");
+    expect(query.mock.calls[3]).toEqual(["INSERT INTO whatsapp_unreachable (phone, reason) VALUES ($1, $2) ON CONFLICT (phone) DO NOTHING", ["9876543210", "63024"]]);
+    query.mockResolvedValueOnce([
+      { phone: "9876543210", kind: "optout" },
+      { phone: "9123456789", kind: "unreachable" },
+    ]);
+    expect(await store.whatsappBlocks(["9876543210", "9123456789", "9876543210"])).toEqual({ optedOut: ["9876543210"], unreachable: ["9123456789"] });
+    expect(query.mock.calls[4][1]).toEqual([["9876543210", "9123456789"]]);
+    expect(await store.whatsappBlocks([])).toEqual({ optedOut: [], unreachable: [] });
+    expect(query).toHaveBeenCalledTimes(5);
   });
 
   it("lists from a day for one clinic", async () => {
@@ -103,7 +195,7 @@ describe("postgres store (driver mocked)", () => {
     const store = postgresStore("postgres://x");
     expect((await store.findLatestByPhone("9876543210", "2026-10-22"))?.id).toBe(row.id);
     const [text, params] = query.mock.calls[0];
-    expect(text).toMatch(/WHERE phone = \$1 AND status IN \('new', 'confirmed'\) AND date >= \$2::date ORDER BY created_at DESC LIMIT 1$/);
+    expect(text).toMatch(/WHERE phone = \$1 AND status IN \('new', 'confirmed'\) AND date >= \$2::date ORDER BY awaiting_patient DESC, created_at DESC LIMIT 1$/);
     expect(params).toEqual(["9876543210", "2026-10-22"]);
     expect(await store.findLatestByPhone("9876543210", "2026-10-22")).toBeNull();
   });
@@ -217,7 +309,7 @@ describe("postgres store (driver mocked)", () => {
     });
     const [text, params] = query.mock.calls[0];
     expect(text).toContain("$12::jsonb");
-    expect(params.slice(8)).toEqual(["confirmed", "walk_in", "spring", JSON.stringify({ utm_source: "google" })]);
+    expect(params.slice(8, 12)).toEqual(["confirmed", "walk_in", "spring", JSON.stringify({ utm_source: "google" })]);
     expect(b).toMatchObject({ status: "confirmed", source: "walk_in", utm: { utm_source: "google" }, isDemo: false });
   });
 
@@ -237,12 +329,14 @@ describe("postgres store (driver mocked)", () => {
     expect(await store.get(row.id)).toBeNull();
   });
 
-  it("needsAction: status new or wants a new time, for one clinic", async () => {
+  it("needsAction: status new, wants a new time, or No WhatsApp still to call from today, for one clinic", async () => {
     query.mockResolvedValue([row]);
-    await postgresStore("postgres://x").needsAction({ clinicSlug: "lotus-clinic" });
+    await postgresStore("postgres://x").needsAction({ clinicSlug: "lotus-clinic", today: "2026-10-21" });
     const [text, params] = query.mock.calls[0];
-    expect(text).toContain("WHERE clinic_slug = $1 AND (status = 'new' OR wants_new_time)");
-    expect(params).toEqual(["lotus-clinic"]);
+    expect(text).toContain(
+      "WHERE clinic_slug = $1 AND (status = 'new' OR wants_new_time OR (no_whatsapp AND status IN ('new', 'confirmed') AND date >= $2::date AND phone_confirmed_at IS NULL))",
+    );
+    expect(params).toEqual(["lotus-clinic", "2026-10-21"]);
   });
 
   it("searches name with ILIKE (wildcards escaped) and phone by its digits", async () => {
@@ -290,12 +384,14 @@ describe("postgres store (driver mocked)", () => {
     expect(counts).toEqual({ website: 4, meta_ads: 2 });
   });
 
-  it("reschedules: new day and slot, confirmed, flag cleared", async () => {
-    query.mockResolvedValue([{ ...row, date: "2026-10-24", status: "confirmed" }]);
-    const b = await postgresStore("postgres://x").reschedule(row.id, "2026-10-24", "Evening, 5 pm – 7 pm");
+  it("reschedules: new day and slot, confirmed, flag and request cleared, waiting for the patient when asked", async () => {
+    query.mockResolvedValue([{ ...row, date: "2026-10-24", status: "confirmed", awaiting_patient: true }]);
+    const b = await postgresStore("postgres://x").reschedule(row.id, "2026-10-24", "Evening, 5 pm – 7 pm", { awaitingPatient: true });
     const [text, params] = query.mock.calls[0];
-    expect(text).toContain("SET date = $2::date, slot = $3, status = 'confirmed', wants_new_time = false");
-    expect(params).toEqual([row.id, "2026-10-24", "Evening, 5 pm – 7 pm"]);
+    expect(text).toContain("SET date = $2::date, slot = $3, status = 'confirmed', wants_new_time = false, requested_date = NULL, requested_slot = NULL");
+    expect(text).toContain("awaiting_patient = $4");
+    expect(params).toEqual([row.id, "2026-10-24", "Evening, 5 pm – 7 pm", true]);
+    expect(b?.awaitingPatient).toBe(true);
     expect(b?.date).toBe("2026-10-24");
   });
 
@@ -331,18 +427,52 @@ describe("postgres store (driver mocked)", () => {
           source: "google_ads",
           campaign: "pcos-awareness",
           utm: { gclid: "x" },
+          viewToken: "Xk3v9QmT0bLr2aWc8YpE5nHd",
+          awaitingPatient: true,
+          noWhatsApp: false,
+          phoneConfirmedAt: null,
+          requestedDate: null,
+          requestedSlot: null,
+          consentAt: "2026-10-20T04:00:00.000Z",
+          consentText: "line",
+          consentSource: "website",
         },
       ],
       messages: [],
       notes: [{ phone: "9000020101", notes: "n", updatedAt: "2026-10-20T04:00:00.000Z" }],
+      optOuts: [
+        { phone: "9000020102", optedOutAt: "2026-10-20T04:00:00.000Z" },
+        // A real number in the demo data is dropped, never written.
+        { phone: "9876543210", optedOutAt: "2026-10-20T04:00:00.000Z" },
+      ],
     });
     expect(result).toEqual({ deleted: 2, inserted: 1 });
     expect(transaction).toHaveBeenCalledTimes(1);
     const queries = transaction.mock.calls[0][0] as { text: string; params: unknown[] }[];
-    expect(queries.map((q) => q.text.split(/\s+/).slice(0, 3).join(" "))).toEqual(["DELETE FROM bookings", "DELETE FROM patient_notes", "INSERT INTO bookings", "INSERT INTO messages", "INSERT INTO patient_notes"]);
+    expect(queries.map((q) => q.text.split(/\s+/).slice(0, 3).join(" "))).toEqual([
+      "DELETE FROM bookings",
+      "DELETE FROM patient_notes",
+      "INSERT INTO bookings",
+      "INSERT INTO messages",
+      "INSERT INTO patient_notes",
+      "DELETE FROM whatsapp_optouts",
+      "DELETE FROM whatsapp_unreachable",
+      "INSERT INTO whatsapp_optouts",
+    ]);
+    expect(queries[5].params).toEqual(["900002%"]);
+    expect(queries[6].params).toEqual(["900002%"]);
+    expect(JSON.parse(queries[7].params[0] as string)).toEqual([{ phone: "9000020102", opted_out_at: "2026-10-20T04:00:00.000Z" }]);
     expect(queries[0].text).toBe("DELETE FROM bookings WHERE clinic_slug = $1 AND is_demo = true RETURNING id");
     expect(queries[1].params).toEqual(["lotus-clinic", "900002%"]);
     expect(queries[2].text).toContain("x.utm, true");
-    expect(JSON.parse(queries[2].params[1] as string)[0]).toMatchObject({ id: row.id, phone: "9000020101", status: "visited", source: "google_ads" });
+    expect(JSON.parse(queries[2].params[1] as string)[0]).toMatchObject({
+      id: row.id,
+      phone: "9000020101",
+      status: "visited",
+      source: "google_ads",
+      view_token: "Xk3v9QmT0bLr2aWc8YpE5nHd",
+      awaiting_patient: true,
+      consent_source: "website",
+    });
   });
 });

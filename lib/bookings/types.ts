@@ -1,6 +1,8 @@
+import type { ConsentSource } from "./consent";
 import type { BookingSource, Utm } from "./sources";
 
 export * from "./sources";
+export type { ConsentSource } from "./consent";
 
 /** visited and no_show close a booking on its day or after. They never send anything on WhatsApp. */
 export const BOOKING_STATUSES = ["new", "confirmed", "cancelled", "visited", "no_show"] as const;
@@ -35,7 +37,35 @@ export type Booking = {
   utm: Utm | null;
   /** Sample data from the demo seed. Reset demo data replaces these rows and never touches the rest. */
   isDemo: boolean;
+  /** The patient's private link: /clinic/website/v/<viewToken>. Null only on rows from before the patient page, until migrated. */
+  viewToken: string | null;
+  /** Staff moved the visit and the patient has not tapped Confirm yet. Cleared by Confirm, or by the patient asking for another time. */
+  awaitingPatient: boolean;
+  /** A WhatsApp send to this booking came back "not on WhatsApp". Staff call instead. */
+  noWhatsApp: boolean;
+  /** When staff marked a no-WhatsApp booking "Confirmed by phone". Null otherwise. */
+  phoneConfirmedAt: string | null;
+  /** The day and slot the patient asked for on their page. Null when they have not asked. */
+  requestedDate: string | null;
+  requestedSlot: string | null;
+  /** WhatsApp consent: when, the exact line shown, and where. All null = no consent, so nothing is ever sent. */
+  consentAt: string | null;
+  consentText: string | null;
+  consentSource: ConsentSource | null;
 };
+
+/** The fields a booking starts with before anything happens to it. Handy for building a Booking by hand. */
+export const BOOKING_FLAG_DEFAULTS = {
+  viewToken: null,
+  awaitingPatient: false,
+  noWhatsApp: false,
+  phoneConfirmedAt: null,
+  requestedDate: null,
+  requestedSlot: null,
+  consentAt: null,
+  consentText: null,
+  consentSource: null,
+} as const satisfies Partial<Booking>;
 
 export type NewBooking = Pick<Booking, "clinicSlug" | "name" | "phone" | "visitType" | "date" | "slot" | "reason"> & {
   notes?: string | null;
@@ -45,6 +75,8 @@ export type NewBooking = Pick<Booking, "clinicSlug" | "name" | "phone" | "visitT
   source?: BookingSource;
   campaign?: string | null;
   utm?: Utm | null;
+  /** WhatsApp consent. Missing or null = none: the booking never gets a WhatsApp message. */
+  consent?: { at: string; text: string; source: ConsentSource } | null;
 };
 
 /** One patient on the Patients tab: every booking with the same phone number, rolled up. */
@@ -77,15 +109,22 @@ export type SourceCounts = Partial<Record<BookingSource, number>>;
 /** A booking row the demo seed writes, with every field set, including the id and created time. */
 export type DemoBooking = Omit<Booking, "isDemo">;
 /** A message log row the demo seed writes. */
-export type DemoMessage = Pick<MessageLog, "bookingId" | "kind" | "provider" | "toMasked" | "template" | "status" | "createdAt" | "updatedAt">;
+export type DemoMessage = Pick<MessageLog, "bookingId" | "kind" | "provider" | "toMasked" | "template" | "status" | "createdAt" | "updatedAt"> & { error?: string | null };
 /** Everything Reset demo data writes. */
-export type DemoData = { bookings: DemoBooking[]; messages: DemoMessage[]; notes: { phone: string; notes: string; updatedAt: string }[] };
+export type DemoData = {
+  bookings: DemoBooking[];
+  messages: DemoMessage[];
+  notes: { phone: string; notes: string; updatedAt: string }[];
+  /** Demo phones that sent STOP. Only ever 90000 2xxxx numbers. */
+  optOuts?: { phone: string; optedOutAt: string }[];
+};
 
 /**
- * clinic_alert goes to the clinic's own number on every new booking. confirmation, reminder and cancellation go to the patient.
+ * clinic_alert goes to the clinic's own number on every new booking. request_received (on booking), confirmation (staff Confirm),
+ * reminder (the day before), visit_moved (staff changed the day or slot) and cancellation go to the patient.
  * inbound is a WhatsApp message from the patient. patient_confirmed is the patient tapping Confirm on WhatsApp.
  */
-export const MESSAGE_KINDS = ["confirmation", "reminder", "cancellation", "clinic_alert", "inbound", "patient_confirmed"] as const;
+export const MESSAGE_KINDS = ["request_received", "confirmation", "reminder", "visit_moved", "cancellation", "clinic_alert", "inbound", "patient_confirmed"] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
 export const MESSAGE_STATUSES = ["queued", "sent", "delivered", "read", "failed"] as const;
@@ -133,8 +172,11 @@ export interface BookingStore {
    * `statuses` keeps only those statuses.
    */
   list(opts: { from?: string; to?: string; clinicSlug?: string; statuses?: readonly BookingStatus[] }): Promise<Booking[]>;
-  /** Bookings waiting on staff: status new (any date) or the patient asked for a new time. Earliest day first. */
-  needsAction(opts: { clinicSlug: string }): Promise<Booking[]>;
+  /**
+   * Bookings waiting on staff, earliest day first: status new (any date), the patient asked for a new time, or
+   * a new or confirmed booking from `today` on (default: clinic today) marked No WhatsApp and not yet confirmed by phone.
+   */
+  needsAction(opts: { clinicSlug: string; today?: string }): Promise<Booking[]>;
   /** Bookings whose name contains `q`, or whose phone contains the digits in `q`. Newest day first, at most `limit` (default 100). */
   search(opts: { clinicSlug: string; q: string; limit?: number }): Promise<Booking[]>;
   /** Every booking for a 10-digit phone, newest day first. */
@@ -145,8 +187,11 @@ export interface BookingStore {
   sourceCounts(opts: { clinicSlug: string; since: string }): Promise<SourceCounts>;
   /** Returns the updated booking, or null when no booking has that id. Any status but new also clears wantsNewTime. */
   updateStatus(id: string, status: BookingStatus): Promise<Booking | null>;
-  /** Moves a booking to a new day and slot, confirms it, and clears wantsNewTime. Null when no booking has that id. */
-  reschedule(id: string, date: string, slot: string): Promise<Booking | null>;
+  /**
+   * Moves a booking to a new day and slot, confirms it, clears wantsNewTime and the requested day and slot, and sets
+   * awaitingPatient to `awaitingPatient` (true when the patient is asked to confirm on WhatsApp). Null when no booking has that id.
+   */
+  reschedule(id: string, date: string, slot: string, opts?: { awaitingPatient?: boolean }): Promise<Booking | null>;
   /** Front-desk notes for a phone, or null when there are none. */
   getNotes(opts: { clinicSlug: string; phone: string }): Promise<PatientNotes | null>;
   /** Saves the notes for a phone, replacing what was there. */
@@ -158,9 +203,27 @@ export interface BookingStore {
   replaceDemoData(clinicSlug: string, data: DemoData): Promise<{ deleted: number; inserted: number }>;
   /** Sets the "wants a new time" flag. Returns the updated booking, or null when no booking has that id. */
   setWantsNewTime(id: string, value: boolean): Promise<Booking | null>;
+  /** The booking behind a patient link, or null for an unknown token. */
+  getByViewToken(token: string): Promise<Booking | null>;
+  /** The patient asked for another day and slot on their page: sets wantsNewTime and the requested day and slot, clears awaitingPatient. */
+  requestNewTime(id: string, date: string, slot: string): Promise<Booking | null>;
+  /** Sets or clears "waiting for the patient to confirm the moved visit". */
+  setAwaitingPatient(id: string, value: boolean): Promise<Booking | null>;
+  /** Marks a booking No WhatsApp (a send came back "not on WhatsApp"). */
+  setNoWhatsApp(id: string, value: boolean): Promise<Booking | null>;
+  /** Staff confirmed a No-WhatsApp booking by phone: status confirmed and phoneConfirmedAt now. Sends nothing. */
+  confirmByPhone(id: string): Promise<Booking | null>;
+  /** Records that a 10-digit phone sent STOP. True when it was not opted out before. */
+  optOut(phone: string, source: OptOutSource): Promise<boolean>;
+  /** Removes an opt-out (the patient sent START). True when the phone was opted out. */
+  optIn(phone: string): Promise<boolean>;
+  /** Remembers a 10-digit phone as not on WhatsApp, so later bookings skip WhatsApp. */
+  markUnreachable(phone: string, reason: string): Promise<void>;
+  /** Which of these 10-digit phones opted out, and which are not on WhatsApp. */
+  whatsappBlocks(phones: string[]): Promise<WhatsAppBlocks>;
   /**
    * The newest booking (by created time) for a 10-digit phone that is still open (new or confirmed)
-   * and on or after `today` (YYYY-MM-DD, clinic time). Null when there is none.
+   * and on or after `today` (YYYY-MM-DD, clinic time), preferring one that is waiting for the patient. Null when there is none.
    */
   findLatestByPhone(phone: string, today?: string): Promise<Booking | null>;
   /** Saves one message log row. */
@@ -175,17 +238,39 @@ export interface BookingStore {
   listMessagesForBookings(bookingIds: string[]): Promise<MessageLog[]>;
 }
 
+/** Where an opt-out came from. whatsapp = the patient sent STOP. */
+export type OptOutSource = "whatsapp" | "staff" | "demo";
+
+/** Phones that must not get WhatsApp, from the whatsapp_optouts and whatsapp_unreachable tables. */
+export type WhatsAppBlocks = { optedOut: string[]; unreachable: string[] };
+
+/** Why a send was stopped before any provider was called. Stored in the message row's template column as "skipped (<reason>)". */
+export const SKIP_REASONS = ["demo", "opted out", "no consent", "no WhatsApp"] as const;
+export type SkipReason = (typeof SKIP_REASONS)[number];
+
+/** "skipped (opted out)": what the template column holds for a send stopped for `reason`. */
+export function skippedTemplate(reason: SkipReason) {
+  return `skipped (${reason})`;
+}
+
+/** The reason back from a template column, or null when the message was really sent. */
+export function skipReasonOf(template: string): SkipReason | null {
+  const m = /^skipped \((.+)\)$/.exec(template);
+  return m && (SKIP_REASONS as readonly string[]).includes(m[1]) ? (m[1] as SkipReason) : null;
+}
+
 /** The latest WhatsApp message for a booking, as GET /api/bookings and the dashboard show it. No number, no template. */
 export type WhatsAppSummary = Pick<MessageLog, "kind" | "status" | "error"> & {
   at: string;
-  /** Who carried it. The dashboard shows "via Twilio" for twilio. */
+  /** Who carried it. Kept in the API; the dashboard never shows a provider name. */
   provider?: MessageProvider;
-  /** True when nothing was sent because the booking is demo data. */
+  /** True when nothing was sent: see skipReason. */
   skipped?: boolean;
+  skipReason?: SkipReason;
 };
 
-/** A booking row on the dashboard. `whatsapp` is null when nothing was sent. */
-export type DashboardBooking = Booking & { whatsapp?: WhatsAppSummary | null };
+/** A booking row on the dashboard. `whatsapp` is null when nothing was sent. `optedOut`: the patient's phone sent STOP. */
+export type DashboardBooking = Booking & { whatsapp?: WhatsAppSummary | null; optedOut?: boolean };
 
 /** Rank used so a late "delivered" never overwrites "read". Failed wins over everything. */
 export const MESSAGE_STATUS_RANK: Record<MessageStatus, number> = { queued: 0, sent: 1, delivered: 2, read: 3, failed: 4 };

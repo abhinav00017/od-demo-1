@@ -1,13 +1,19 @@
 import { clinic } from "@/demos/lotus-clinic/data";
+import { CONSENT_TEXT_V1, STAFF_CONSENT_TEXT_V1 } from "./consent";
 import { DEMO_PHONE_PREFIX } from "./demoPhones";
-import type { BookingSource, BookingStatus, DemoBooking, DemoData, DemoMessage, Utm } from "./types";
+import { PUBLIC_SOURCES } from "./sources";
+import { BOOKING_FLAG_DEFAULTS, type BookingSource, type BookingStatus, type DemoBooking, type DemoData, type DemoMessage, type Utm } from "./types";
+import { newViewToken } from "./viewToken";
 
 /**
  * Sample data for the clinic dashboard, so the demo looks like a working clinic.
  * Deterministic: the same `today` and seed always give the same rows, ids included.
  * Every date is relative to `today` (YYYY-MM-DD, clinic time): about 32 bookings over the past 60 days,
  * 5 today and 8 over the next 7 days, for 14 made-up patients on made-up numbers (90000 2xxxx).
- * Exactly 3 bookings need action: one new today, one new later this week, one that wants a new time.
+ * Exactly 4 bookings need action: one new today, one new later this week, one that wants a new time (asked on the patient page,
+ * with the requested day and slot), and one tomorrow marked No WhatsApp (call to confirm).
+ * Also one moved visit waiting for the patient, one patient who sent STOP, and WhatsApp consent on every website booking.
+ * View tokens are random (not from the seed), so nobody can work out a demo patient's link from the code.
  */
 export const DEMO_SEED = 20261110;
 
@@ -117,7 +123,7 @@ export function demoPhone(index: number) {
 
 const [MORNING, AFTERNOON, EVENING] = clinic.booking.slots;
 
-type Plan = { date: string; slot: string; status: BookingStatus; wantsNewTime?: boolean };
+type Plan = { date: string; slot: string; status: BookingStatus; wantsNewTime?: boolean; awaitingPatient?: boolean; noWhatsApp?: boolean; optOut?: boolean };
 
 /** The day, slot and status of every booking, before patients are given out. */
 function plan(rand: Rand, today: string): Plan[] {
@@ -143,7 +149,17 @@ function plan(rand: Rand, today: string): Plan[] {
   future.forEach((status, i) => {
     let date = addDays(today, 1 + Math.floor(rand() * 7));
     if (weekday(date) === 0) date = addDays(date, date === addDays(today, 7) ? -1 : 1);
-    upcoming.push({ date, slot: pick(rand, clinic.booking.slots), status, wantsNewTime: i === future.length - 1 });
+    // The No-WhatsApp one is tomorrow, so it also shows on Today's "Call to remind" list.
+    if (i === 1) date = addDays(today, 1);
+    upcoming.push({
+      date,
+      slot: pick(rand, clinic.booking.slots),
+      status,
+      wantsNewTime: i === future.length - 1,
+      awaitingPatient: i === 0,
+      noWhatsApp: i === 1,
+      optOut: i === 2,
+    });
   });
   out.push(...upcoming);
   return out.sort((a, b) => a.date.localeCompare(b.date));
@@ -170,7 +186,9 @@ function utmFor(rand: Rand, source: BookingSource, campaign: string | null): Utm
   }
 }
 
-export function generateDemoData(today: string, seed: number = DEMO_SEED): DemoData {
+/** `token` makes the patient links; random by default. Tests pass a fixed one to compare two runs. */
+export function generateDemoData(today: string, seed: number = DEMO_SEED, opts: { token?: () => string } = {}): DemoData {
+  const token = opts.token ?? newViewToken;
   const rand = prng(seed);
   const slots = plan(rand, today);
 
@@ -216,9 +234,25 @@ export function generateDemoData(today: string, seed: number = DEMO_SEED): DemoD
     let createdDay = addDays(s.date, -lead);
     if (createdDay >= today && source !== "walk_in") createdDay = addDays(today, -1);
     const hour = source === "walk_in" ? 9 : 8 + Math.floor(rand() * 13);
+    const createdAt = istIso(createdDay, hour, Math.floor(rand() * 60));
+    // Website bookings agreed under the form's line. Staff bookings have no consent, except the special ones below.
+    const website = (PUBLIC_SOURCES as readonly string[]).includes(source);
+    const special = s.awaitingPatient || s.noWhatsApp || s.optOut;
+    const consent = website || special ? { consentAt: createdAt, consentText: website ? CONSENT_TEXT_V1 : STAFF_CONSENT_TEXT_V1, consentSource: website ? ("website" as const) : ("staff" as const) } : {};
+    // Asked on the patient page for the next working day, a different slot.
+    let asked = addDays(s.date, 1);
+    if (weekday(asked) === 0) asked = addDays(asked, 1);
+    const askedSlot = clinic.booking.slots.find((x) => x !== s.slot)!;
     return {
+      ...BOOKING_FLAG_DEFAULTS,
+      ...consent,
+      viewToken: token(),
+      awaitingPatient: s.awaitingPatient === true,
+      noWhatsApp: s.noWhatsApp === true,
+      requestedDate: s.wantsNewTime ? asked : null,
+      requestedSlot: s.wantsNewTime ? askedSlot : null,
       id: uuid(rand),
-      createdAt: istIso(createdDay, hour, Math.floor(rand() * 60)),
+      createdAt,
       clinicSlug: "lotus-clinic",
       name: patient.name,
       phone: demoPhone(p),
@@ -238,23 +272,31 @@ export function generateDemoData(today: string, seed: number = DEMO_SEED): DemoD
 
   // WhatsApp confirmations on the confirmed and visited ones: delivered or read, a couple of hours after booking.
   const messages: DemoMessage[] = [];
-  for (const b of bookings) {
-    if (b.status !== "confirmed" && b.status !== "visited") continue;
-    if (b.status === "visited" && rand() < 0.5) continue;
-    const sent = new Date(Date.parse(b.createdAt) + (60 + Math.floor(rand() * 90)) * 60 * 1000).toISOString();
-    const seen = new Date(Date.parse(sent) + Math.floor(rand() * 40 + 2) * 60 * 1000).toISOString();
-    messages.push({
-      bookingId: b.id,
-      kind: "confirmation",
-      provider: "fake",
-      toMasked: `••••${b.phone.slice(-4)}`,
-      template: "lotus_confirmation",
-      status: rand() < 0.6 ? "read" : "delivered",
-      createdAt: sent,
-      updatedAt: seen,
-    });
-  }
+  const later = (iso: string, minutes: number) => new Date(Date.parse(iso) + minutes * 60 * 1000).toISOString();
+  bookings.forEach((b, i) => {
+    if (b.status !== "confirmed" && b.status !== "visited") return;
+    if (b.status === "visited" && rand() < 0.5) return;
+    const sent = later(b.createdAt, 60 + Math.floor(rand() * 90));
+    const seen = later(sent, Math.floor(rand() * 40 + 2));
+    const toMasked = `••••${b.phone.slice(-4)}`;
+    const read = rand() < 0.6;
+    if (slots[i].noWhatsApp) {
+      // The confirmation came back: the number is not on WhatsApp.
+      messages.push({ bookingId: b.id, kind: "confirmation", provider: "twilio", toMasked, template: "lotus_confirmation", status: "failed", error: "63024: Invalid message recipient", createdAt: sent, updatedAt: seen });
+      return;
+    }
+    messages.push({ bookingId: b.id, kind: "confirmation", provider: "fake", toMasked, template: "lotus_confirmation", status: read ? "read" : "delivered", createdAt: sent, updatedAt: seen });
+    if (slots[i].awaitingPatient) {
+      // Staff moved the visit this morning; the patient has read it but not tapped Confirm yet.
+      const moved = istIso(today, 9, 40);
+      messages.push({ bookingId: b.id, kind: "visit_moved", provider: "fake", toMasked, template: "lotus_visit_moved", status: "read", createdAt: moved, updatedAt: later(moved, 12) });
+    }
+  });
 
   const notes = NOTES.map((n) => ({ phone: demoPhone(n.patient), notes: n.notes, updatedAt: istIso(addDays(today, -3), 18, 10) }));
-  return { bookings, messages, notes };
+  // One patient sent STOP. Never the patient of the moved or No-WhatsApp visit, so each state shows on its own row.
+  const taken = new Set(bookings.filter((_, i) => slots[i].awaitingPatient || slots[i].noWhatsApp).map((b) => b.phone));
+  const stopper = bookings.find((b, i) => slots[i].optOut && !taken.has(b.phone)) ?? bookings.find((b) => b.date > today && b.status === "confirmed" && !taken.has(b.phone));
+  const optOuts = stopper ? [{ phone: stopper.phone, optedOutAt: istIso(addDays(today, -2), 19, 5) }] : [];
+  return { bookings, messages, notes, optOuts };
 }

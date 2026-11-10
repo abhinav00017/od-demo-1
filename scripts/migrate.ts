@@ -1,6 +1,7 @@
 /**
- * Creates the bookings, messages, patient_notes and crm_* tables, their indexes and later columns, from lib/bookings/schema.sql.
- * Safe to run more than once (every statement is IF NOT EXISTS, including ADD COLUMN IF NOT EXISTS).
+ * Creates the bookings, messages, patient_notes, whatsapp_optouts, whatsapp_unreachable and crm_* tables, their indexes and
+ * later columns, from lib/bookings/schema.sql. Safe to run more than once: every statement is IF NOT EXISTS (including
+ * ADD COLUMN IF NOT EXISTS), and the two backfills (view tokens, consent on old website bookings) only touch rows still unset.
  * Usage: npm run db:migrate   (reads DATABASE_URL from the shell or .env.local)
  */
 import { readFileSync } from "node:fs";
@@ -32,7 +33,7 @@ async function main() {
     await sql.query(statement);
     console.log(`ok: ${statement.split("\n")[0]}`);
   }
-  for (const table of ["bookings", "messages", "patient_notes", "crm_products", "crm_leads", "crm_quotes", "crm_quote_items", "crm_followups"]) {
+  for (const table of ["bookings", "messages", "patient_notes", "whatsapp_optouts", "whatsapp_unreachable", "crm_products", "crm_leads", "crm_quotes", "crm_quote_items", "crm_followups"]) {
     const [{ count }] = (await sql.query(`SELECT count(*)::int AS count FROM ${table}`)) as { count: number }[];
     console.log(`${table} table ready, ${count} rows`);
   }
