@@ -217,6 +217,10 @@ describe("motion pass 2", () => {
       status: "new",
       notes: null,
       wantsNewTime: false,
+      source: "website",
+      campaign: null,
+      utm: null,
+      isDemo: false,
     });
     const props = { today: "2026-10-22", live: true, bookHref: "/book", onStatus: () => undefined, onLogout: () => undefined };
     const { container, rerender } = render(<Dashboard {...props} bookings={[row("a", "Asha")]} />);
@@ -225,7 +229,7 @@ describe("motion pass 2", () => {
     await waitFor(() => expect(container.querySelectorAll("[data-fresh]")).toHaveLength(1));
     expect(container.querySelector("[data-fresh]")!.textContent).toContain("Bina");
     expect(container.querySelector("[data-fresh] [data-row-flash]")).toBeTruthy();
-    const fresh = screen.getByText("New", { selector: "dt" }).nextElementSibling!;
+    const fresh = screen.getByText("Needs action", { selector: "dt" }).nextElementSibling!;
     expect(fresh.querySelector("[data-ticker]")).toBeTruthy();
     await waitFor(() => expect(fresh.textContent).toBe("2"));
   });

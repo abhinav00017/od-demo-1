@@ -55,3 +55,69 @@ export function dashboardCounts(bookings: Booking[], today: string) {
     fresh: bookings.filter((b) => b.status === "new").length,
   };
 }
+
+/** YYYY-MM-DD `n` days after `day` (n may be negative). */
+export function shiftDay(day: string, n: number) {
+  return addDays(day, n);
+}
+
+/** True when the booking needs staff: a new request (any day) or a patient who asked for a new time. */
+export function needsAction(b: Pick<Booking, "status" | "wantsNewTime">) {
+  return b.status === "new" || b.wantsNewTime;
+}
+
+/**
+ * The search box: a name that contains the text (any case), or a phone that contains the digits typed
+ * (so the last 4 digits find a patient). Empty matches everything.
+ */
+export function matchesQuery(b: Pick<Booking, "name" | "phone">, q: string) {
+  const text = q.trim().toLowerCase();
+  if (!text) return true;
+  const digits = text.replace(/\D/g, "");
+  if (b.name.toLowerCase().includes(text)) return true;
+  return digits.length >= 2 && digits.length === text.replace(/[\s+-]/g, "").length && b.phone.includes(digits.replace(/^91(?=\d{10}$)/, ""));
+}
+
+/** The four count cards. Cancelled bookings never count toward today or this week. */
+export function adminCounts(bookings: Booking[], waiting: Booking[], today: string) {
+  const weekEnd = endOfWeek(today);
+  const live = bookings.filter((b) => b.status !== "cancelled");
+  return {
+    needsAction: waiting.length,
+    today: live.filter((b) => b.date === today).length,
+    visitedToday: bookings.filter((b) => b.date === today && b.status === "visited").length,
+    week: live.filter((b) => b.date >= today && b.date <= weekEnd).length,
+  };
+}
+
+/** Bookings from tomorrow to 7 days out. */
+export function upcomingWeek<T extends Booking>(bookings: T[], today: string) {
+  const last = addDays(today, 7);
+  return bookings.filter((b) => b.date > today && b.date <= last);
+}
+
+/** Groups by day, newest day first; inside a day, morning first. For the Past tab. */
+export function groupByDayNewest<T extends Booking>(bookings: T[]) {
+  return groupByDay(bookings).reverse();
+}
+
+/** "LP" for "Lakshmi Prasanna Varma": first and last word. */
+export function initials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  const first = words[0][0];
+  const last = words.length > 1 ? words[words.length - 1][0] : "";
+  return `${first}${last}`.toUpperCase();
+}
+
+/** "Thu, 12 Nov" from YYYY-MM-DD. */
+export function shortDay(day: string) {
+  const d = parseDay(day);
+  return d ? formatDay(d) : day;
+}
+
+/** "12 Nov 2026" from YYYY-MM-DD. */
+export function longDay(day: string) {
+  const d = parseDay(day);
+  return d ? d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : day;
+}

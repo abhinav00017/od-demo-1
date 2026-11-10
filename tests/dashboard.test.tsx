@@ -20,6 +20,10 @@ function make(over: Partial<Booking>): Booking {
     status: "new",
     notes: null,
     wantsNewTime: false,
+    source: "website",
+    campaign: null,
+    utm: null,
+    isDemo: false,
     ...over,
   };
 }
@@ -44,16 +48,20 @@ describe("dashboard helpers", () => {
 });
 
 describe("Dashboard", () => {
-  it("groups by day, morning first, with counts in the header", () => {
+  it("opens on Needs action, and shows today in slot order and the next 7 days grouped by day", () => {
     render(<Dashboard {...props} bookings={bookings} />);
-    const days = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(days).toEqual(["Today2 bookings", "Tomorrow1 booking", "Fri, 23 Oct1 booking", "Tue, 27 Oct1 booking"]);
-    const today = screen.getByRole("region", { name: /Today/ });
-    const names = within(today).getAllByText(/Meena|Eva/, { selector: "p" }).map((n) => n.textContent);
+    expect(screen.getByRole("tab", { name: /Needs action/ }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: /^Today/ }));
+    const panel = screen.getByRole("tabpanel");
+    const names = within(panel).getAllByRole("button", { name: /^Open .*history$/ }).map((n) => n.textContent);
     expect(names).toEqual(["Morning Meena", "Evening Eva"]);
-    expect(within(today).getByText("Online")).toBeTruthy();
+    expect(within(panel).getByText("Online")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /Upcoming/ }));
+    const days = within(screen.getByRole("tabpanel")).getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(days).toEqual(["Tomorrow1 booking", "Fri, 23 Oct1 booking", "Tue, 27 Oct1 booking"]);
     expect(screen.getByText("Today", { selector: "dt" }).nextElementSibling?.textContent).toBe("2");
-    expect(screen.getByText("New", { selector: "dt" }).nextElementSibling?.textContent).toBe("3");
+    expect(screen.getByText("Needs action", { selector: "dt" }).nextElementSibling?.textContent).toBe("3");
+    expect(screen.getByText("Visited today", { selector: "dt" }).nextElementSibling?.textContent).toBe("0");
     expect(screen.getByText("Live")).toBeTruthy();
   });
 
@@ -67,9 +75,13 @@ describe("Dashboard", () => {
 
   it("sends Confirm and Cancel, and disables the current status", () => {
     const onStatus = vi.fn();
-    render(<Dashboard {...props} bookings={[bookings[1], bookings[2]]} onStatus={onStatus} />);
-    expect((screen.getByRole("button", { name: "Confirm Morning Meena" }) as HTMLButtonElement).disabled).toBe(true);
+    const upcomingConfirmed = make({ name: "Booked Bina", date: "2026-10-22", status: "confirmed" });
+    render(<Dashboard {...props} bookings={[bookings[1], bookings[2], upcomingConfirmed]} onStatus={onStatus} />);
+    fireEvent.click(screen.getByRole("tab", { name: /Upcoming/ }));
+    expect((screen.getByRole("button", { name: "Confirm Booked Bina" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Confirm Tomorrow Tara" }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Today/ }));
+    expect(screen.queryByRole("button", { name: "Confirm Morning Meena" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Cancel Morning Meena" }));
     expect(onStatus.mock.calls).toEqual([
       [bookings[2].id, "confirmed"],
@@ -130,7 +142,7 @@ describe("WhatsApp status line", () => {
 });
 
 describe("Wants a new time chip", () => {
-  it("shows an amber chip only on rows that asked, and keeps Confirm and Cancel", () => {
+  it("shows an amber chip only on rows that asked, with Reschedule and Cancel in Needs action", () => {
     const rows: DashboardBooking[] = [{ ...make({ name: "Moving Maya", status: "confirmed", wantsNewTime: true }) }, { ...make({ name: "Settled Sana" }) }];
     render(<Dashboard {...props} bookings={rows} />);
     const chips = screen.getAllByText("Wants a new time");
@@ -138,7 +150,10 @@ describe("Wants a new time chip", () => {
     expect(chips[0].className).toContain("bg-amber-100");
     const row = chips[0].closest("li")!;
     expect(row.textContent).toContain("Moving Maya");
-    expect(within(row).getByRole("button", { name: "Confirm Moving Maya" })).toBeTruthy();
+    expect(within(row).getByRole("button", { name: "Reschedule Moving Maya" })).toBeTruthy();
     expect(within(row).getByRole("button", { name: "Cancel Moving Maya" })).toBeTruthy();
+    expect(within(row).queryByRole("button", { name: "Confirm Moving Maya" })).toBeNull();
+    const sana = screen.getByRole("button", { name: "Confirm Settled Sana" }).closest("li")!;
+    expect(within(sana).getByRole("button", { name: "Cancel Settled Sana" })).toBeTruthy();
   });
 });

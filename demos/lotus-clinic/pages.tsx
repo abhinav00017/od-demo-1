@@ -544,7 +544,7 @@ export function LotusAdmin({ nav }: { nav: Nav }) {
   const deskOptIn = optIn ? { ...optIn, qr: qrPath(optIn.href) } : null;
   return (
     <>
-      <PageHead title="Clinic Dashboard" intro="Bookings from the website, today and upcoming, updated within seconds." />
+      <PageHead title="Clinic Dashboard" intro="Bookings, patients and where they came from, updated within seconds." />
       <LotusContainer className={ui.section}>
         <AdminApp bookHref={nav.href("book")} optIn={deskOptIn} />
       </LotusContainer>

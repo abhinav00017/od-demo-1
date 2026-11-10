@@ -1,15 +1,21 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
-import type { Booking, BookingStatus, DashboardBooking } from "@/lib/bookings/types";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import type { Booking, BookingStatus, DashboardBooking, SourceCounts } from "@/lib/bookings/types";
+import { httpAdminApi, onLoggedOut } from "./adminApi";
 import { Dashboard, type DeskOptIn } from "./Dashboard";
+import { needsAction as isWaiting } from "./dashboardData";
 import { ui } from "./ui";
+
+/** Sent when an on-demand load finds the session gone. */
+const LOGGED_OUT_EVENT = "lotus-admin-logged-out";
 
 /** How often the dashboard asks for new bookings. */
 export const POLL_MS = 5000;
 
-type Session = { configured: boolean; devPassword: boolean; authed: boolean; storage?: "memory" | "postgres" };
+type Session = { configured: boolean; devPassword: boolean; authed: boolean; storage?: "memory" | "postgres"; demoReset?: boolean };
+type Live = { ok: boolean; today: string; storage: Session["storage"]; bookings: DashboardBooking[]; needsAction?: DashboardBooking[]; sources?: SourceCounts };
 type View = { kind: "loading" } | { kind: "error"; message: string } | { kind: "off" } | { kind: "login"; devPassword: boolean } | { kind: "in" };
 
 async function fetchSession(): Promise<Session> {
@@ -86,6 +92,9 @@ function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => vo
 export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOptIn | null }) {
   const [view, setView] = useState<View>({ kind: "loading" });
   const [bookings, setBookings] = useState<DashboardBooking[]>([]);
+  const [waiting, setWaiting] = useState<DashboardBooking[]>([]);
+  const [sources, setSources] = useState<SourceCounts>({});
+  const [demoReset, setDemoReset] = useState(true);
   const [today, setToday] = useState("");
   const [storage, setStorage] = useState<Session["storage"]>();
   const [live, setLive] = useState(false);
@@ -108,10 +117,12 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
         restart.current();
         return;
       }
-      const data = (await res.json()) as { ok: boolean; today: string; storage: Session["storage"]; bookings: DashboardBooking[] };
+      const data = (await res.json()) as Live;
       if (!data.ok) throw new Error("not ok");
       if (startedAt !== edits.current) return;
       setBookings(data.bookings);
+      setWaiting(data.needsAction ?? data.bookings.filter(isWaiting));
+      setSources(data.sources ?? {});
       setToday(data.today);
       setStorage(data.storage);
       setUpdatedAt(new Date());
@@ -129,6 +140,7 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
       else if (!s.authed) setView({ kind: "login", devPassword: s.devPassword });
       else {
         setView({ kind: "in" });
+        setDemoReset(s.demoReset !== false);
         void load();
       }
     },
@@ -153,29 +165,65 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
     return () => clearInterval(timer);
   }, [view.kind, load]);
 
-  async function setStatus(id: string, status: BookingStatus) {
+  /** Puts an updated booking into both live lists: it leaves Needs action once it no longer waits on staff. */
+  function merge(updated: Booking) {
+    // Keep the row's WhatsApp line. The next poll brings the new one, sent after this response.
+    setBookings((list) => list.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
+    setWaiting((list) => list.flatMap((b) => (b.id !== updated.id ? [b] : isWaiting(updated) ? [{ ...b, ...updated }] : [])));
+  }
+
+  async function patch(id: string, body: unknown): Promise<{ booking?: Booking; error?: string }> {
     setBusyId(id);
     setActionError("");
     edits.current += 1;
     try {
-      const res = await fetch(`/api/bookings/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-      if (res.status === 401) return start();
+      const res = await fetch(`/api/bookings/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (res.status === 401) {
+        start();
+        return { error: "Logged out." };
+      }
       const data = (await res.json()) as { ok: boolean; booking?: Booking; error?: string };
-      if (!data.ok || !data.booking) throw new Error(data.error);
-      const updated = data.booking;
-      // Keep the row's WhatsApp line. The next poll brings the new one, sent after this response.
-      setBookings((list) => list.map((b) => (b.id === id ? { ...b, ...updated } : b)));
+      if (!data.ok || !data.booking) return { error: data.error ?? "Could not update that booking. Try again." };
+      merge(data.booking);
+      return { booking: data.booking };
     } catch {
-      setActionError("Could not update that booking. Try again.");
+      return { error: "Could not update that booking. Try again." };
     } finally {
       edits.current += 1;
       setBusyId(undefined);
     }
   }
 
+  async function setStatus(id: string, status: BookingStatus): Promise<DashboardBooking | void> {
+    const { booking, error } = await patch(id, { status });
+    if (error) setActionError(error);
+    return booking;
+  }
+
+  async function reschedule(id: string, date: string, slot: string) {
+    const { error } = await patch(id, { date, slot });
+    return error ?? null;
+  }
+
+  /** Fresh live data now: waits for a poll in flight, then loads. */
+  async function refresh() {
+    edits.current += 1;
+    for (let i = 0; i < 40 && inFlight.current; i++) await new Promise((r) => setTimeout(r, 50));
+    await load();
+  }
+
+  // On-demand loads that find the cookie expired send the dashboard back to the login (through an event, see below).
+  const api = useMemo(() => onLoggedOut(httpAdminApi, () => window.dispatchEvent(new Event(LOGGED_OUT_EVENT))), []);
+  useEffect(() => {
+    const again = () => restart.current();
+    window.addEventListener(LOGGED_OUT_EVENT, again);
+    return () => window.removeEventListener(LOGGED_OUT_EVENT, again);
+  }, []);
+
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" }).catch(() => undefined);
     setBookings([]);
+    setWaiting([]);
     setLive(false);
     start();
   }
@@ -209,15 +257,21 @@ export function AdminApp({ bookHref, optIn }: { bookHref: string; optIn?: DeskOp
           ) : null}
           <Dashboard
             bookings={bookings}
+            needsAction={waiting}
+            sources={sources}
             today={today}
             storage={storage}
             live={live}
             updatedAt={updatedAt}
             busyId={busyId}
             bookHref={bookHref}
-            onStatus={(id, s) => void setStatus(id, s)}
+            onStatus={setStatus}
+            onReschedule={reschedule}
+            onRefresh={refresh}
             onLogout={() => void logout()}
             optIn={optIn}
+            api={api}
+            demoReset={demoReset}
           />
         </>
       );
