@@ -21,6 +21,21 @@ Every business is set up with four things. None of them need code.
 
 **Knowledge is plain data.** When the owner edits a price or an FAQ in the console, or a row changes in the table, the bot uses the new value on the next message. Nobody retrains anything.
 
+## 1a. Where the bot lives: one bubble, a different profile per page
+
+| Page | Bot profile | Mode | Does |
+|---|---|---|---|
+| onlydevs demo hub | onlydevs demo guide | Customer | Explains each demo and service, points to the right one |
+| Lotus clinic site | Lotus Women's Clinic | Customer | Answers patients, books visits, manages their booking |
+| Lotus clinic admin (logged in) | Lotus Women's Clinic | Owner | Questions on bookings, patients, sources, no-shows |
+| Verdant Crest site | Verdant Crest | Customer | Projects, prices, site visits, brochure, leads |
+| Solstice cafe, ShowSalsa, Kalyani CRM | That business | Customer on the site, owner when logged in | Same pattern |
+| onlydevs company website (later) | onlydevs | Customer | For now: information about the company, services and demos only |
+
+- Each page tells the bot which profile it belongs to.
+- Owner mode switches on only when the server sees a valid admin login for that business. A page can never turn it on by itself, so a visitor cannot get business numbers from the public bot.
+- The company website, its database, booking a call and its integrations come later as their own project; the bot profile gains those skills then.
+
 ## 2. Customer mode
 
 | Skill | Clinic | Cafe | Real estate | Ticketing | Tiles |
