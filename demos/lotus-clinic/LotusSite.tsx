@@ -8,6 +8,7 @@ import { clinic, clinicWhatsAppHref } from "./data";
 import { MenuStateProvider } from "./MenuState";
 import { MobileBar } from "./MobileBar";
 import { MobileMenu } from "./MobileMenu";
+import { OgiBubble } from "./OgiBubble";
 import { SiteHeader } from "./SiteHeader";
 import { BloomMark, FloatingButton, MotionProvider, PageFade, PillLink, ScrollProgress } from "./Motion";
 import { ui } from "./ui";
@@ -237,6 +238,8 @@ export function LotusSite({ nav, children }: { nav: Nav; children: ReactNode }) 
           {bar ? <FloatingBook href={book.href} /> : null}
           {bar ? <FloatingCall /> : null}
           {bar ? <MobileBar bookHref={book.href} whatsapp={{ href: clinicWhatsAppHref, label: clinic.phone }} /> : null}
+          {/* Ogi, the chat bot, on every visitor page. Not on admin: owner mode is not in v1. */}
+          {nav.page !== "admin" ? <OgiBubble page="lotus-clinic" withBar={bar} /> : null}
         </div>
       </MenuStateProvider>
     </MotionProvider>
