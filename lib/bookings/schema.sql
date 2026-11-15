@@ -228,3 +228,102 @@ CREATE TABLE IF NOT EXISTS whatsapp_unreachable (
   marked_at timestamptz NOT NULL DEFAULT now(),
   reason    text
 );
+
+-- Ogi safety base (step 0, 15 Nov 2026). Every table says which business owns each row. Ogi, the onlydevs bot, reads
+-- only through ogi_bot: a read-only role with no login, which row-level security limits to one business at a time.
+-- The app's own role owns these tables and RLS is not forced, so the app reads and writes exactly as before.
+-- The defaults fill business_id, so today's inserts need no change. Every statement is safe to rerun.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+
+ALTER TABLE patient_notes ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+
+ALTER TABLE whatsapp_optouts ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+
+ALTER TABLE whatsapp_unreachable ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+
+ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+
+ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+
+ALTER TABLE crm_quotes ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+
+ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+
+ALTER TABLE crm_followups ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+
+CREATE INDEX IF NOT EXISTS bookings_business_idx ON bookings (business_id);
+
+CREATE INDEX IF NOT EXISTS messages_business_idx ON messages (business_id);
+
+CREATE INDEX IF NOT EXISTS patient_notes_business_idx ON patient_notes (business_id);
+
+CREATE INDEX IF NOT EXISTS whatsapp_optouts_business_idx ON whatsapp_optouts (business_id);
+
+CREATE INDEX IF NOT EXISTS whatsapp_unreachable_business_idx ON whatsapp_unreachable (business_id);
+
+CREATE INDEX IF NOT EXISTS crm_products_business_idx ON crm_products (business_id);
+
+CREATE INDEX IF NOT EXISTS crm_leads_business_idx ON crm_leads (business_id);
+
+CREATE INDEX IF NOT EXISTS crm_quotes_business_idx ON crm_quotes (business_id);
+
+CREATE INDEX IF NOT EXISTS crm_quote_items_business_idx ON crm_quote_items (business_id);
+
+CREATE INDEX IF NOT EXISTS crm_followups_business_idx ON crm_followups (business_id);
+
+-- CRM sends share the messages table, so the clinic default would label them lotus-clinic. A message takes its
+-- business from its CRM lead or its booking instead, whatever the insert says.
+CREATE OR REPLACE FUNCTION messages_business_id() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.crm_lead_id IS NOT NULL THEN
+    NEW.business_id := (SELECT business_id FROM crm_leads WHERE id = NEW.crm_lead_id);
+  ELSIF NEW.booking_id IS NOT NULL THEN
+    NEW.business_id := (SELECT business_id FROM bookings WHERE id = NEW.booking_id);
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+CREATE OR REPLACE TRIGGER messages_business_id BEFORE INSERT OR UPDATE OF booking_id, crm_lead_id, business_id ON messages
+FOR EACH ROW EXECUTE FUNCTION messages_business_id();
+
+-- CRM messages sent before the trigger got the clinic default. Moves them to their lead's business. Touches only rows still wrong.
+UPDATE messages SET business_id = crm_leads.business_id FROM crm_leads
+WHERE messages.crm_lead_id = crm_leads.id AND messages.business_id IS DISTINCT FROM crm_leads.business_id;
+
+-- The bot's role. NOLOGIN: it has no password and nobody can connect as it. The app switches to it per transaction.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ogi_bot') THEN
+    CREATE ROLE ogi_bot NOLOGIN;
+  ELSE
+    ALTER ROLE ogi_bot NOLOGIN;
+  END IF;
+END
+$$;
+
+-- Lets the app's role run SET LOCAL ROLE ogi_bot. On Postgres 16+ the creator's automatic grant cannot SET, so this is needed.
+GRANT ogi_bot TO CURRENT_USER;
+
+-- For every table: stop if the app's role does not own it (RLS would then hide rows from the app itself), give ogi_bot
+-- SELECT and nothing else, turn RLS on without FORCE, and let ogi_bot see only rows of the business set for the
+-- transaction. With app.business_id unset or empty, ogi_bot sees no rows at all.
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['bookings', 'messages', 'patient_notes', 'whatsapp_optouts', 'whatsapp_unreachable', 'crm_products', 'crm_leads', 'crm_quotes', 'crm_quote_items', 'crm_followups'] LOOP
+    IF NOT pg_has_role(current_user, (SELECT relowner FROM pg_class WHERE oid = t::regclass), 'USAGE') THEN
+      RAISE EXCEPTION 'table % is not owned by %, so row-level security would hide its rows from the app', t, current_user;
+    END IF;
+    EXECUTE format('REVOKE ALL ON %I FROM ogi_bot', t);
+    EXECUTE format('GRANT SELECT ON %I TO ogi_bot', t);
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format('ALTER TABLE %I NO FORCE ROW LEVEL SECURITY', t);
+    EXECUTE format('DROP POLICY IF EXISTS ogi_bot_read ON %I', t);
+    EXECUTE format('CREATE POLICY ogi_bot_read ON %I FOR SELECT TO ogi_bot USING (business_id = NULLIF(current_setting(%L, true), %L))', t, 'app.business_id', '');
+  END LOOP;
+END
+$$;

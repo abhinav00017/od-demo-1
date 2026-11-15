@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { schemaStatements } from "@/lib/bookings/migrations";
+import { BOT_TABLES, type BotTable } from "@/lib/db/botScope";
+
+const TABLES = Object.keys(BOT_TABLES) as BotTable[];
 
 describe("schema.sql", () => {
   const statements = schemaStatements(readFileSync(path.join(process.cwd(), "lib/bookings/schema.sql"), "utf8"));
@@ -52,9 +55,26 @@ describe("schema.sql", () => {
       "UPDATE bookings SET consent_at = created_at, consent_text = 'The clinic may message me on WhatsApp about this visit.', consent_source = 'website'",
       "CREATE TABLE IF NOT EXISTS whatsapp_optouts (",
       "CREATE TABLE IF NOT EXISTS whatsapp_unreachable (",
+      ...TABLES.map((t) => `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT '${BOT_TABLES[t]}'`),
+      ...TABLES.map((t) => `CREATE INDEX IF NOT EXISTS ${t}_business_idx ON ${t} (business_id)`),
+      "CREATE OR REPLACE FUNCTION messages_business_id() RETURNS trigger LANGUAGE plpgsql AS $$",
+      "CREATE OR REPLACE TRIGGER messages_business_id BEFORE INSERT OR UPDATE OF booking_id, crm_lead_id, business_id ON messages",
+      "UPDATE messages SET business_id = crm_leads.business_id FROM crm_leads",
+      "DO $$",
+      "GRANT ogi_bot TO CURRENT_USER",
+      "DO $$",
     ]);
-    // Every statement is safe to rerun: IF [NOT] EXISTS, or an UPDATE that only touches rows still unset.
-    expect(statements.every((s) => (/IF (NOT )?EXISTS/.test(s) || (s.startsWith("UPDATE bookings SET") && /IS NULL/.test(s))) && !s.includes(";"))).toBe(true);
+    // Every statement is safe to rerun: IF [NOT] EXISTS, CREATE OR REPLACE, a DO block that checks first, a GRANT
+    // (granting twice is a no-op), or an UPDATE that only touches rows still unset or still wrong.
+    // Only dollar-quoted bodies (DO blocks, functions) may hold a semicolon.
+    const rerunSafe = (s: string) =>
+      /IF (NOT )?EXISTS/.test(s) ||
+      s.startsWith("CREATE OR REPLACE ") ||
+      s.startsWith("DO $$") ||
+      s.startsWith("GRANT ") ||
+      (s.startsWith("UPDATE ") && /IS NULL|IS DISTINCT FROM/.test(s));
+    expect(statements.filter((s) => !rerunSafe(s))).toEqual([]);
+    expect(statements.filter((s) => s.includes(";") && !s.includes("$$"))).toEqual([]);
   });
 
   it("backfills tokens and consent only where unset, and consent only on old website rows", () => {
@@ -119,5 +139,30 @@ describe("schema.sql", () => {
     // CRM tables come before the messages columns that point at them.
     const leadsAt = statements.indexOf(table("crm_leads"));
     expect(statements.findIndex((s) => s.includes("ADD COLUMN IF NOT EXISTS crm_lead_id"))).toBeGreaterThan(leadsAt);
+  });
+
+  it("keeps each DO block and function body whole, so Neon gets it as one statement", () => {
+    const bodies = statements.filter((s) => s.includes("$$"));
+    expect(bodies).toHaveLength(3);
+    for (const b of bodies) {
+      expect(b.match(/\$\$/g)).toHaveLength(2);
+      expect(b.endsWith("$$")).toBe(true);
+    }
+    expect(schemaStatements("DO $$\nBEGIN\n  PERFORM 1;\n  -- kept inside the body\nEND\n$$;\n-- dropped\nSELECT 2;")).toEqual([
+      "DO $$\nBEGIN\n  PERFORM 1;\n  -- kept inside the body\nEND\n$$",
+      "SELECT 2",
+    ]);
+  });
+
+  it("gives every table a business_id the Ogi helper knows, and RLS for ogi_bot on all of them", () => {
+    const created = statements.filter((s) => s.startsWith("CREATE TABLE IF NOT EXISTS")).map((s) => s.split(" ")[5]);
+    expect([...created].sort()).toEqual([...TABLES].sort());
+    const rls = statements.find((s) => s.includes("ENABLE ROW LEVEL SECURITY"))!;
+    for (const t of TABLES) expect(rls).toContain(`'${t}'`);
+    expect(rls).not.toMatch(/ALTER TABLE %I FORCE/);
+    expect(rls).toContain("FOR SELECT TO ogi_bot USING (business_id = NULLIF(current_setting(%L, true), %L))");
+    expect(rls).toContain("GRANT SELECT ON %I TO ogi_bot");
+    // No login role and no password anywhere in the schema.
+    expect(statements.join("\n")).not.toMatch(/\bLOGIN\b(?<!NOLOGIN)|PASSWORD/i);
   });
 });

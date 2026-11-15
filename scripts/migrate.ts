@@ -1,7 +1,9 @@
 /**
  * Creates the bookings, messages, patient_notes, whatsapp_optouts, whatsapp_unreachable and crm_* tables, their indexes and
- * later columns, from lib/bookings/schema.sql. Safe to run more than once: every statement is IF NOT EXISTS (including
- * ADD COLUMN IF NOT EXISTS), and the two backfills (view tokens, consent on old website bookings) only touch rows still unset.
+ * later columns, from lib/bookings/schema.sql. Also Ogi's safety base: business_id on every table, the read-only ogi_bot
+ * role (no login), and row-level security. Safe to run more than once: statements are IF NOT EXISTS, CREATE OR REPLACE,
+ * DO blocks that check first, or grants; the backfills (view tokens, consent on old website bookings, CRM message
+ * business) only touch rows still unset or wrong. Stops before RLS if this role does not own every table.
  * Usage: npm run db:migrate   (reads DATABASE_URL from the shell or .env.local)
  */
 import { readFileSync } from "node:fs";
