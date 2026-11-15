@@ -18,3 +18,5 @@ Fonts: the logo wordmark is custom. For UI use a clean geometric sans close to t
 Tone: minimal, simple, straight. One accent colour. Big type, lots of white space. The purple dot can repeat as a small motif (list bullets, active states).
 
 **How to apply:** Every page in od-demo-1 uses these tokens as CSS variables. Demo client sites (the fictional clinic, cafe) have their own palettes; the hub chrome stays onlydevs. See [[decisions]].
+
+Bot mascot: Ogi, a plush-style purple octopus. Rules for colours, accessories, sizes and backgrounds are in `docs/ogi-image-guidelines.html`. Files in `public/brand/ogi*.svg`.
