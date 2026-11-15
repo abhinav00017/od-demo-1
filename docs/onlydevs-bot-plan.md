@@ -111,7 +111,7 @@ Until a field exists, the bot says plainly that it does not record that yet, ins
 ## 4. Architecture
 
 - **One engine** on Vercel: a route per channel (website chat, WhatsApp inbound) feeds the same conversation handler.
-- **Claude API with tool use.** Skills and catalogue measures are tools. The engine runs the tool calls against our own APIs and returns the results. Tool definitions are sorted the same way every time so prompt caching works.
+- **Model with tool calling** through the connector in section 5. Skills and catalogue measures are tools. The engine runs the tool calls against our own APIs and returns the results. Tool definitions are sorted the same way every time so prompt caching works where the provider offers it.
 - **Prompt caching.** Each business's profile, knowledge and tool list form a stable prefix that is cached; only the conversation changes per message. This is the main cost saver.
 - **Data (new tables)**: `bots` (business, profile, enabled skills, channels, owner numbers), `bot_knowledge` (entries and sources), `bot_conversations` and `bot_messages` (with handover state), `metrics` (the catalogue).
 - **WhatsApp**: the existing inbound webhook routes a message to the business that owns the receiving number; owner numbers go to owner mode.
@@ -120,9 +120,11 @@ Until a field exists, the bot says plainly that it does not record that yet, ins
 
 ## 5. Model and cost
 
-- Default model: Claude Opus 5.5 (`claude-opus-5-5`) at low effort for customer chat, higher effort for owner questions that combine several measures.
-- Cheaper option for high-volume customer chat: Claude Haiku 5.5 (`claude-haiku-5-5`). Listed price is about 40 times lower than Opus 5.5. This is Abhinav's call; measure quality on real questions before switching.
-- Prompt caching on the business prefix in both cases.
+- **Demos: Google Gemini Flash on the free tier** (Google AI Studio key, no card). Decided by Abhinav, 15 Nov 2026.
+- **One model connector.** The engine talks to the model through a single small module, so Gemini, Groq, Claude or any paid model is a settings change: `BOT_MODEL_PROVIDER` and `BOT_MODEL` env vars plus the provider's key.
+- **Real clients go to a paid tier before launch.** Google's free tier may use requests to improve its products and has small, unpublished daily limits. No real customer or patient chats on a free tier.
+- **Backup for demo days:** Groq free tier (open models, about 1,000 requests a day reported), test tool calling on the chosen model first.
+- Keep each business's profile, knowledge and tool list as a stable prefix, so providers with prompt caching reuse it.
 - WhatsApp replies inside a chat the customer started are free up to 1,000 a month per number, then charged by Meta.
 
 ## 6. Safety and policy
@@ -147,6 +149,6 @@ Until a field exists, the bot says plainly that it does not record that yet, ins
 
 ## 9. Open questions
 
-1. Model for customer chat: Opus 5.5 everywhere, or Haiku 5.5 for customer chat after a quality check?
+1. Which paid model each real client moves to at launch (paid Gemini Flash, or another), decided per client.
 2. Pricing to clients: setup fee plus monthly, and whether owner mode is a higher tier.
 3. Which demo business goes first in version 1: clinic only, or clinic and cafe together?

@@ -458,3 +458,4 @@ Append only. Newest at the bottom.
 - Meta policy checked 15 Nov: general-purpose AI assistants banned on the WhatsApp Business API since 15 Jan 2026; business-specific bots for questions, bookings and support allowed. Bot stays business-only.
 - Model: plan defaults to claude-opus-5-5 (low effort for customer chat); claude-haiku-5-5 for customer chat is offered as Abhinav's cost decision, after a quality check. Prompt caching on each business's profile + knowledge + tools.
 - Plan written to docs/onlydevs-bot-plan.md. Nothing built.
+- 15 Nov 2026: Abhinav chose a free model for the bot demos: Google Gemini Flash, free tier (AI Studio key). Engine gets a single model connector (BOT_MODEL_PROVIDER, BOT_MODEL, provider key) so switching provider is config. Groq free tier is the demo-day backup. Real clients move to a paid tier before launch (free tier may use data to improve Google products; small daily caps). Supersedes the Claude model lines above for the demo.
