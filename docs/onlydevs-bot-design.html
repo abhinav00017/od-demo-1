@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>onlydevs bot design</title>
+<style>
+:root{--bg:#ffffff;--text:#1f1f1d;--muted:#5f5e5a;--line:#d3d1c7;--arrow:#888780;
+--g-fill:#F1EFE8;--g-stroke:#888780;--g-title:#2C2C2A;--g-sub:#5F5E5A;
+--p-fill:#EEEDFE;--p-stroke:#534AB7;--p-title:#3C3489;--p-sub:#534AB7;
+--t-fill:#E1F5EE;--t-stroke:#0F6E56;--t-title:#085041;--t-sub:#0F6E56;--card:#faf9f6}
+@media (prefers-color-scheme: dark){:root{--bg:#1c1c1a;--text:#ecebe6;--muted:#b4b2a9;--line:#444441;--arrow:#b4b2a9;
+--g-fill:#2C2C2A;--g-stroke:#888780;--g-title:#F1EFE8;--g-sub:#D3D1C7;
+--p-fill:#3C3489;--p-stroke:#AFA9EC;--p-title:#EEEDFE;--p-sub:#CECBF6;
+--t-fill:#085041;--t-stroke:#5DCAA5;--t-title:#E1F5EE;--t-sub:#9FE1CB;--card:#242422}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:40px 16px 64px}
+h1{font-size:28px;font-weight:600;margin:0 0 6px}
+h2{font-size:19px;font-weight:600;margin:40px 0 6px}
+p.lead{color:var(--muted);margin:0 0 8px}
+p.note{color:var(--muted);margin:6px 0 0;font-size:15px}
+figure{margin:14px 0 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+svg{display:block;width:100%;height:auto}
+svg .box-g rect{fill:var(--g-fill);stroke:var(--g-stroke)} svg .box-g .t1{fill:var(--g-title)} svg .box-g .t2{fill:var(--g-sub)}
+svg .box-p rect{fill:var(--p-fill);stroke:var(--p-stroke)} svg .box-p .t1{fill:var(--p-title)} svg .box-p .t2{fill:var(--p-sub)}
+svg .box-t rect{fill:var(--t-fill);stroke:var(--t-stroke)} svg .box-t .t1{fill:var(--t-title)} svg .box-t .t2{fill:var(--t-sub)}
+svg rect{stroke-width:1}
+svg .t1{font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+svg .t2{font:400 12px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+svg .arr{stroke:var(--arrow);stroke-width:1.3;fill:none}
+svg .dash{stroke:var(--arrow);stroke-width:1;stroke-dasharray:4 4;fill:none}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600}
+ul{margin:8px 0 0;padding-left:20px}
+li{margin:4px 0}
+footer{margin-top:44px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>onlydevs bot</h1>
+<p class="lead">One chat assistant for every business we build for. Design draft, 15 Nov 2026. Nothing is built yet.</p>
+
+<h2>1. One bot, a different face on every page</h2>
+<p class="lead">The same bot sits on every page. Each page tells it which business it belongs to, so it answers as that business.</p>
+<figure>
+<svg viewBox="0 0 680 352" role="img" aria-label="Four pages send messages to one onlydevs bot, which answers as a demo guide, Lotus clinic, a clinic admin bot or Verdant Crest">
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g class="box-g"><rect x="40" y="40" width="180" height="56" rx="8"/><text class="t1" x="130" y="62" text-anchor="middle">Demo hub page</text><text class="t2" x="130" y="82" text-anchor="middle">onlydevs demos</text></g>
+<g class="box-g"><rect x="40" y="112" width="180" height="56" rx="8"/><text class="t1" x="130" y="134" text-anchor="middle">Clinic website</text><text class="t2" x="130" y="154" text-anchor="middle">a visitor</text></g>
+<g class="box-g"><rect x="40" y="184" width="180" height="56" rx="8"/><text class="t1" x="130" y="206" text-anchor="middle">Clinic admin</text><text class="t2" x="130" y="226" text-anchor="middle">owner, logged in</text></g>
+<g class="box-g"><rect x="40" y="256" width="180" height="56" rx="8"/><text class="t1" x="130" y="278" text-anchor="middle">Real estate site</text><text class="t2" x="130" y="298" text-anchor="middle">a visitor</text></g>
+<line class="arr" x1="220" y1="68" x2="258" y2="150" marker-end="url(#a1)"/><line class="arr" x1="220" y1="140" x2="258" y2="168" marker-end="url(#a1)"/><line class="arr" x1="220" y1="212" x2="258" y2="184" marker-end="url(#a1)"/><line class="arr" x1="220" y1="284" x2="258" y2="202" marker-end="url(#a1)"/>
+<g class="box-p"><rect x="260" y="136" width="160" height="80" rx="8"/><text class="t1" x="340" y="170" text-anchor="middle">One onlydevs bot</text><text class="t2" x="340" y="192" text-anchor="middle">same everywhere</text></g>
+<line class="arr" x1="420" y1="150" x2="458" y2="68" marker-end="url(#a1)"/><line class="arr" x1="420" y1="168" x2="458" y2="140" marker-end="url(#a1)"/><line class="arr" x1="420" y1="184" x2="458" y2="212" marker-end="url(#a1)"/><line class="arr" x1="420" y1="202" x2="458" y2="284" marker-end="url(#a1)"/>
+<g class="box-t"><rect x="460" y="40" width="180" height="56" rx="8"/><text class="t1" x="550" y="62" text-anchor="middle">Demo guide</text><text class="t2" x="550" y="82" text-anchor="middle">explains our demos</text></g>
+<g class="box-t"><rect x="460" y="112" width="180" height="56" rx="8"/><text class="t1" x="550" y="134" text-anchor="middle">Lotus clinic</text><text class="t2" x="550" y="154" text-anchor="middle">answers, books visits</text></g>
+<g class="box-t"><rect x="460" y="184" width="180" height="56" rx="8"/><text class="t1" x="550" y="206" text-anchor="middle">Clinic admin bot</text><text class="t2" x="550" y="226" text-anchor="middle">business numbers</text></g>
+<g class="box-t"><rect x="460" y="256" width="180" height="56" rx="8"/><text class="t1" x="550" y="278" text-anchor="middle">Verdant Crest</text><text class="t2" x="550" y="298" text-anchor="middle">site visits, brochure</text></g>
+</svg>
+</figure>
+<p class="note">The admin face appears only when the owner is really logged in. A visitor can never switch it on.</p>
+
+<h2>2. What happens to one message</h2>
+<p class="lead">Every message, on every page, goes through the same five steps.</p>
+<figure>
+<svg viewBox="0 0 680 430" role="img" aria-label="A message arrives, the bot loads the page's profile, checks who is asking, thinks with Gemini, then acts and replies using the business's data">
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g class="box-g"><rect x="150" y="30" width="270" height="56" rx="8"/><text class="t1" x="285" y="52" text-anchor="middle">1. A message arrives</text><text class="t2" x="285" y="72" text-anchor="middle">from any page</text></g>
+<line class="arr" x1="285" y1="86" x2="285" y2="104" marker-end="url(#a2)"/>
+<g class="box-p"><rect x="150" y="106" width="270" height="56" rx="8"/><text class="t1" x="285" y="128" text-anchor="middle">2. Who am I?</text><text class="t2" x="285" y="148" text-anchor="middle">load this page's profile</text></g>
+<line class="arr" x1="285" y1="162" x2="285" y2="180" marker-end="url(#a2)"/>
+<g class="box-p"><rect x="150" y="182" width="270" height="56" rx="8"/><text class="t1" x="285" y="204" text-anchor="middle">3. Who is asking?</text><text class="t2" x="285" y="224" text-anchor="middle">a visitor, or the logged-in owner</text></g>
+<line class="arr" x1="285" y1="238" x2="285" y2="256" marker-end="url(#a2)"/>
+<g class="box-p"><rect x="150" y="258" width="270" height="56" rx="8"/><text class="t1" x="285" y="280" text-anchor="middle">4. Think</text><text class="t2" x="285" y="300" text-anchor="middle">Gemini reads the rules and details</text></g>
+<line class="arr" x1="285" y1="314" x2="285" y2="332" marker-end="url(#a2)"/>
+<g class="box-p"><rect x="150" y="334" width="270" height="56" rx="8"/><text class="t1" x="285" y="356" text-anchor="middle">5. Act and reply</text><text class="t2" x="285" y="376" text-anchor="middle">book, look up, or answer</text></g>
+<line class="dash" x1="420" y1="134" x2="470" y2="134"/>
+<g class="box-t"><rect x="470" y="106" width="170" height="56" rx="8"/><text class="t1" x="555" y="128" text-anchor="middle">Profiles</text><text class="t2" x="555" y="148" text-anchor="middle">details, rules, skills</text></g>
+<line class="dash" x1="420" y1="362" x2="470" y2="362"/>
+<g class="box-t"><rect x="470" y="334" width="170" height="56" rx="8"/><text class="t1" x="555" y="356" text-anchor="middle">Business data</text><text class="t2" x="555" y="376" text-anchor="middle">bookings, sales, leads</text></g>
+</svg>
+</figure>
+<p class="note">Example: a patient types "Can I come Friday evening?" on the clinic site. The bot loads the clinic's profile, sees a visitor, decides to book, books the visit in the clinic's system, and replies.</p>
+
+<h2>3. How it grows</h2>
+<table>
+<tr><th>To add</th><th>What we do</th></tr>
+<tr><td>A new business</td><td>Write its profile: name, hours, services, prices, which actions it may take. Put the chat bubble on its pages.</td></tr>
+<tr><td>A new page</td><td>Put the chat bubble on it and say which business it belongs to.</td></tr>
+<tr><td>A new action</td><td>Build it once, for example "take an order". Any business can switch it on.</td></tr>
+<tr><td>A new number, like revenue</td><td>Add the field to the database and one line to the list of measures. The owner can ask about it straight away.</td></tr>
+<tr><td>A different AI model</td><td>Change one setting. Today it is Gemini Flash, free, for demos only.</td></tr>
+</table>
+
+<h2>4. Rules every bot follows</h2>
+<ul>
+<li>It only talks about its own business and politely declines anything else.</li>
+<li>It never invents a price, a time or a promise. When unsure, it hands over to staff.</li>
+<li>One business's bot can never see another business's data.</li>
+<li>Business numbers only for a logged-in owner. Owner questions only read; changes still need a confirm step.</li>
+<li>Clinics: no medical advice. Emergencies are told to call 108 and the clinic.</li>
+<li>Real clients move to a paid AI plan before launch, so their customers' chats stay private.</li>
+</ul>
+
+<h2>5. Build order</h2>
+<table>
+<tr><th>Step</th><th>What</th></tr>
+<tr><td>1</td><td>The bot itself, the chat bubble, and the clinic website bot.</td></tr>
+<tr><td>2</td><td>The clinic admin bot with the first business numbers.</td></tr>
+<tr><td>3</td><td>The other demo businesses and the demo hub guide, each just a new profile.</td></tr>
+<tr><td>4</td><td>WhatsApp as a second way in to the same bot.</td></tr>
+</table>
+
+<footer>onlydevs · personal project · design draft</footer>
+</main>
+</body>
+</html>
