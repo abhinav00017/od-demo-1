@@ -334,6 +334,13 @@ describe("Booking needs the visitor's signed Confirm", () => {
     expect(out.confirm).toBeUndefined();
   });
 
+  it("sends plain text even when the model answers in markdown", async () => {
+    const model = fakeModel(say("We are open **Monday to Saturday**, 10 am to 7 pm.\n- Clinic visits\n- *Online* consultations"));
+    const out = await runOgi({ profile: lotus, role: "visitor", messages: [{ role: "user", content: "When are you open?" }], model, today: TODAY });
+    expect(out.kind).toBe("answer");
+    expect(out.reply).toBe("We are open Monday to Saturday, 10 am to 7 pm.\n• Clinic visits\n• Online consultations");
+  });
+
   it("books once on a valid Confirm, through the booking form's service, with the website consent line", async () => {
     const before = (await all()).length;
     const signed = signConfirm("lotus-clinic", pending)!;

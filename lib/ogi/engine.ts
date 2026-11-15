@@ -1,6 +1,7 @@
 import { generateText, isStepCount, type LanguageModel, type ModelMessage } from "ai";
 import { parseDay } from "@/demos/lotus-clinic/booking";
 import { logOgi } from "./log";
+import { toPlainText } from "./plainText";
 import type { OgiProfile } from "./profiles";
 import { checkReply, safeHandOver } from "./replyCheck";
 import { buildTools, type ConfirmCard, type Role, type ToolContext } from "./tools";
@@ -46,6 +47,7 @@ export function buildInstructions(profile: OgiProfile, today: string) {
     `You are Ogi, the friendly assistant on the ${profile.businessName} website. You speak for this business only.`,
     `Today is ${weekday(today)} (${today}).`,
     "Keep replies short: one to three plain sentences. Be warm and calm.",
+    "Write plain text only. No markdown: no asterisks, no bold, no headings, no bullet symbols.",
     "Answer only from the business facts below or from your tools. If a fact is not there, say you don't know and use hand_over.",
     "To request a visit, collect: full name, 10-digit mobile number, clinic visit or online consultation, preferred day, time window and reason. " +
       "Then call request_visit. Never say a visit is booked or confirmed: the visitor must press Confirm on the summary.",
@@ -97,7 +99,7 @@ export async function runOgi({
       maxRetries: 1,
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
-    text = result.text.trim();
+    text = toPlainText(result.text);
     // A tool the model asked for that is not in its set never runs; log it so attacks show up.
     for (const step of result.steps) {
       for (const part of step.content) {
