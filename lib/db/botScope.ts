@@ -1,62 +1,39 @@
 /**
- * Ogi's only way to read business data. Server code only: never import this from a client component.
+ * Ogi's only way to read an organization's data. Server code only: never import this from a client component.
  *
  * Postgres: every read runs in one read-only transaction that switches to the ogi_bot role and sets the
- * business for that transaction. Row-level security (lib/bookings/schema.sql) then shows ogi_bot only that
- * business's rows, and ogi_bot has SELECT and nothing else. Without a database, the memory path filters rows
- * by the same rule, so local dev behaves the same.
+ * organization for that transaction (app.org_id). Row-level security (lib/bookings/schema.sql) then shows ogi_bot
+ * only rows whose org_id is that organization, and ogi_bot has SELECT and nothing else. Without a database, the
+ * memory path filters rows by the same rules the database's org_id triggers use, so local dev behaves the same.
  *
- * The business comes from the server-side allow-list below, never from a request body or the model.
+ * The organization comes from the server's list (lib/orgs.ts), never from a request body or the model.
  * The SQL text must be a constant written in our code. The model never writes SQL: a role switch only
  * guards against our own query mistakes, because SQL that runs RESET ROLE would leave ogi_bot.
  */
 import { neon } from "@neondatabase/serverless";
-
-/** Every business Ogi may read for. Add a business here only with its rows in the database. */
-export const BUSINESS_IDS = ["lotus-clinic", "kalyani-tiles"] as const;
-
-type KnownBusiness = (typeof BUSINESS_IDS)[number];
-declare const businessBrand: unique symbol;
-/** A business id from the allow-list. Make one only with businessId(). */
-export type BusinessId = KnownBusiness & { readonly [businessBrand]: true };
-
-export class UnknownBusinessError extends Error {
-  constructor() {
-    // The raw value stays out of the message, so a hostile string never reaches logs.
-    super("unknown business id");
-    this.name = "UnknownBusinessError";
-  }
-}
-
-const isKnown = (raw: unknown): raw is KnownBusiness => typeof raw === "string" && (BUSINESS_IDS as readonly string[]).includes(raw);
-
-/** The one way to make a BusinessId. Throws UnknownBusinessError for anything outside the allow-list. */
-export function businessId(raw: unknown): BusinessId {
-  if (!isKnown(raw)) throw new UnknownBusinessError();
-  return raw as BusinessId;
-}
+import { isKnownOrgId, orgForSlug, UnknownOrgError, WHATSAPP_LISTS_ORG_ID, type OrgId } from "@/lib/orgs";
 
 /** Checked again at run time, because a cast can fake the branded type. */
-function checked(id: BusinessId): KnownBusiness {
-  if (!isKnown(id)) throw new UnknownBusinessError();
+function checked(id: OrgId): OrgId {
+  if (!isKnownOrgId(id)) throw new UnknownOrgError();
   return id;
 }
 
-/** Every table in schema.sql, with the business its business_id column defaults to. */
-export const BOT_TABLES = {
-  bookings: "lotus-clinic",
-  messages: "lotus-clinic",
-  patient_notes: "lotus-clinic",
-  whatsapp_optouts: "lotus-clinic",
-  whatsapp_unreachable: "lotus-clinic",
-  crm_products: "kalyani-tiles",
-  crm_leads: "kalyani-tiles",
-  crm_quotes: "kalyani-tiles",
-  crm_quote_items: "kalyani-tiles",
-  crm_followups: "kalyani-tiles",
-} as const satisfies Record<string, KnownBusiness>;
+/** Every table in schema.sql that holds an organization's rows. Each has org_id and the ogi_bot_read policy. */
+export const BOT_TABLES = [
+  "bookings",
+  "messages",
+  "patient_notes",
+  "whatsapp_optouts",
+  "whatsapp_unreachable",
+  "crm_products",
+  "crm_leads",
+  "crm_quotes",
+  "crm_quote_items",
+  "crm_followups",
+] as const;
 
-export type BotTable = keyof typeof BOT_TABLES;
+export type BotTable = (typeof BOT_TABLES)[number];
 
 /** The read-only database role Ogi reads as. It has no login. */
 export const BOT_ROLE = "ogi_bot";
@@ -69,7 +46,7 @@ export class BotSqlError extends Error {
 }
 
 /**
- * One SELECT (or WITH ... SELECT), no semicolon, and nothing that could change the role or the business.
+ * One SELECT (or WITH ... SELECT), no semicolon, and nothing that could change the role or the organization.
  * A guard against our own mistakes. The real guard is the role and row-level security.
  */
 function assertReadOnlySql(text: string) {
@@ -82,15 +59,15 @@ export type BotStatement = { text: string; params: unknown[] };
 
 /**
  * The statements one bot read sends, in order, inside one read-only transaction:
- * switch to ogi_bot, set the business for this transaction only, then the read.
- * Throws before any SQL exists when the business or the query is not allowed.
+ * switch to ogi_bot, set the organization for this transaction only, then the read.
+ * Throws before any SQL exists when the organization or the query is not allowed.
  */
-export function botStatements(id: BusinessId, text: string, params: unknown[] = []): BotStatement[] {
-  const business = checked(id);
+export function botStatements(id: OrgId, text: string, params: unknown[] = []): BotStatement[] {
+  const org = checked(id);
   assertReadOnlySql(text);
   return [
     { text: `SET LOCAL ROLE ${BOT_ROLE}`, params: [] },
-    { text: "SELECT set_config('app.business_id', $1, true)", params: [business] },
+    { text: "SELECT set_config('app.org_id', $1, true)", params: [org] },
     { text, params },
   ];
 }
@@ -98,11 +75,11 @@ export function botStatements(id: BusinessId, text: string, params: unknown[] = 
 let cached: { url: string; sql: ReturnType<typeof neon> } | undefined;
 
 /**
- * Runs one read for Ogi on Postgres, as ogi_bot, scoped to one business. Returns the read's rows.
+ * Runs one read for Ogi on Postgres, as ogi_bot, scoped to one organization. Returns the read's rows.
  * Uses the Neon HTTP driver's transaction(): the statements go in one request as one non-interactive
  * transaction, so SET LOCAL and set_config(..., true) end with it.
  */
-export async function botQuery<T = Record<string, unknown>>(id: BusinessId, text: string, params: unknown[] = []): Promise<T[]> {
+export async function botQuery<T = Record<string, unknown>>(id: OrgId, text: string, params: unknown[] = []): Promise<T[]> {
   const statements = botStatements(id, text, params);
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("botQuery needs DATABASE_URL. Without a database, use scopeMemoryRows.");
@@ -120,25 +97,56 @@ export function botUsesDatabase(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
 
-type MemoryRow = { businessId?: unknown; crmLeadId?: unknown; leadId?: unknown };
+/** Parent rows a memory read may need: a message's booking or CRM lead, a quote item's quote. */
+export type MemoryParents = { bookings?: readonly object[]; crm_leads?: readonly object[]; crm_quotes?: readonly object[] };
 
-/**
- * The business a memory row belongs to, by the database's rule: its own businessId when it has one,
- * otherwise the table's default. A message linked to a CRM lead belongs to the CRM business, as the
- * messages trigger does in the database.
- */
-function memoryBusinessOf(table: BotTable, row: MemoryRow): string {
-  if (typeof row.businessId === "string") return row.businessId;
-  if (table === "messages" && (row.crmLeadId != null || row.leadId != null)) return BOT_TABLES.crm_leads;
-  return BOT_TABLES[table];
+type MemoryRow = Record<string, unknown>;
+
+function parentOrg(table: "bookings" | "crm_leads" | "crm_quotes", id: unknown, parents: MemoryParents): string | undefined {
+  const parent = parents[table]?.find((p) => (p as MemoryRow).id === id);
+  return parent ? memoryOrgOf(table, parent as MemoryRow, parents) : undefined;
 }
 
 /**
- * The memory-store path of a bot read: only the rows of one business, the same rows row-level security
- * would show ogi_bot. Copies, so the caller cannot change the store.
+ * The organization a memory row belongs to, by the same rules as the org_id triggers in schema.sql:
+ * a slug table takes the organization with that slug; a quote item takes its quote's; a message takes its CRM
+ * lead's, or else its booking's; the WhatsApp lists take their own orgId, or else the column's default.
+ * Any orgId on a trigger table's row is ignored, as the triggers ignore what an insert says.
+ * Undefined when the database would refuse the row (unknown slug, missing parent), so the row is never shown.
  */
-export function scopeMemoryRows<T extends object>(id: BusinessId, table: BotTable, rows: readonly T[]): T[] {
-  const business = checked(id);
-  if (!Object.hasOwn(BOT_TABLES, table)) throw new BotSqlError("unknown table");
-  return rows.filter((row) => memoryBusinessOf(table, row as MemoryRow) === business).map((row) => ({ ...row }));
+function memoryOrgOf(table: BotTable, row: MemoryRow, parents: MemoryParents): string | undefined {
+  switch (table) {
+    case "bookings":
+    case "patient_notes":
+      return orgForSlug(row.clinicSlug)?.id;
+    case "crm_products":
+    case "crm_leads":
+    case "crm_quotes":
+    case "crm_followups":
+      return orgForSlug(row.shopSlug)?.id;
+    case "crm_quote_items":
+      return parentOrg("crm_quotes", row.quoteId, parents);
+    case "messages": {
+      // The CRM's memory messages call the lead leadId; the database column is crm_lead_id.
+      const lead = row.crmLeadId ?? row.leadId;
+      if (lead != null) return parentOrg("crm_leads", lead, parents);
+      if (row.bookingId != null) return parentOrg("bookings", row.bookingId, parents);
+      return undefined;
+    }
+    case "whatsapp_optouts":
+    case "whatsapp_unreachable":
+      if (row.orgId === undefined) return WHATSAPP_LISTS_ORG_ID;
+      return isKnownOrgId(row.orgId) ? row.orgId : undefined;
+  }
+}
+
+/**
+ * The memory-store path of a bot read: only the rows of one organization, the same rows row-level security
+ * would show ogi_bot. Messages and quote items need their parent rows in `parents`; without them they are
+ * never shown. Copies, so the caller cannot change the store.
+ */
+export function scopeMemoryRows<T extends object>(id: OrgId, table: BotTable, rows: readonly T[], parents: MemoryParents = {}): T[] {
+  const org = checked(id);
+  if (!(BOT_TABLES as readonly string[]).includes(table)) throw new BotSqlError("unknown table");
+  return rows.filter((row) => memoryOrgOf(table, row as MemoryRow, parents) === org).map((row) => ({ ...row }));
 }

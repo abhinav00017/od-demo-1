@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 import { schemaStatements } from "@/lib/bookings/migrations";
 import { BOT_TABLES, type BotTable } from "@/lib/db/botScope";
 
-const TABLES = Object.keys(BOT_TABLES) as BotTable[];
+const TABLES: readonly BotTable[] = BOT_TABLES;
+/** Tables whose org_id comes from their slug, then the two that follow a parent row, then the two WhatsApp lists. */
+const SLUG_TABLES: BotTable[] = ["bookings", "patient_notes", "crm_products", "crm_leads", "crm_quotes", "crm_followups"];
+const TRIGGER_TABLES: BotTable[] = [...SLUG_TABLES, "crm_quote_items", "messages"];
+const LIST_TABLES: BotTable[] = ["whatsapp_optouts", "whatsapp_unreachable"];
 
 describe("schema.sql", () => {
   const statements = schemaStatements(readFileSync(path.join(process.cwd(), "lib/bookings/schema.sql"), "utf8"));
@@ -55,23 +59,36 @@ describe("schema.sql", () => {
       "UPDATE bookings SET consent_at = created_at, consent_text = 'The clinic may message me on WhatsApp about this visit.', consent_source = 'website'",
       "CREATE TABLE IF NOT EXISTS whatsapp_optouts (",
       "CREATE TABLE IF NOT EXISTS whatsapp_unreachable (",
-      ...TABLES.map((t) => `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT '${BOT_TABLES[t]}'`),
-      ...TABLES.map((t) => `CREATE INDEX IF NOT EXISTS ${t}_business_idx ON ${t} (business_id)`),
-      "CREATE OR REPLACE FUNCTION messages_business_id() RETURNS trigger LANGUAGE plpgsql AS $$",
-      "CREATE OR REPLACE TRIGGER messages_business_id BEFORE INSERT OR UPDATE OF booking_id, crm_lead_id, business_id ON messages",
-      "UPDATE messages SET business_id = crm_leads.business_id FROM crm_leads",
+      "CREATE TABLE IF NOT EXISTS organizations (",
+      "INSERT INTO organizations (id, slug, name, product) VALUES",
+      ...TRIGGER_TABLES.map((t) => `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id)`),
+      ...LIST_TABLES.map((t) => `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS org_id text NOT NULL DEFAULT 'org_7f3k2a' REFERENCES organizations (id)`),
+      "CREATE OR REPLACE FUNCTION org_id_from_slug() RETURNS trigger LANGUAGE plpgsql AS $$",
+      ...SLUG_TABLES.map((t) => `CREATE OR REPLACE TRIGGER ${t}_org_id BEFORE INSERT OR UPDATE ON ${t}`),
+      "CREATE OR REPLACE FUNCTION crm_quote_items_org_id() RETURNS trigger LANGUAGE plpgsql AS $$",
+      "CREATE OR REPLACE TRIGGER crm_quote_items_org_id BEFORE INSERT OR UPDATE ON crm_quote_items",
+      "CREATE OR REPLACE FUNCTION messages_org_id() RETURNS trigger LANGUAGE plpgsql AS $$",
+      "CREATE OR REPLACE TRIGGER messages_org_id BEFORE INSERT OR UPDATE ON messages",
+      ...SLUG_TABLES.map((t) => `UPDATE ${t} SET org_id = organizations.id FROM organizations`),
+      "UPDATE crm_quote_items SET org_id = crm_quotes.org_id FROM crm_quotes",
+      "UPDATE messages SET org_id = crm_leads.org_id FROM crm_leads",
+      "UPDATE messages SET org_id = bookings.org_id FROM bookings",
+      ...TRIGGER_TABLES.map((t) => `ALTER TABLE ${t} ALTER COLUMN org_id SET NOT NULL`),
+      ...TABLES.map((t) => `CREATE INDEX IF NOT EXISTS ${t}_org_idx ON ${t} (org_id)`),
       "DO $$",
       "GRANT ogi_bot TO CURRENT_USER",
       "DO $$",
     ]);
     // Every statement is safe to rerun: IF [NOT] EXISTS, CREATE OR REPLACE, a DO block that checks first, a GRANT
-    // (granting twice is a no-op), or an UPDATE that only touches rows still unset or still wrong.
-    // Only dollar-quoted bodies (DO blocks, functions) may hold a semicolon.
+    // (granting twice is a no-op), an INSERT that skips rows already there, SET NOT NULL (a no-op once set), or an
+    // UPDATE that only touches rows still unset or still wrong. Only dollar-quoted bodies (DO blocks, functions) may hold a semicolon.
     const rerunSafe = (s: string) =>
       /IF (NOT )?EXISTS/.test(s) ||
       s.startsWith("CREATE OR REPLACE ") ||
       s.startsWith("DO $$") ||
       s.startsWith("GRANT ") ||
+      (s.startsWith("INSERT ") && s.endsWith("ON CONFLICT DO NOTHING")) ||
+      /^ALTER TABLE \w+ ALTER COLUMN org_id SET NOT NULL$/.test(s) ||
       (s.startsWith("UPDATE ") && /IS NULL|IS DISTINCT FROM/.test(s));
     expect(statements.filter((s) => !rerunSafe(s))).toEqual([]);
     expect(statements.filter((s) => s.includes(";") && !s.includes("$$"))).toEqual([]);
@@ -143,7 +160,8 @@ describe("schema.sql", () => {
 
   it("keeps each DO block and function body whole, so Neon gets it as one statement", () => {
     const bodies = statements.filter((s) => s.includes("$$"));
-    expect(bodies).toHaveLength(3);
+    // Three org_id trigger functions and two DO blocks.
+    expect(bodies).toHaveLength(5);
     for (const b of bodies) {
       expect(b.match(/\$\$/g)).toHaveLength(2);
       expect(b.endsWith("$$")).toBe(true);
@@ -154,13 +172,16 @@ describe("schema.sql", () => {
     ]);
   });
 
-  it("gives every table a business_id the Ogi helper knows, and RLS for ogi_bot on all of them", () => {
+  it("gives every table an org_id the Ogi helper knows, and RLS for ogi_bot on all of them", () => {
     const created = statements.filter((s) => s.startsWith("CREATE TABLE IF NOT EXISTS")).map((s) => s.split(" ")[5]);
-    expect([...created].sort()).toEqual([...TABLES].sort());
+    expect([...created].sort()).toEqual([...TABLES, "organizations"].sort());
+    expect(statements.join("\n")).not.toContain("business_id");
     const rls = statements.find((s) => s.includes("ENABLE ROW LEVEL SECURITY"))!;
     for (const t of TABLES) expect(rls).toContain(`'${t}'`);
+    expect(rls).not.toContain("'organizations'");
     expect(rls).not.toMatch(/ALTER TABLE %I FORCE/);
-    expect(rls).toContain("FOR SELECT TO ogi_bot USING (business_id = NULLIF(current_setting(%L, true), %L))");
+    expect(rls).toContain("FOR SELECT TO ogi_bot USING (org_id = NULLIF(current_setting(%L, true), %L))");
+    expect(rls).toContain("'app.org_id'");
     expect(rls).toContain("GRANT SELECT ON %I TO ogi_bot");
     // No login role and no password anywhere in the schema.
     expect(statements.join("\n")).not.toMatch(/\bLOGIN\b(?<!NOLOGIN)|PASSWORD/i);

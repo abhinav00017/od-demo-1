@@ -8,20 +8,25 @@ const query = vi.fn((text: string, params: unknown[]) => ({ text, params }));
 const neon = vi.fn(() => ({ query, transaction }));
 vi.mock("@neondatabase/serverless", () => ({ neon }));
 
-const { BOT_TABLES, BotSqlError, botQuery, botStatements, businessId, scopeMemoryRows, UnknownBusinessError } = await import("@/lib/db/botScope");
-type BusinessId = import("@/lib/db/botScope").BusinessId;
+const { BOT_TABLES, BotSqlError, botQuery, botStatements, scopeMemoryRows } = await import("@/lib/db/botScope");
+const { orgId, UnknownOrgError } = await import("@/lib/orgs");
+type OrgId = import("@/lib/orgs").OrgId;
 
-describe("businessId", () => {
-  it("accepts only businesses on the server's allow-list", () => {
-    expect(businessId("lotus-clinic")).toBe("lotus-clinic");
-    expect(businessId("kalyani-tiles")).toBe("kalyani-tiles");
-    for (const raw of ["", "Lotus-Clinic", "lotus-clinic ", "other-clinic", "lotus-clinic' OR '1'='1", null, undefined, 42, {}, ["lotus-clinic"]]) {
-      expect(() => businessId(raw), String(raw)).toThrow(UnknownBusinessError);
+const LOTUS = "org_7f3k2a";
+const KALYANI = "org_2m9qd1";
+
+describe("orgId", () => {
+  it("accepts only organizations on the server's list", () => {
+    expect(orgId(LOTUS)).toBe(LOTUS);
+    expect(orgId(KALYANI)).toBe(KALYANI);
+    // Slugs are not ids, and a test-only organization is not on the list.
+    for (const raw of ["lotus-clinic", "kalyani-tiles", "org_9x4hb7", "", "ORG_7F3K2A", "org_7f3k2a ", "org_7f3k2a' OR '1'='1", null, undefined, 42, {}, [LOTUS]]) {
+      expect(() => orgId(raw), String(raw)).toThrow(UnknownOrgError);
     }
   });
 
   it("keeps the raw value out of the error message", () => {
-    expect(() => businessId("<script>")).toThrow("unknown business id");
+    expect(() => orgId("<script>")).toThrow("unknown organization");
   });
 });
 
@@ -34,37 +39,37 @@ describe("botQuery (Neon driver mocked)", () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
-  it("sends one read-only transaction: switch to ogi_bot, set the business for this transaction, then the read", async () => {
-    transaction.mockResolvedValue([[], [{ set_config: "lotus-clinic" }], [{ id: "b1" }]]);
-    const rows = await botQuery(businessId("lotus-clinic"), "SELECT id FROM bookings WHERE date = $1", ["2026-11-20"]);
+  it("sends one read-only transaction: switch to ogi_bot, set the organization for this transaction, then the read", async () => {
+    transaction.mockResolvedValue([[], [{ set_config: LOTUS }], [{ id: "b1" }]]);
+    const rows = await botQuery(orgId(LOTUS), "SELECT id FROM bookings WHERE date = $1", ["2026-11-20"]);
     expect(rows).toEqual([{ id: "b1" }]);
     expect(transaction).toHaveBeenCalledTimes(1);
     const [queries, opts] = transaction.mock.calls[0];
     expect(opts).toEqual({ readOnly: true });
     expect(queries).toEqual([
       { text: "SET LOCAL ROLE ogi_bot", params: [] },
-      { text: "SELECT set_config('app.business_id', $1, true)", params: ["lotus-clinic"] },
+      { text: "SELECT set_config('app.org_id', $1, true)", params: [LOTUS] },
       { text: "SELECT id FROM bookings WHERE date = $1", params: ["2026-11-20"] },
     ]);
   });
 
-  it("attack: rejects an unknown business before any SQL runs, even one cast past the type", async () => {
-    for (const fake of ["other-clinic", "", "lotus-clinic; DROP TABLE bookings"]) {
-      await expect(botQuery(fake as BusinessId, "SELECT 1")).rejects.toThrow(UnknownBusinessError);
+  it("attack: rejects an unknown organization before any SQL runs, even one cast past the type", async () => {
+    for (const fake of ["org_9x4hb7", "lotus-clinic", "", "org_7f3k2a; DROP TABLE bookings"]) {
+      await expect(botQuery(fake as OrgId, "SELECT 1")).rejects.toThrow(UnknownOrgError);
     }
     expect(neon).not.toHaveBeenCalled();
     expect(query).not.toHaveBeenCalled();
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it("attack: refuses writes, several statements, and anything that changes the role or the business, before any SQL runs", async () => {
-    const id = businessId("lotus-clinic");
+  it("attack: refuses writes, several statements, and anything that changes the role or the organization, before any SQL runs", async () => {
+    const id = orgId(LOTUS);
     for (const text of [
       "DELETE FROM bookings",
       "INSERT INTO bookings (name) VALUES ('x')",
       "UPDATE bookings SET name = 'x'",
       "SELECT 1; DELETE FROM bookings",
-      "SELECT set_config('app.business_id', 'kalyani-tiles', true)",
+      `SELECT set_config('app.org_id', '${KALYANI}', true)`,
       "SELECT set_config('role', 'none', true)",
       "RESET ROLE",
       "SET ROLE neondb_owner",
@@ -77,51 +82,73 @@ describe("botQuery (Neon driver mocked)", () => {
   });
 
   it("allows plain SELECT and WITH reads", () => {
-    const id = businessId("kalyani-tiles");
+    const id = orgId(KALYANI);
     expect(botStatements(id, "WITH open AS (SELECT * FROM crm_followups WHERE done_at IS NULL) SELECT count(*) FROM open")).toHaveLength(3);
     expect(botStatements(id, "select name from crm_products order by name limit 5 offset 5")).toHaveLength(3);
   });
 
   it("fails without a database rather than reading unscoped", async () => {
     vi.stubEnv("DATABASE_URL", "");
-    await expect(botQuery(businessId("lotus-clinic"), "SELECT 1")).rejects.toThrow(/DATABASE_URL/);
+    await expect(botQuery(orgId(LOTUS), "SELECT 1")).rejects.toThrow(/DATABASE_URL/);
     expect(transaction).not.toHaveBeenCalled();
   });
 });
 
-describe("scopeMemoryRows (the memory-store path)", () => {
+describe("scopeMemoryRows (the memory-store path, same rules as the org_id triggers)", () => {
   const bookings = [
     { id: "b1", clinicSlug: "lotus-clinic" },
-    { id: "b2", clinicSlug: "lotus-clinic", businessId: "kalyani-tiles" },
+    // A row that claims another organization: ignored, as the trigger ignores it.
+    { id: "b2", clinicSlug: "lotus-clinic", orgId: KALYANI },
+    // A clinic the server does not know: the database would refuse it, so nobody sees it.
+    { id: "b3", clinicSlug: "sunrise-clinic" },
   ];
   const leads = [{ id: "l1", shopSlug: "kalyani-tiles" }];
+  const quotes = [{ id: "q1", shopSlug: "kalyani-tiles", leadId: "l1" }];
+  const items = [
+    { id: "i1", quoteId: "q1" },
+    { id: "i2", quoteId: "missing" },
+  ];
   const messages = [
     { id: "m1", bookingId: "b1" },
     { id: "m2", crmLeadId: "l1" },
     { id: "m3", leadId: "l1" },
+    { id: "m4", bookingId: "b3" },
   ];
+  const parents = { bookings, crm_leads: leads, crm_quotes: quotes };
 
-  it("attack: the bot for lotus-clinic gets zero CRM rows and no CRM messages", () => {
-    const id = businessId("lotus-clinic");
-    for (const table of Object.keys(BOT_TABLES) as (keyof typeof BOT_TABLES)[]) {
-      if (BOT_TABLES[table] === "kalyani-tiles") expect(scopeMemoryRows(id, table, leads), table).toEqual([]);
-    }
-    expect(scopeMemoryRows(id, "messages", messages).map((m) => m.id)).toEqual(["m1"]);
-    expect(scopeMemoryRows(id, "bookings", bookings).map((b) => b.id)).toEqual(["b1"]);
+  it("attack: the bot for Lotus gets zero CRM rows, no CRM messages and no unknown clinic's rows", () => {
+    const id = orgId(LOTUS);
+    for (const table of ["crm_products", "crm_leads", "crm_quotes", "crm_followups"] as const) expect(scopeMemoryRows(id, table, leads), table).toEqual([]);
+    expect(scopeMemoryRows(id, "crm_quote_items", items, parents)).toEqual([]);
+    expect(scopeMemoryRows(id, "messages", messages, parents).map((m) => m.id)).toEqual(["m1"]);
+    expect(scopeMemoryRows(id, "bookings", bookings).map((b) => b.id)).toEqual(["b1", "b2"]);
   });
 
-  it("gives kalyani-tiles its CRM rows and the CRM messages, by the same rule as the database", () => {
-    const id = businessId("kalyani-tiles");
+  it("gives Kalyani its CRM rows, its quote's items and its CRM messages", () => {
+    const id = orgId(KALYANI);
     expect(scopeMemoryRows(id, "crm_leads", leads)).toEqual(leads);
-    expect(scopeMemoryRows(id, "bookings", bookings).map((b) => b.id)).toEqual(["b2"]);
-    expect(scopeMemoryRows(id, "messages", messages).map((m) => m.id)).toEqual(["m2", "m3"]);
+    expect(scopeMemoryRows(id, "bookings", bookings)).toEqual([]);
+    expect(scopeMemoryRows(id, "crm_quote_items", items, parents).map((i) => i.id)).toEqual(["i1"]);
+    expect(scopeMemoryRows(id, "messages", messages, parents).map((m) => m.id)).toEqual(["m2", "m3"]);
   });
 
-  it("returns copies, and rejects an unknown business or table", () => {
-    const id = businessId("lotus-clinic");
+  it("shows no message or quote item when its parent rows are not given", () => {
+    expect(scopeMemoryRows(orgId(LOTUS), "messages", messages)).toEqual([]);
+    expect(scopeMemoryRows(orgId(KALYANI), "crm_quote_items", items)).toEqual([]);
+  });
+
+  it("puts the WhatsApp lists under Lotus by default, like the column default", () => {
+    const optouts = [{ phone: "9000000001" }, { phone: "9000000002", orgId: KALYANI }, { phone: "9000000003", orgId: "org_unknown" }];
+    expect(scopeMemoryRows(orgId(LOTUS), "whatsapp_optouts", optouts).map((r) => r.phone)).toEqual(["9000000001"]);
+    expect(scopeMemoryRows(orgId(KALYANI), "whatsapp_unreachable", optouts).map((r) => r.phone)).toEqual(["9000000002"]);
+  });
+
+  it("returns copies, and rejects an unknown organization or table", () => {
+    const id = orgId(LOTUS);
     const [copy] = scopeMemoryRows(id, "bookings", bookings);
     expect(copy).not.toBe(bookings[0]);
-    expect(() => scopeMemoryRows("nope" as BusinessId, "bookings", bookings)).toThrow(UnknownBusinessError);
+    expect(() => scopeMemoryRows("org_9x4hb7" as OrgId, "bookings", bookings)).toThrow(UnknownOrgError);
     expect(() => scopeMemoryRows(id, "users" as "bookings", bookings)).toThrow(BotSqlError);
+    expect(BOT_TABLES).toHaveLength(10);
   });
 });

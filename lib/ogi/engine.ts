@@ -81,7 +81,7 @@ export async function runOgi({
     return { reply: emergencyReply(profile), kind: "emergency" };
   }
 
-  const ctx: ToolContext = { profile, role, today, pending: {}, results: [] };
+  const ctx: ToolContext = { profile, orgId: profile.orgId, role, today, pending: {}, results: [] };
   const tools = buildTools(ctx);
 
   let text: string;

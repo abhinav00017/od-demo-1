@@ -3,6 +3,7 @@ import { z } from "zod";
 import { clinic } from "@/demos/lotus-clinic/data";
 import { formatDay, normalisePhone, parseDay, validateBooking } from "@/demos/lotus-clinic/booking";
 import { CONSENT_TEXT_V1 } from "@/lib/bookings/consent";
+import type { OrgId } from "@/lib/orgs";
 import { signConfirm, type PendingVisit } from "./confirmToken";
 import { logOgi } from "./log";
 import { INFO_TOPICS, type OgiProfile } from "./profiles";
@@ -11,7 +12,7 @@ import { INFO_TOPICS, type OgiProfile } from "./profiles";
  * Ogi's tools, and who may use them.
  *
  * Lock 2: a per-role allow-list in code, deny by default. A role that is not listed gets no tools at all.
- * Lock 3: every tool reads the business from the server closure `ctx`. No input schema has a business id, a page,
+ * Lock 3: every tool reads the business and its organization from the server closure `ctx`. No input schema has a business id, a page,
  *         a role or anything like it, so nothing the model writes can point a tool at another business.
  * The model can never create a booking: request_visit only signs a summary for the visitor's Confirm click.
  */
@@ -68,6 +69,8 @@ export type ConfirmCard = {
 /** Server-side context for one chat request. Built from the page allow-list, never from the model. */
 export type ToolContext = {
   profile: OgiProfile;
+  /** The organization every tool works for: the profile's, set by the server. v1 tools read no rows with it yet. */
+  orgId: OrgId;
   role: Role;
   /** Today in clinic time, YYYY-MM-DD. */
   today: string;

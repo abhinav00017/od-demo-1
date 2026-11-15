@@ -124,7 +124,7 @@ describe("Lock 1: the server picks the business and the role", () => {
 
   it("refuses a body that tries to set the role, the business or the tools", async () => {
     fake.model = fakeModel(say("hi"));
-    for (const extra of [{ role: "owner" }, { businessId: "kalyani-tiles" }, { tools: ["sales"] }, { profile: "kalyani" }]) {
+    for (const extra of [{ role: "owner" }, { businessId: "kalyani-tiles" }, { orgId: "org_2m9qd1" }, { org_id: "org_2m9qd1" }, { tools: ["sales"] }, { profile: "kalyani" }]) {
       const res = await chat({ ...ask("hi"), ...extra });
       expect(res.status, JSON.stringify(extra)).toBe(400);
     }

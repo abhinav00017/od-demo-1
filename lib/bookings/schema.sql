@@ -229,69 +229,189 @@ CREATE TABLE IF NOT EXISTS whatsapp_unreachable (
   reason    text
 );
 
--- Ogi safety base (step 0, 15 Nov 2026). Every table says which business owns each row. Ogi, the onlydevs bot, reads
--- only through ogi_bot: a read-only role with no login, which row-level security limits to one business at a time.
--- The app's own role owns these tables and RLS is not forced, so the app reads and writes exactly as before.
--- The defaults fill business_id, so today's inserts need no change. Every statement is safe to rerun.
-ALTER TABLE bookings ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+-- Organizations and Ogi's safety base (15 Nov 2026, docs/ogi-database-design.html). Every client is an organization
+-- with a fixed id. Every table says which organization owns each row in org_id, and the database fills it itself:
+-- from the slug, the quote, or the booking or lead. Ogi, the onlydevs bot, reads only through ogi_bot: a read-only
+-- role with no login, which row-level security limits to one organization at a time. The app's own role owns these
+-- tables and RLS is not forced, so the app reads and writes exactly as before. Every statement is safe to rerun.
 
-ALTER TABLE messages ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+-- One row per client. The id never changes and is what the lock uses. The slug only names web addresses: renaming it
+-- changes no row's org_id. product is which onlydevs product the client uses (clinic, tiles, ...).
+CREATE TABLE IF NOT EXISTS organizations (
+  id         text        PRIMARY KEY,
+  slug       text        NOT NULL UNIQUE,
+  name       text        NOT NULL,
+  product    text        NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-ALTER TABLE patient_notes ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+-- The two demo organizations. lib/orgs.ts lists the same rows; a test checks they match.
+INSERT INTO organizations (id, slug, name, product) VALUES
+  ('org_7f3k2a', 'lotus-clinic', 'Lotus Women''s Clinic', 'clinic'),
+  ('org_2m9qd1', 'kalyani-tiles', 'Kalyani Tiles', 'tiles')
+ON CONFLICT DO NOTHING;
 
-ALTER TABLE whatsapp_optouts ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+-- org_id on every table. Empty at first on tables that have rows; the backfill below fills it, then it becomes NOT NULL.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-ALTER TABLE whatsapp_unreachable ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'lotus-clinic';
+ALTER TABLE patient_notes ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-ALTER TABLE crm_quotes ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+ALTER TABLE crm_quotes ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+ALTER TABLE crm_followups ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-ALTER TABLE crm_followups ADD COLUMN IF NOT EXISTS business_id text NOT NULL DEFAULT 'kalyani-tiles';
+ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-CREATE INDEX IF NOT EXISTS bookings_business_idx ON bookings (business_id);
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS org_id text REFERENCES organizations (id);
 
-CREATE INDEX IF NOT EXISTS messages_business_idx ON messages (business_id);
+-- The STOP list and the no-WhatsApp list have no slug and no parent row. They belong to Lotus for now.
+-- Open question for Abhinav: should each organization keep its own lists? Their keys stay phone only until he decides.
+ALTER TABLE whatsapp_optouts ADD COLUMN IF NOT EXISTS org_id text NOT NULL DEFAULT 'org_7f3k2a' REFERENCES organizations (id);
 
-CREATE INDEX IF NOT EXISTS patient_notes_business_idx ON patient_notes (business_id);
+ALTER TABLE whatsapp_unreachable ADD COLUMN IF NOT EXISTS org_id text NOT NULL DEFAULT 'org_7f3k2a' REFERENCES organizations (id);
 
-CREATE INDEX IF NOT EXISTS whatsapp_optouts_business_idx ON whatsapp_optouts (business_id);
-
-CREATE INDEX IF NOT EXISTS whatsapp_unreachable_business_idx ON whatsapp_unreachable (business_id);
-
-CREATE INDEX IF NOT EXISTS crm_products_business_idx ON crm_products (business_id);
-
-CREATE INDEX IF NOT EXISTS crm_leads_business_idx ON crm_leads (business_id);
-
-CREATE INDEX IF NOT EXISTS crm_quotes_business_idx ON crm_quotes (business_id);
-
-CREATE INDEX IF NOT EXISTS crm_quote_items_business_idx ON crm_quote_items (business_id);
-
-CREATE INDEX IF NOT EXISTS crm_followups_business_idx ON crm_followups (business_id);
-
--- CRM sends share the messages table, so the clinic default would label them lotus-clinic. A message takes its
--- business from its CRM lead or its booking instead, whatever the insert says.
-CREATE OR REPLACE FUNCTION messages_business_id() RETURNS trigger LANGUAGE plpgsql AS $$
+-- Tables with a slug (clinic_slug or shop_slug, named by the trigger's argument) take the organization with that slug.
+-- An unknown slug is an error, so no row is ever stored without an organization. An update that keeps the slug keeps
+-- the organization, whatever the update says about org_id; so after a client renames its slug, old rows keep their
+-- org_id and only new rows need the new slug.
+CREATE OR REPLACE FUNCTION org_id_from_slug() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  new_slug text := to_jsonb(NEW) ->> TG_ARGV[0];
 BEGIN
-  IF NEW.crm_lead_id IS NOT NULL THEN
-    NEW.business_id := (SELECT business_id FROM crm_leads WHERE id = NEW.crm_lead_id);
-  ELSIF NEW.booking_id IS NOT NULL THEN
-    NEW.business_id := (SELECT business_id FROM bookings WHERE id = NEW.booking_id);
+  IF TG_OP = 'UPDATE' AND OLD.org_id IS NOT NULL AND new_slug IS NOT DISTINCT FROM (to_jsonb(OLD) ->> TG_ARGV[0]) THEN
+    NEW.org_id := OLD.org_id;
+    RETURN NEW;
+  END IF;
+  NEW.org_id := (SELECT id FROM organizations WHERE slug = new_slug);
+  IF NEW.org_id IS NULL THEN
+    RAISE EXCEPTION 'no organization has this %.%', TG_TABLE_NAME, TG_ARGV[0] USING ERRCODE = 'foreign_key_violation';
   END IF;
   RETURN NEW;
 END
 $$;
 
-CREATE OR REPLACE TRIGGER messages_business_id BEFORE INSERT OR UPDATE OF booking_id, crm_lead_id, business_id ON messages
-FOR EACH ROW EXECUTE FUNCTION messages_business_id();
+CREATE OR REPLACE TRIGGER bookings_org_id BEFORE INSERT OR UPDATE ON bookings
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('clinic_slug');
 
--- CRM messages sent before the trigger got the clinic default. Moves them to their lead's business. Touches only rows still wrong.
-UPDATE messages SET business_id = crm_leads.business_id FROM crm_leads
-WHERE messages.crm_lead_id = crm_leads.id AND messages.business_id IS DISTINCT FROM crm_leads.business_id;
+CREATE OR REPLACE TRIGGER patient_notes_org_id BEFORE INSERT OR UPDATE ON patient_notes
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('clinic_slug');
+
+CREATE OR REPLACE TRIGGER crm_products_org_id BEFORE INSERT OR UPDATE ON crm_products
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('shop_slug');
+
+CREATE OR REPLACE TRIGGER crm_leads_org_id BEFORE INSERT OR UPDATE ON crm_leads
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('shop_slug');
+
+CREATE OR REPLACE TRIGGER crm_quotes_org_id BEFORE INSERT OR UPDATE ON crm_quotes
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('shop_slug');
+
+CREATE OR REPLACE TRIGGER crm_followups_org_id BEFORE INSERT OR UPDATE ON crm_followups
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('shop_slug');
+
+-- A quote item always takes its quote's organization, whatever the insert or update says.
+CREATE OR REPLACE FUNCTION crm_quote_items_org_id() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.org_id := (SELECT org_id FROM crm_quotes WHERE id = NEW.quote_id);
+  IF NEW.org_id IS NULL THEN
+    RAISE EXCEPTION 'a quote item needs a quote with an organization' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+CREATE OR REPLACE TRIGGER crm_quote_items_org_id BEFORE INSERT OR UPDATE ON crm_quote_items
+FOR EACH ROW EXECUTE FUNCTION crm_quote_items_org_id();
+
+-- CRM sends share the messages table with clinic sends. A message always takes its CRM lead's organization, or else
+-- its booking's, whatever the insert or update says. A message with neither is left to the NOT NULL and owner checks.
+CREATE OR REPLACE FUNCTION messages_org_id() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.crm_lead_id IS NOT NULL THEN
+    NEW.org_id := (SELECT org_id FROM crm_leads WHERE id = NEW.crm_lead_id);
+  ELSIF NEW.booking_id IS NOT NULL THEN
+    NEW.org_id := (SELECT org_id FROM bookings WHERE id = NEW.booking_id);
+  ELSE
+    RETURN NEW;
+  END IF;
+  IF NEW.org_id IS NULL THEN
+    RAISE EXCEPTION 'a message needs a booking or CRM lead with an organization' USING ERRCODE = 'foreign_key_violation';
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+CREATE OR REPLACE TRIGGER messages_org_id BEFORE INSERT OR UPDATE ON messages
+FOR EACH ROW EXECUTE FUNCTION messages_org_id();
+
+-- Backfill rows from before org_id, parents first. Slug tables touch only rows still empty (a filled row keeps its
+-- organization, even after a slug rename). Quote items and messages touch only rows that differ from their parent.
+-- A row whose slug matches no organization stays empty, and SET NOT NULL below then stops the migration.
+UPDATE bookings SET org_id = organizations.id FROM organizations
+WHERE bookings.org_id IS NULL AND organizations.slug = bookings.clinic_slug;
+
+UPDATE patient_notes SET org_id = organizations.id FROM organizations
+WHERE patient_notes.org_id IS NULL AND organizations.slug = patient_notes.clinic_slug;
+
+UPDATE crm_products SET org_id = organizations.id FROM organizations
+WHERE crm_products.org_id IS NULL AND organizations.slug = crm_products.shop_slug;
+
+UPDATE crm_leads SET org_id = organizations.id FROM organizations
+WHERE crm_leads.org_id IS NULL AND organizations.slug = crm_leads.shop_slug;
+
+UPDATE crm_quotes SET org_id = organizations.id FROM organizations
+WHERE crm_quotes.org_id IS NULL AND organizations.slug = crm_quotes.shop_slug;
+
+UPDATE crm_followups SET org_id = organizations.id FROM organizations
+WHERE crm_followups.org_id IS NULL AND organizations.slug = crm_followups.shop_slug;
+
+UPDATE crm_quote_items SET org_id = crm_quotes.org_id FROM crm_quotes
+WHERE crm_quote_items.quote_id = crm_quotes.id AND crm_quote_items.org_id IS DISTINCT FROM crm_quotes.org_id;
+
+UPDATE messages SET org_id = crm_leads.org_id FROM crm_leads
+WHERE messages.crm_lead_id = crm_leads.id AND messages.org_id IS DISTINCT FROM crm_leads.org_id;
+
+UPDATE messages SET org_id = bookings.org_id FROM bookings
+WHERE messages.crm_lead_id IS NULL AND messages.booking_id = bookings.id AND messages.org_id IS DISTINCT FROM bookings.org_id;
+
+ALTER TABLE bookings ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE patient_notes ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE crm_products ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE crm_leads ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE crm_quotes ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE crm_followups ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE crm_quote_items ALTER COLUMN org_id SET NOT NULL;
+
+ALTER TABLE messages ALTER COLUMN org_id SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS bookings_org_idx ON bookings (org_id);
+
+CREATE INDEX IF NOT EXISTS messages_org_idx ON messages (org_id);
+
+CREATE INDEX IF NOT EXISTS patient_notes_org_idx ON patient_notes (org_id);
+
+CREATE INDEX IF NOT EXISTS whatsapp_optouts_org_idx ON whatsapp_optouts (org_id);
+
+CREATE INDEX IF NOT EXISTS whatsapp_unreachable_org_idx ON whatsapp_unreachable (org_id);
+
+CREATE INDEX IF NOT EXISTS crm_products_org_idx ON crm_products (org_id);
+
+CREATE INDEX IF NOT EXISTS crm_leads_org_idx ON crm_leads (org_id);
+
+CREATE INDEX IF NOT EXISTS crm_quotes_org_idx ON crm_quotes (org_id);
+
+CREATE INDEX IF NOT EXISTS crm_quote_items_org_idx ON crm_quote_items (org_id);
+
+CREATE INDEX IF NOT EXISTS crm_followups_org_idx ON crm_followups (org_id);
 
 -- The bot's role. NOLOGIN: it has no password and nobody can connect as it. The app switches to it per transaction.
 DO $$
@@ -308,8 +428,8 @@ $$;
 GRANT ogi_bot TO CURRENT_USER;
 
 -- For every table: stop if the app's role does not own it (RLS would then hide rows from the app itself), give ogi_bot
--- SELECT and nothing else, turn RLS on without FORCE, and let ogi_bot see only rows of the business set for the
--- transaction. With app.business_id unset or empty, ogi_bot sees no rows at all.
+-- SELECT and nothing else, turn RLS on without FORCE, and let ogi_bot see only rows of the organization set for the
+-- transaction. With app.org_id unset or empty, ogi_bot sees no rows at all. ogi_bot gets nothing on organizations.
 DO $$
 DECLARE
   t text;
@@ -323,7 +443,7 @@ BEGIN
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I NO FORCE ROW LEVEL SECURITY', t);
     EXECUTE format('DROP POLICY IF EXISTS ogi_bot_read ON %I', t);
-    EXECUTE format('CREATE POLICY ogi_bot_read ON %I FOR SELECT TO ogi_bot USING (business_id = NULLIF(current_setting(%L, true), %L))', t, 'app.business_id', '');
+    EXECUTE format('CREATE POLICY ogi_bot_read ON %I FOR SELECT TO ogi_bot USING (org_id = NULLIF(current_setting(%L, true), %L))', t, 'app.org_id', '');
   END LOOP;
 END
 $$;

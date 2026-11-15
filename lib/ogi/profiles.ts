@@ -1,4 +1,5 @@
 import { clinic, clinicWhatsAppHref } from "@/demos/lotus-clinic/data";
+import { orgForSlug, type OrgId } from "@/lib/orgs";
 import type { ToolName } from "./tools";
 
 /**
@@ -8,8 +9,10 @@ import type { ToolName } from "./tools";
  * website and Ogi never disagree.
  */
 export type OgiProfile = {
-  /** Server-side key. Never sent by the browser as a business id: the browser only names its page. */
+  /** Server-side key: the page's slug. The browser only names its page, never an organization. */
   key: string;
+  /** The organization this page belongs to, found on the server from the page's slug. Every database read uses it. */
+  orgId: OrgId;
   kind: "clinic";
   businessName: string;
   /** The Ogi image for this page (docs/ogi-image-guidelines.html, section 6). */
@@ -30,8 +33,16 @@ export type OgiProfile = {
 export const INFO_TOPICS = ["hours", "address", "contact", "services", "doctor", "visit_types", "how_booking_works"] as const;
 export type InfoTopic = (typeof INFO_TOPICS)[number];
 
+/** The organization for a page's slug, from the server's list. A page with no organization is a startup error. */
+function orgOfPage(slug: string): OrgId {
+  const org = orgForSlug(slug);
+  if (!org) throw new Error(`Ogi page ${slug} has no organization in lib/orgs.ts`);
+  return org.id;
+}
+
 const lotusClinic: OgiProfile = {
   key: "lotus-clinic",
+  orgId: orgOfPage("lotus-clinic"),
   kind: "clinic",
   businessName: clinic.name,
   mascot: "/brand/ogi-clinic.svg",
