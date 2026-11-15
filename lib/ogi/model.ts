@@ -5,15 +5,16 @@ import type { LanguageModel } from "ai";
  * Ogi's one model connector. Everything else talks to the model through `getOgiModel()`, so switching provider or
  * model is configuration, not code:
  *   BOT_MODEL_PROVIDER  "gemini" (default). The only provider wired in v1.
- *   BOT_MODEL           the provider's model id. Default "gemini-3.8-flash", the current stable Gemini Flash model
- *                       on Google's models page (aistudio.google.com/docs/models, checked 15 Nov 2026).
+ *   BOT_MODEL           the provider's model id. Default "gemini-3.5-flash-lite". Measured on the free tier on
+ *                       15 Nov 2026: Ogi replies in 0.7 to 3 s. gemini-3.8-flash took 1.5 to 2 min per reply and
+ *                       gemini-3.5-flash about 14 s, too slow for a chat bubble.
  *   GEMINI_API_KEY      the Google AI Studio key. Missing = no model, and the bubble shows "Ogi is resting".
  *
  * FREE TIER IS FOR DEMOS ONLY. Google's free tier may use requests to improve Google's products and has small daily
  * limits. Real clients and real patient chats must move to a paid tier before launch (docs/onlydevs-bot-plan.md, section 5).
  */
 export const DEFAULT_PROVIDER = "gemini";
-export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 type Env = Record<string, string | undefined>;
 

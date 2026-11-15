@@ -57,18 +57,23 @@ export function buildInstructions(profile: OgiProfile, today: string) {
   ].join("\n");
 }
 
+/** The longest Ogi waits for the model. A slower answer becomes the polite hand-over instead of a hanging chat. */
+export const MODEL_TIMEOUT_MS = 20_000;
+
 export async function runOgi({
   profile,
   role,
   messages,
   model,
   today,
+  timeoutMs = MODEL_TIMEOUT_MS,
 }: {
   profile: OgiProfile;
   role: Role;
   messages: ChatMessage[];
   model: LanguageModel;
   today: string;
+  timeoutMs?: number;
 }): Promise<OgiReply> {
   const last = messages[messages.length - 1];
   if (last?.role === "user" && isEmergency(last.content)) {
@@ -90,6 +95,7 @@ export async function runOgi({
       maxOutputTokens: 500,
       temperature: 0.3,
       maxRetries: 1,
+      abortSignal: AbortSignal.timeout(timeoutMs),
     });
     text = result.text.trim();
     // A tool the model asked for that is not in its set never runs; log it so attacks show up.

@@ -317,6 +317,17 @@ describe("Booking needs the visitor's signed Confirm", () => {
     expect(second).toContain("summary");
   });
 
+  it("gives the polite hand-over when the model is slower than the time limit", async () => {
+    const hanging = new MockLanguageModelV4({
+      doGenerate: (options) =>
+        new Promise((_, reject) => options.abortSignal?.addEventListener("abort", () => reject(options.abortSignal?.reason))),
+    });
+    const started = Date.now();
+    const out = await runOgi({ profile: lotus, role: "visitor", messages: [{ role: "user", content: "What are your timings?" }], model: hanging, today: TODAY, timeoutMs: 50 });
+    expect(out).toEqual({ reply: safeHandOver(lotus), kind: "error" });
+    expect(Date.now() - started).toBeLessThan(5_000);
+  });
+
   it("asks again when the details do not pass the booking form's checks", async () => {
     const model = fakeModel(call("request_visit", { ...visit, date: "2026-10-25" }), say("The clinic is closed on Sundays. Which other day suits you?"));
     const out = await runOgi({ profile: lotus, role: "visitor", messages: [{ role: "user", content: "Sunday please" }], model, today: TODAY });
@@ -338,6 +349,12 @@ describe("Booking needs the visitor's signed Confirm", () => {
     // The same token cannot book twice.
     expect((await confirm({ token: signed.token })).status).toBe(409);
     expect((await all()).length).toBe(before + 1);
+  });
+
+  it("books when the Confirm carries the bubble's real attribution, with null campaign and utm", async () => {
+    const signed = signConfirm("lotus-clinic", { ...pending, name: "Null Attribution" })!;
+    const res = await confirm({ token: signed.token, source: "website", campaign: null, utm: null });
+    expect(res.status).toBe(201);
   });
 
   it("rejects a forged token: edited details, a made-up signature, or another secret", async () => {
@@ -392,8 +409,8 @@ describe("Logs and the model connector", () => {
   });
 
   it("defaults to Gemini Flash and needs GEMINI_API_KEY", () => {
-    expect(DEFAULT_GEMINI_MODEL).toBe("gemini-3.8-flash");
-    expect(ogiModelConfig({})).toMatchObject({ configured: false, provider: "gemini", modelId: "gemini-3.8-flash", reason: "no_key" });
+    expect(DEFAULT_GEMINI_MODEL).toBe("gemini-3.5-flash-lite");
+    expect(ogiModelConfig({})).toMatchObject({ configured: false, provider: "gemini", modelId: "gemini-3.5-flash-lite", reason: "no_key" });
     expect(ogiModelConfig({ BOT_MODEL_PROVIDER: "openai", GEMINI_API_KEY: "x" })).toMatchObject({ configured: false, reason: "unknown_provider" });
     expect(ogiModelConfig({ GEMINI_API_KEY: "x", BOT_MODEL: "gemini-3.6-flash" })).toMatchObject({ configured: true, modelId: "gemini-3.6-flash" });
     expect(getOgiModel).toBeTypeOf("function");

@@ -465,3 +465,9 @@ Append only. Newest at the bottom.
 - 15 Nov 2026: Ogi's mascot is a purple octopus (brand colours only), with a different accessory per page: clinic stethoscope, cafe chef hat, real estate hard hat, logged-in owner glasses and tie. Files: public/brand/ogi.svg and ogi-clinic/-cafe/-realestate/-owner.svg. On a purple chat button, put Ogi on a white or lavender circle (purple on purple disappears).
 - 15 Nov 2026 (supersedes the octopus line above): Ogi's mascot is a cute plush-style octopus, drawn by us from a style reference Abhinav shared: round head, thick deep-purple outline (#3B1A78), soft eight-arm skirt, bean eyes, blush, small smile, and three water bubbles at top right. Brand purples only. Same accessories per page (stethoscope, chef hat, hard hat, glasses and tie). Generated SVGs in public/brand/ogi*.svg.
 - 15 Nov 2026: Ogi's accessories use the lavender scheme (lavender fills, deep-purple #3B1A78 outline, purple details) so they show on the purple body. Abhinav found the dark ink accessories hard to see. Clinic keeps the stethoscope around the neck, redrawn as an outlined lavender tube.
+
+## 2026-11-15 (Ogi version 1)
+
+- Ogi version 1 scope: engine (one Gemini Flash connector, profiles, tools), the chat bubble with plush Ogi on the Lotus clinic website only, clinic visitor skills (answer from the clinic's details, request a visit with a confirm step, hand over to staff), locks 1, 2, 3 and 5, logs, rate limits, attack tests.
+- Abhinav chose option B: the safety base (step 0) comes first: a business id on every table, Postgres row-level security, and a read-only bot database role, before Ogi ships. Migrations run at the final batch deploy, not before.
+- 15 Nov 2026: Ogi's default model is gemini-3.5-flash-lite (measured 0.7 to 3 s per reply on the free tier; gemini-3.8-flash took 1.5 to 2 min). Each model call has a 20-second limit; a slower answer becomes the polite hand-over. BOT_MODEL can still override it.

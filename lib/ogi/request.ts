@@ -31,6 +31,7 @@ export type ChatRequest = z.infer<typeof chatRequestSchema>;
 export const confirmRequestSchema = z.strictObject({
   token: z.string().min(10).max(4000),
   source: z.string().max(40).optional(),
-  campaign: z.string().max(200).optional(),
-  utm: z.record(z.string(), z.string().max(200)).optional(),
+  // readAttribution() gives null for "none", so null must pass (the chat bubble sends exactly what it returns).
+  campaign: z.string().max(200).nullish(),
+  utm: z.record(z.string(), z.string().max(200)).nullish(),
 });
