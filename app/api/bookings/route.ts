@@ -1,13 +1,9 @@
 import type { NextRequest } from "next/server";
-import { HONEYPOT_FIELD, normalisePhone, parseBookingBody, parseDay, validateBooking } from "@/demos/lotus-clinic/booking";
-import { ADMIN_COOKIE, isAdminRequest } from "@/lib/admin/auth";
-import { BOOKING_FLAG_DEFAULTS, CLINIC_SLUG, clinicToday, getStore, type Booking } from "@/lib/bookings";
-import { parseAttribution } from "@/lib/bookings/attribution";
-import { consentNow } from "@/lib/bookings/consent";
+import { isAdminRequest, ADMIN_COOKIE } from "@/lib/admin/auth";
+import { CLINIC_SLUG, clinicToday, getStore } from "@/lib/bookings";
 import { json, NOT_LOGGED_IN } from "@/lib/bookings/http";
+import { submitPublicBooking } from "@/lib/bookings/publicBooking";
 import { withWhatsApp } from "@/lib/bookings/whatsappSummary";
-import { notifyClinic, runAfterResponse } from "@/lib/bookings/notify";
-import { sendBookingMessage } from "@/lib/whatsapp/notify";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 
 /** Saves a booking from the Lotus booking form. Runs the same checks as the form. */
@@ -23,69 +19,9 @@ export async function POST(req: NextRequest) {
     return json({ ok: false, error: "Send the booking as JSON." }, 400);
   }
 
-  const input = parseBookingBody(body);
-  const raw = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-  const today = clinicToday();
-
-  // A bot filled the hidden field. Answer as if it worked, and save nothing.
-  if (typeof raw[HONEYPOT_FIELD] === "string" && raw[HONEYPOT_FIELD].trim() !== "") {
-    const fake: Booking = {
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      clinicSlug: CLINIC_SLUG,
-      name: input.name.trim(),
-      phone: normalisePhone(input.phone) ?? "",
-      visitType: input.visitType,
-      date: input.date,
-      slot: input.slot,
-      reason: input.reason,
-      status: "new",
-      notes: null,
-      wantsNewTime: false,
-      source: "website",
-      campaign: null,
-      utm: null,
-      isDemo: false,
-      ...BOOKING_FLAG_DEFAULTS,
-    };
-    return json({ ok: true, id: fake.id, booking: fake }, 201);
-  }
-
-  const fieldErrors = validateBooking(input, parseDay(today)!);
-  if (Object.keys(fieldErrors).length) {
-    return json({ ok: false, error: "Please check the highlighted fields.", fieldErrors }, 400);
-  }
-
-  // Where the visitor first came from. Re-checked here, and only ever shown on the dashboard.
-  const attribution = parseAttribution(body);
-
-  let booking: Booking;
-  try {
-    booking = await getStore().create({
-      ...attribution,
-      clinicSlug: CLINIC_SLUG,
-      name: input.name.trim(),
-      phone: normalisePhone(input.phone)!,
-      visitType: input.visitType,
-      date: input.date,
-      slot: input.slot,
-      reason: input.reason,
-      // The patient booked under the line CONSENT_TEXT_V1 (validateBooking refuses a request without consent: true).
-      consent: consentNow("website"),
-    });
-  } catch (err) {
-    console.error(`booking save failed: ${err instanceof Error ? err.message : "unknown error"}`);
-    return json({ ok: false, error: "We could not save your booking. Please try again." }, 500);
-  }
-
-  const dashboardUrl = new URL("/clinic/website/admin", req.nextUrl.origin).toString();
-  runAfterResponse(() => notifyClinic(booking, { dashboardUrl }));
-  // WhatsApp alert to the clinic's own number. Skipped with one log line when CLINIC_WHATSAPP is unset.
-  runAfterResponse(() => sendBookingMessage(booking, "clinic_alert"));
-  // "We've received your request": the same words the success screen shows. No buttons.
-  runAfterResponse(() => sendBookingMessage(booking, "request_received"));
-
-  return json({ ok: true, id: booking.id, booking }, 201);
+  // The same service Ogi's Confirm button uses: checks, consent line, save, clinic alert and WhatsApp.
+  const result = await submitPublicBooking(body, { origin: req.nextUrl.origin });
+  return json(result.body, result.status);
 }
 
 /** Bookings this many days back count toward "Bookings by source". */
