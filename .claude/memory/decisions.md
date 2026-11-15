@@ -473,3 +473,10 @@ Append only. Newest at the bottom.
 - 15 Nov 2026: Ogi's default model is gemini-3.5-flash-lite (measured 0.7 to 3 s per reply on the free tier; gemini-3.8-flash took 1.5 to 2 min). Each model call has a 20-second limit; a slower answer becomes the polite hand-over. BOT_MODEL can still override it.
 - 15 Nov 2026: design the database for many clients from now on, even though only demos exist. Several clients may use the same product (two clinics on the clinic website), each with its own organization. Later, onlydevs super admins will onboard clients from an onboarding page. That page, users and roles are NOT built now; the database design must simply not block them.
 - 15 Nov 2026: before the first real client signs up, the app's own door must get the same organization lock as Ogi's, so the database checks every read, not only Ogi's. Until then the app keeps clients apart in code only.
+- 15 Nov 2026 (lunch): Abhinav said "make some decisions, make it ready, deployed and all", then list the decisions for him to change. This is his go-ahead for this batch's final deploy (Ogi safety base, Ogi v1, organizations/org_id, the design pages). Decisions taken in his absence are logged below, marked "(lunch decision)".
+- (lunch decision) Fixed organization IDs: Lotus org_7f3k2a, Kalyani org_2m9qd1 (the IDs shown on the design page).
+- (lunch decision) The STOP and no-WhatsApp lists stay shared, labelled with the Lotus organization; per-organization lists wait for Abhinav's answer.
+- (lunch decision) No OGI_CONFIRM_SECRET added on Vercel; Confirm tokens use the existing ADMIN_SECRET through a labelled key. No BOT_MODEL on Vercel; the code default gemini-3.5-flash-lite is used.
+- (lunch decision) Demo seeds were not re-run; the live demo data stays as it was.
+- (lunch decision) A real Confirm was not pressed on production, because it would create a real booking row; Confirm was tested locally on test data only.
+- (lunch decision) The halted CRM dashboard work stays uncommitted and was not deployed (deploy ran from a clean copy of main).
