@@ -1,4 +1,6 @@
-# onlydevs bot: plan (draft, 15 Nov 2026)
+# Ogi, the onlydevs bot: plan (draft, 15 Nov 2026)
+
+The bot is named **Ogi** (decided 15 Nov 2026). Mascot: `public/brand/ogi.svg`.
 
 One assistant, built once, that any business switches on with its own details.
 It has two modes on the same engine:
