@@ -449,3 +449,12 @@ Append only. Newest at the bottom.
 - Demo data: lib/bookings/demoSeed.ts, seeded PRNG, 45 bookings for 14 made-up patients on 90000 2xxxx numbers, relative to today (India time); exactly 3 need action. The memory store seeds itself on first use. Any send for an is_demo booking or a 90000 2xxxx number never reaches Twilio or Meta: one log line and a message row with template "skipped (demo)" (shown as "WhatsApp: skipped (demo)").
 - Staff bookings are real rows (is_demo false), so Reset demo data keeps them.
 - Run at the final deploy, in order, from a machine that resolves neon.tech: `npm run db:migrate` (adds the columns, widens bookings_status_check, creates patient_notes), then `npm run db:seed-clinic-demo`. Migrate BEFORE deploying: the bookings queries now select source, campaign, utm and is_demo. Optional on Vercel: DEMO_RESET_DISABLED=1 to turn the reset button off.
+
+## 2026-11-15 (onlydevs bot)
+
+- Abhinav wants one plug-and-play "onlydevs bot" for every industry (clinic, cafe, real estate, ticketing, tiles), not a per-client bot. Two modes on one engine: customer mode (answers from that business's knowledge, book, manage own booking, orders/leads/documents per industry, hand over to staff) and owner mode (answers the owner's questions about the business, Monday summary, alerts, weekly suggestion).
+- Owner answers read the database through a metrics catalogue stored as data (each measure = table, calculation, date field, filters, owner-only flag). No free-form SQL by the model. Adding a field later = add the column + one catalogue entry; no retraining, no deploy. Customer knowledge (FAQs, prices, menu) is plain data: edits apply on the next message.
+- Future fields agreed "as we go, not now": clinic fee/payment/doctor, cafe stored orders and item cost, real estate unit price, ticketing refunds/fees, tiles cost price, ad spend per source.
+- Meta policy checked 15 Nov: general-purpose AI assistants banned on the WhatsApp Business API since 15 Jan 2026; business-specific bots for questions, bookings and support allowed. Bot stays business-only.
+- Model: plan defaults to claude-opus-5-5 (low effort for customer chat); claude-haiku-5-5 for customer chat is offered as Abhinav's cost decision, after a quality check. Prompt caching on each business's profile + knowledge + tools.
+- Plan written to docs/onlydevs-bot-plan.md. Nothing built.
