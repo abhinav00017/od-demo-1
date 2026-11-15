@@ -33,6 +33,7 @@ Templates to submit after the Twilio upgrade (docs/whatsapp-templates.md, "The f
 Dropped: exact-time picker, clinic hours settings, "Confirm by" choice, clinic-proposes-a-time flow, "I'll be there" button, the join opt-in step.
 
 ## Needs Abhinav (not code)
+- Before the onlydevs bot's first deploy: an Anthropic API key on Vercel as ANTHROPIC_API_KEY (production, sensitive), added by Abhinav himself from console.anthropic.com, with billing and a monthly spend limit. Never pasted in chat. Local dev reads it from .env.local or an `ant auth login` profile.
 - Upgrade Twilio off trial (~$20 credit) and submit the two templates with buttons, so the live demo sends the promised wording instead of Twilio's sample text. Trial ends around 20 Nov 2026.
 - Final deploy: Abhinav said "deploy" on 10 Nov, then chose "wait for all": deploy everything together once the admin redesign (item 2) and items 3-12 are built and verified. Do NOT ship pieces earlier. Then: clean-worktree gates, migrate + seeds on Neon (Cloudflare DNS runner), deploy, live check.
 
