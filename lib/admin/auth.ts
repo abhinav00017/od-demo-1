@@ -3,13 +3,13 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 /** A login lasts 12 hours. */
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 /** Password accepted in `next dev` when the password env var is missing. Never in production. */
-export const DEV_PASSWORD = "demo";
+export const DEV_PASSWORD = "testpass";
 
 type Env = Record<string, string | undefined>;
 
 /**
  * One password-protected area: its cookie, the word signed into the cookie, and the env vars it reads.
- * The scope keeps a cookie from one area from opening another, even when both run on the "demo" password.
+ * The scope keeps a cookie from one area from opening another, even when both run on the "testpass" password.
  */
 export type AuthArea = { cookie: string; scope: string; passwordVar: string; secretVar: string };
 
@@ -17,6 +17,8 @@ export type AuthArea = { cookie: string; scope: string; passwordVar: string; sec
 export const LOTUS_AUTH: AuthArea = { cookie: "lotus_admin", scope: "admin", passwordVar: "ADMIN_PASSWORD", secretVar: "ADMIN_SECRET" };
 /** The tile showroom CRM. */
 export const CRM_AUTH: AuthArea = { cookie: "crm_session", scope: "crm", passwordVar: "CRM_ADMIN_PASSWORD", secretVar: "CRM_ADMIN_SECRET" };
+/** The Solstice cafe owner's list of event enquiries. */
+export const CAFE_AUTH: AuthArea = { cookie: "cafe_session", scope: "cafe", passwordVar: "CAFE_ADMIN_PASSWORD", secretVar: "CAFE_ADMIN_SECRET" };
 
 export const ADMIN_COOKIE = LOTUS_AUTH.cookie;
 
@@ -26,7 +28,7 @@ export type AdminConfig =
 
 /**
  * The area's password env var turns it on. Its secret var signs the cookie; it falls back to the password.
- * Without the password, development accepts "demo" and production stays off.
+ * Without the password, development accepts "testpass" and production stays off.
  */
 export function authConfig(area: AuthArea, env: Env = process.env): AdminConfig {
   const password = env[area.passwordVar];

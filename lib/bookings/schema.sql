@@ -245,10 +245,13 @@ CREATE TABLE IF NOT EXISTS organizations (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- The two demo organizations. lib/orgs.ts lists the same rows; a test checks they match.
+-- The demo organizations. lib/orgs.ts lists the same rows; a test checks they match.
+-- The Solstice cafe was added with event enquiries (25 Nov 2026). On a database that already has the first two,
+-- a rerun inserts only the new row.
 INSERT INTO organizations (id, slug, name, product) VALUES
   ('org_7f3k2a', 'lotus-clinic', 'Lotus Women''s Clinic', 'clinic'),
-  ('org_2m9qd1', 'kalyani-tiles', 'Kalyani Tiles', 'tiles')
+  ('org_2m9qd1', 'kalyani-tiles', 'Kalyani Tiles', 'tiles'),
+  ('org_4v8c1n', 'solstice-cafe', 'Solstice Roastery & Bakehouse', 'cafe')
 ON CONFLICT DO NOTHING;
 
 -- org_id on every table. Empty at first on tables that have rows; the backfill below fills it, then it becomes NOT NULL.
@@ -413,6 +416,76 @@ CREATE INDEX IF NOT EXISTS crm_quote_items_org_idx ON crm_quote_items (org_id);
 
 CREATE INDEX IF NOT EXISTS crm_followups_org_idx ON crm_followups (org_id);
 
+-- Cafe event enquiries (25 Nov 2026): a visitor asks to book The Courtyard or The Conservatory for a party or a
+-- small function. The cafe owner sees them in a password-protected list and moves them new, contacted, confirmed or
+-- declined. org_id comes from cafe_slug through the same trigger as the other slug tables, so code never sets it.
+-- A new table, so org_id is NOT NULL from the start. guests is capped at 40, the larger venue's capacity; the API
+-- checks each venue's own range. Every statement is safe to rerun.
+CREATE TABLE IF NOT EXISTS cafe_event_enquiries (
+  id                uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  cafe_slug         text        NOT NULL,
+  org_id            text        NOT NULL REFERENCES organizations (id),
+  venue             text        NOT NULL CHECK (venue IN ('courtyard', 'conservatory')),
+  event_type        text        NOT NULL CHECK (event_type IN ('birthday', 'small_function', 'corporate', 'other')),
+  date              date        NOT NULL,
+  slot              text        NOT NULL,
+  guests            integer     NOT NULL CHECK (guests BETWEEN 1 AND 40),
+  name              text        NOT NULL,
+  phone             text        NOT NULL CHECK (phone ~ '^[6-9][0-9]{9}$'),
+  notes             text        NOT NULL DEFAULT '',
+  status            text        NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'confirmed', 'declined')),
+  status_updated_at timestamptz,
+  -- Where the visitor first came from (first-touch attribution, as on bookings). Display only. The public form and
+  -- Ogi may only claim these sources; anything else becomes website.
+  source            text        NOT NULL DEFAULT 'website' CHECK (source IN ('website', 'google_ads', 'meta_ads', 'google_maps', 'google_search', 'whatsapp')),
+  campaign          text,
+  utm               jsonb,
+  -- How it was sent: the venue page's form, or Ogi's Confirm button.
+  channel           text        NOT NULL DEFAULT 'form' CHECK (channel IN ('form', 'ogi')),
+  -- Sample data from the demo seed. The seed deletes and rewrites only these rows.
+  is_demo           boolean     NOT NULL DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS cafe_event_enquiries_slug_created_idx ON cafe_event_enquiries (cafe_slug, created_at);
+
+CREATE INDEX IF NOT EXISTS cafe_event_enquiries_org_idx ON cafe_event_enquiries (org_id);
+
+CREATE OR REPLACE TRIGGER cafe_event_enquiries_org_id BEFORE INSERT OR UPDATE ON cafe_event_enquiries
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('cafe_slug');
+
+-- Cafe orders (25 Nov 2026): orders from the website's order tray (saved before WhatsApp opens), plus sample WhatsApp
+-- and walk-in orders from the demo seed. Owner Ogi reads them, read-only, for best sellers and sales.
+-- items is a jsonb array of {id, name, category, qty, unitPrice}: an order is written once and never edited, the menu
+-- lives in code (demos/solstice-cafe/data.ts) not in a table, and every read wants the whole order, so one row per order
+-- is simpler than an order_items table. The server copies name and unit price from the menu and works out item_count
+-- and total itself; the browser's prices are never read. org_id comes from cafe_slug through the same trigger.
+CREATE TABLE IF NOT EXISTS cafe_orders (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  cafe_slug   text        NOT NULL,
+  org_id      text        NOT NULL REFERENCES organizations (id),
+  channel     text        NOT NULL CHECK (channel IN ('website', 'whatsapp', 'walk_in')),
+  items       jsonb       NOT NULL CHECK (jsonb_typeof(items) = 'array' AND jsonb_array_length(items) BETWEEN 1 AND 20),
+  item_count  integer     NOT NULL CHECK (item_count BETWEEN 1 AND 400),
+  -- Rupees, incl. GST.
+  total       integer     NOT NULL CHECK (total >= 0),
+  fulfilment  text        CHECK (fulfilment IN ('pickup', 'delivery')),
+  name        text,
+  phone       text        CHECK (phone ~ '^[6-9][0-9]{9}$'),
+  -- First-touch source of a website order, as on enquiries. Display only.
+  source      text        CHECK (source IN ('website', 'google_ads', 'meta_ads', 'google_maps', 'google_search', 'whatsapp')),
+  -- Sample data from the demo seed. The seed deletes and rewrites only these rows.
+  is_demo     boolean     NOT NULL DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS cafe_orders_slug_created_idx ON cafe_orders (cafe_slug, created_at);
+
+CREATE INDEX IF NOT EXISTS cafe_orders_org_idx ON cafe_orders (org_id);
+
+CREATE OR REPLACE TRIGGER cafe_orders_org_id BEFORE INSERT OR UPDATE ON cafe_orders
+FOR EACH ROW EXECUTE FUNCTION org_id_from_slug('cafe_slug');
+
 -- The bot's role. NOLOGIN: it has no password and nobody can connect as it. The app switches to it per transaction.
 DO $$
 BEGIN
@@ -434,7 +507,7 @@ DO $$
 DECLARE
   t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['bookings', 'messages', 'patient_notes', 'whatsapp_optouts', 'whatsapp_unreachable', 'crm_products', 'crm_leads', 'crm_quotes', 'crm_quote_items', 'crm_followups'] LOOP
+  FOREACH t IN ARRAY ARRAY['bookings', 'messages', 'patient_notes', 'whatsapp_optouts', 'whatsapp_unreachable', 'crm_products', 'crm_leads', 'crm_quotes', 'crm_quote_items', 'crm_followups', 'cafe_event_enquiries', 'cafe_orders'] LOOP
     IF NOT pg_has_role(current_user, (SELECT relowner FROM pg_class WHERE oid = t::regclass), 'USAGE') THEN
       RAISE EXCEPTION 'table % is not owned by %, so row-level security would hide its rows from the app', t, current_user;
     END IF;

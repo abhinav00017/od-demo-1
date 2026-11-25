@@ -137,6 +137,17 @@ describe("scopeMemoryRows (the memory-store path, same rules as the org_id trigg
     expect(scopeMemoryRows(orgId(KALYANI), "crm_quote_items", items)).toEqual([]);
   });
 
+  it("gives the Solstice cafe its own event enquiries and nobody else's", () => {
+    const enquiries = [
+      { id: "e1", cafeSlug: "solstice-cafe" },
+      { id: "e2", cafeSlug: "solstice-cafe", orgId: LOTUS },
+      { id: "e3", cafeSlug: "other-cafe" },
+    ];
+    expect(scopeMemoryRows(orgId("org_4v8c1n"), "cafe_event_enquiries", enquiries).map((e) => e.id)).toEqual(["e1", "e2"]);
+    expect(scopeMemoryRows(orgId(LOTUS), "cafe_event_enquiries", enquiries)).toEqual([]);
+    expect(scopeMemoryRows(orgId(KALYANI), "cafe_event_enquiries", enquiries)).toEqual([]);
+  });
+
   it("puts the WhatsApp lists under Lotus by default, like the column default", () => {
     const optouts = [{ phone: "9000000001" }, { phone: "9000000002", orgId: KALYANI }, { phone: "9000000003", orgId: "org_unknown" }];
     expect(scopeMemoryRows(orgId(LOTUS), "whatsapp_optouts", optouts).map((r) => r.phone)).toEqual(["9000000001"]);
@@ -149,6 +160,6 @@ describe("scopeMemoryRows (the memory-store path, same rules as the org_id trigg
     expect(copy).not.toBe(bookings[0]);
     expect(() => scopeMemoryRows("org_9x4hb7" as OrgId, "bookings", bookings)).toThrow(UnknownOrgError);
     expect(() => scopeMemoryRows(id, "users" as "bookings", bookings)).toThrow(BotSqlError);
-    expect(BOT_TABLES).toHaveLength(10);
+    expect(BOT_TABLES).toHaveLength(12);
   });
 });

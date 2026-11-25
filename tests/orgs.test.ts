@@ -26,6 +26,7 @@ describe("the organization list (lib/orgs.ts)", () => {
     expect(seededOrgs()).toEqual([
       { id: "org_7f3k2a", slug: "lotus-clinic", name: "Lotus Women's Clinic", product: "clinic" },
       { id: "org_2m9qd1", slug: "kalyani-tiles", name: "Kalyani Tiles", product: "tiles" },
+      { id: "org_4v8c1n", slug: "solstice-cafe", name: "Solstice Roastery & Bakehouse", product: "cafe" },
     ]);
   });
 
@@ -40,6 +41,7 @@ describe("the organization list (lib/orgs.ts)", () => {
   it("finds an organization by slug, and nothing for an unknown or non-string slug", () => {
     expect(orgForSlug("lotus-clinic")).toEqual({ id: "org_7f3k2a", slug: "lotus-clinic", name: "Lotus Women's Clinic", product: "clinic" });
     expect(orgForSlug("kalyani-tiles")?.id).toBe("org_2m9qd1");
+    expect(orgForSlug("solstice-cafe")?.id).toBe("org_4v8c1n");
     for (const raw of ["sunrise-clinic", "org_7f3k2a", "Lotus-Clinic", "", "__proto__", null, undefined, 1]) expect(orgForSlug(raw), String(raw)).toBeUndefined();
   });
 

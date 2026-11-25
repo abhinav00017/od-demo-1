@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SolsticeSite } from "@/demos/solstice-cafe/SolsticeSite";
 import {
@@ -52,7 +52,8 @@ describe("Solstice cafe demo", () => {
 
   it("every image has alt text and goes through next/image", () => {
     const { container } = renderSite();
-    const imgs = [...container.querySelectorAll("img")];
+    // Ogi's button face is decorative (the button has its own name) and an unoptimised SVG, like on the clinic site.
+    const imgs = [...container.querySelectorAll("img")].filter((img) => !img.closest("[data-ogi-button]"));
     expect(imgs.length).toBeGreaterThanOrEqual(16);
     for (const img of imgs) {
       expect(img.getAttribute("alt")?.trim()).toBeTruthy();
@@ -83,6 +84,35 @@ describe("Solstice cafe demo", () => {
     expect(text).toContain("• 1x Classic Osmania Butter Croissant — ₹290");
     expect(text).toContain("Total: ₹970");
     fireEvent.keyDown(window, { key: "Escape" });
+  });
+
+  it("Send Order saves the tray first (ids and quantities only), then opens WhatsApp with the order reference", async () => {
+    const tab = { opener: {} as unknown, location: { href: "" } };
+    const open = vi.spyOn(window, "open").mockImplementation(() => tab as unknown as Window);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(JSON.stringify({ ok: true, reference: "OR-1A2B3C4D", total: 630 }), { status: 201 }));
+    renderSite();
+    fireEvent.click(screen.getAllByRole("button", { name: /Order on WhatsApp/ })[0]);
+    const tray = screen.getByRole("complementary", { name: "WhatsApp Order Tray" });
+    fireEvent.click(within(tray).getByRole("link", { name: /Send Order to Solstice WhatsApp/ }));
+    expect(open).toHaveBeenCalledTimes(1); // inside the click, so pop-up blockers allow it
+    await waitFor(() => expect(tab.location.href).toContain("wa.me/917382130063"));
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/cafe/orders");
+    const sent = JSON.parse(init.body as string) as { items: Record<string, unknown>[] };
+    expect(sent.items).toEqual([{ id: "araku-pour-over", qty: 1 }, { id: "osmania-salted-croissant", qty: 1 }]);
+    expect(new URL(tab.location.href).searchParams.get("text")).toContain("Order ref: OR-1A2B3C4D");
+    expect(tab.opener).toBeNull();
+  });
+
+  it("Send Order still opens WhatsApp, without a reference, when the save fails", async () => {
+    const tab = { opener: {} as unknown, location: { href: "" } };
+    vi.spyOn(window, "open").mockImplementation(() => tab as unknown as Window);
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => Promise.reject(new Error("offline")));
+    renderSite();
+    fireEvent.click(screen.getAllByRole("button", { name: /Order on WhatsApp/ })[0]);
+    fireEvent.click(within(screen.getByRole("complementary", { name: "WhatsApp Order Tray" })).getByRole("link", { name: /Send Order to Solstice WhatsApp/ }));
+    await waitFor(() => expect(tab.location.href).toContain("wa.me/917382130063"));
+    expect(new URL(tab.location.href).searchParams.get("text")).not.toContain("Order ref");
   });
 
   it("the reservation form checks the mobile number, then opens WhatsApp with the request", () => {

@@ -1,6 +1,6 @@
 /**
- * Creates the bookings, messages, patient_notes, whatsapp_optouts, whatsapp_unreachable and crm_* tables, their indexes and
- * later columns, from lib/bookings/schema.sql. Also the organizations table (two seeded rows), org_id on every table
+ * Creates the bookings, messages, patient_notes, whatsapp_optouts, whatsapp_unreachable, crm_*, cafe_event_enquiries and cafe_orders tables, their indexes and
+ * later columns, from lib/bookings/schema.sql. Also the organizations table (three seeded rows), org_id on every table
  * (filled by the database's own triggers), the read-only ogi_bot role (no login), and row-level security.
  * Safe to run more than once: statements are IF NOT EXISTS, CREATE OR REPLACE, ON CONFLICT DO NOTHING, SET NOT NULL,
  * DO blocks that check first, or grants; the backfills (view tokens, consent on old website bookings, org_id) only
@@ -37,7 +37,7 @@ async function main() {
     await sql.query(statement);
     console.log(`ok: ${statement.split("\n")[0]}`);
   }
-  for (const table of ["organizations", "bookings","messages", "patient_notes", "whatsapp_optouts", "whatsapp_unreachable", "crm_products", "crm_leads", "crm_quotes", "crm_quote_items", "crm_followups"]) {
+  for (const table of ["organizations", "bookings","messages", "patient_notes", "whatsapp_optouts", "whatsapp_unreachable", "crm_products", "crm_leads", "crm_quotes", "crm_quote_items", "crm_followups", "cafe_event_enquiries", "cafe_orders"]) {
     const [{ count }] = (await sql.query(`SELECT count(*)::int AS count FROM ${table}`)) as { count: number }[];
     console.log(`${table} table ready, ${count} rows`);
   }

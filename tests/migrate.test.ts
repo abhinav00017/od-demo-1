@@ -74,7 +74,17 @@ describe("schema.sql", () => {
       "UPDATE messages SET org_id = crm_leads.org_id FROM crm_leads",
       "UPDATE messages SET org_id = bookings.org_id FROM bookings",
       ...TRIGGER_TABLES.map((t) => `ALTER TABLE ${t} ALTER COLUMN org_id SET NOT NULL`),
-      ...TABLES.map((t) => `CREATE INDEX IF NOT EXISTS ${t}_org_idx ON ${t} (org_id)`),
+      ...TABLES.filter((t) => t !== "cafe_event_enquiries" && t !== "cafe_orders").map((t) => `CREATE INDEX IF NOT EXISTS ${t}_org_idx ON ${t} (org_id)`),
+      // Cafe event enquiries (25 Nov 2026): a new table born with org_id, after the organizations and the slug trigger.
+      "CREATE TABLE IF NOT EXISTS cafe_event_enquiries (",
+      "CREATE INDEX IF NOT EXISTS cafe_event_enquiries_slug_created_idx ON cafe_event_enquiries (cafe_slug, created_at)",
+      "CREATE INDEX IF NOT EXISTS cafe_event_enquiries_org_idx ON cafe_event_enquiries (org_id)",
+      "CREATE OR REPLACE TRIGGER cafe_event_enquiries_org_id BEFORE INSERT OR UPDATE ON cafe_event_enquiries",
+      // Cafe orders (25 Nov 2026): also born with org_id, same slug trigger.
+      "CREATE TABLE IF NOT EXISTS cafe_orders (",
+      "CREATE INDEX IF NOT EXISTS cafe_orders_slug_created_idx ON cafe_orders (cafe_slug, created_at)",
+      "CREATE INDEX IF NOT EXISTS cafe_orders_org_idx ON cafe_orders (org_id)",
+      "CREATE OR REPLACE TRIGGER cafe_orders_org_id BEFORE INSERT OR UPDATE ON cafe_orders",
       "DO $$",
       "GRANT ogi_bot TO CURRENT_USER",
       "DO $$",
@@ -156,6 +166,28 @@ describe("schema.sql", () => {
     // CRM tables come before the messages columns that point at them.
     const leadsAt = statements.indexOf(table("crm_leads"));
     expect(statements.findIndex((s) => s.includes("ADD COLUMN IF NOT EXISTS crm_lead_id"))).toBeGreaterThan(leadsAt);
+  });
+
+  it("creates cafe_event_enquiries with org_id from the start, the agreed checks, and the slug trigger", () => {
+    const create = statements.find((s) => s.startsWith("CREATE TABLE IF NOT EXISTS cafe_event_enquiries ("))!;
+    expect(create).toMatch(/org_id\s+text\s+NOT NULL REFERENCES organizations \(id\)/);
+    expect(create).toContain("CHECK (venue IN ('courtyard', 'conservatory'))");
+    expect(create).toContain("CHECK (event_type IN ('birthday', 'small_function', 'corporate', 'other'))");
+    expect(create).toContain("CHECK (status IN ('new', 'contacted', 'confirmed', 'declined'))");
+    expect(create).toContain("CHECK (guests BETWEEN 1 AND 40)");
+    expect(create).toContain("CHECK (phone ~ '^[6-9][0-9]{9}$')");
+    // Where each enquiry came from: only the public sources (as the clinic's public form), form or Ogi, and demo rows.
+    expect(create).toContain("source            text        NOT NULL DEFAULT 'website' CHECK (source IN ('website', 'google_ads', 'meta_ads', 'google_maps', 'google_search', 'whatsapp'))");
+    expect(create).toContain("channel           text        NOT NULL DEFAULT 'form' CHECK (channel IN ('form', 'ogi'))");
+    expect(create).toMatch(/utm\s+jsonb/);
+    expect(create).toMatch(/is_demo\s+boolean\s+NOT NULL DEFAULT false/);
+    const trigger = statements.find((s) => s.startsWith("CREATE OR REPLACE TRIGGER cafe_event_enquiries_org_id"))!;
+    expect(trigger).toContain("EXECUTE FUNCTION org_id_from_slug('cafe_slug')");
+    // The table comes after the slug function it uses, and before the RLS block that names it.
+    const fnAt = statements.findIndex((s) => s.startsWith("CREATE OR REPLACE FUNCTION org_id_from_slug"));
+    const rlsAt = statements.findIndex((s) => s.includes("ENABLE ROW LEVEL SECURITY"));
+    expect(statements.indexOf(create)).toBeGreaterThan(fnAt);
+    expect(statements.indexOf(trigger)).toBeLessThan(rlsAt);
   });
 
   it("keeps each DO block and function body whole, so Neon gets it as one statement", () => {

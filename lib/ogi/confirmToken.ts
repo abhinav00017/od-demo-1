@@ -22,14 +22,33 @@ export const pendingVisitSchema = z.strictObject({
 });
 export type PendingVisit = z.infer<typeof pendingVisitSchema>;
 
-const payloadSchema = z.strictObject({
+/**
+ * A cafe event enquiry, already checked by the enquiry schema (lib/cafeEvents/validation.ts) when it was signed.
+ * Confirm runs that schema again before saving, so a token can never carry something the form would refuse.
+ */
+export const pendingEnquirySchema = z.strictObject({
+  venue: z.enum(["courtyard", "conservatory"]),
+  eventType: z.enum(["birthday", "small_function", "corporate", "other"]),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  slot: z.string().min(1).max(20),
+  guests: z.number().int().min(1).max(40),
+  name: z.string().min(2).max(80),
+  phone: z.string().regex(/^[6-9]\d{9}$/),
+  notes: z.string().max(500),
+});
+export type PendingEnquiry = z.infer<typeof pendingEnquirySchema>;
+
+const common = {
   v: z.literal(1),
   page: z.string().max(64),
-  visit: pendingVisitSchema,
   exp: z.number().int(),
   nonce: z.string().min(16).max(64),
-});
+};
+
+/** A token carries exactly one thing to confirm: a clinic visit or a cafe event enquiry. */
+const payloadSchema = z.union([z.strictObject({ ...common, visit: pendingVisitSchema }), z.strictObject({ ...common, enquiry: pendingEnquirySchema })]);
 type Payload = z.infer<typeof payloadSchema>;
+type Item = { visit: PendingVisit } | { enquiry: PendingEnquiry };
 
 type Env = Record<string, string | undefined>;
 
@@ -52,12 +71,22 @@ function sign(key: Buffer, body: string) {
   return createHmac("sha256", key).update(body).digest("base64url");
 }
 
-export function signConfirm(page: string, visit: PendingVisit, { now = Date.now(), env }: { now?: number; env?: Env } = {}) {
+function signItem(page: string, item: Item, { now = Date.now(), env }: { now?: number; env?: Env } = {}) {
   const key = signingKey(env);
   if (!key) return undefined;
-  const payload: Payload = { v: 1, page, visit, exp: now + CONFIRM_TTL_MS, nonce: randomBytes(16).toString("base64url") };
+  const payload = { v: 1, page, ...item, exp: now + CONFIRM_TTL_MS, nonce: randomBytes(16).toString("base64url") } as Payload;
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return { token: `${body}.${sign(key, body)}`, expiresAt: payload.exp };
+}
+
+/** Signs a clinic visit for the Confirm button. */
+export function signConfirm(page: string, visit: PendingVisit, opts: { now?: number; env?: Env } = {}) {
+  return signItem(page, { visit }, opts);
+}
+
+/** Signs a cafe event enquiry for the Confirm button. Same key, lifetime and one-use nonce as a visit. */
+export function signEnquiryConfirm(page: string, enquiry: PendingEnquiry, opts: { now?: number; env?: Env } = {}) {
+  return signItem(page, { enquiry }, opts);
 }
 
 export type VerifyResult = { ok: true; payload: Payload } | { ok: false; reason: "invalid" | "expired" };

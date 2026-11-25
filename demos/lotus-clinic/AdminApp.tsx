@@ -56,7 +56,7 @@ function Login({ devPassword, onDone }: { devPassword: boolean; onDone: () => vo
       <p className="mt-1.5">Enter the clinic password to see bookings.</p>
       {devPassword ? (
         <p className="mt-4 rounded-2xl bg-lotus-wash p-4 text-sm text-lotus-text">
-          Development mode: ADMIN_PASSWORD is not set, so the password is <strong>demo</strong>.
+          Development mode: ADMIN_PASSWORD is not set, so the password is <strong>testpass</strong>.
         </p>
       ) : null}
       <label htmlFor={`${id}-pw`} className="mt-5 block font-medium text-lotus-text">

@@ -11,7 +11,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed-crm": "tsx scripts/seed-crm.ts",
-    "db:seed-clinic-demo": "tsx scripts/seed-clinic-demo.ts"
+    "db:seed-clinic-demo": "tsx scripts/seed-clinic-demo.ts",
+    "db:seed-cafe-demo": "tsx scripts/seed-cafe-demo.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.121",

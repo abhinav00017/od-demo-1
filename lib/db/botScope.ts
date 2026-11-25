@@ -31,6 +31,8 @@ export const BOT_TABLES = [
   "crm_quotes",
   "crm_quote_items",
   "crm_followups",
+  "cafe_event_enquiries",
+  "cafe_orders",
 ] as const;
 
 export type BotTable = (typeof BOT_TABLES)[number];
@@ -124,6 +126,9 @@ function memoryOrgOf(table: BotTable, row: MemoryRow, parents: MemoryParents): s
     case "crm_quotes":
     case "crm_followups":
       return orgForSlug(row.shopSlug)?.id;
+    case "cafe_event_enquiries":
+    case "cafe_orders":
+      return orgForSlug(row.cafeSlug)?.id;
     case "crm_quote_items":
       return parentOrg("crm_quotes", row.quoteId, parents);
     case "messages": {

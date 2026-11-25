@@ -213,7 +213,7 @@ describe("admin login", () => {
   it("is off in production without ADMIN_PASSWORD", async () => {
     vi.stubEnv("ADMIN_PASSWORD", "");
     vi.stubEnv("NODE_ENV", "production");
-    expect((await login(req("/api/admin/login", { method: "POST", body: { password: "demo" } }))).status).toBe(503);
+    expect((await login(req("/api/admin/login", { method: "POST", body: { password: "testpass" } }))).status).toBe(503);
     expect(await (await session(req("/api/admin/session"))).json()).toMatchObject({ configured: false, authed: false });
   });
 
@@ -222,6 +222,6 @@ describe("admin login", () => {
     vi.stubEnv("ADMIN_SECRET", "");
     vi.stubEnv("NODE_ENV", "development");
     expect(await (await session(req("/api/admin/session"))).json()).toMatchObject({ configured: true, devPassword: true });
-    expect((await login(req("/api/admin/login", { method: "POST", body: { password: "demo" } }))).status).toBe(200);
+    expect((await login(req("/api/admin/login", { method: "POST", body: { password: "testpass" } }))).status).toBe(200);
   });
 });

@@ -153,8 +153,8 @@ describe("Lock 1: the server picks the business and the role", () => {
 });
 
 describe("Lock 2: tools per role, deny by default", () => {
-  it("has only the visitor role in v1, with only visitor tools", () => {
-    expect(ROLES).toEqual(["visitor"]);
+  it("has the visitor role and the owner role; the clinic visitor gets only visitor tools", () => {
+    expect(ROLES).toEqual(["visitor", "owner"]);
     expect(allowedTools("visitor", lotus).sort()).toEqual(["clinic_info", "hand_over", "request_visit"]);
     for (const name of allowedTools("visitor", lotus)) expect(name).not.toMatch(/sales|revenue|metric|owner|admin|report|patients|bookings_list|export/);
   });

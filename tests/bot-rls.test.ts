@@ -16,11 +16,15 @@ const statements = schemaStatements(readFileSync(path.join(process.cwd(), "lib/b
 const TABLES = [...BOT_TABLES];
 const LOTUS = "org_7f3k2a";
 const KALYANI = "org_2m9qd1";
+const SOLSTICE = "org_4v8c1n";
 /** Test-only organizations. Not in schema.sql's seed, and not in lib/orgs.ts, so the helper refuses them. */
 const SUNRISE = "org_9x4hb7";
 const SECOND_SHOP = "org_5t7wq3";
 const CLINIC_TABLES: BotTable[] = ["bookings", "messages", "patient_notes", "whatsapp_optouts", "whatsapp_unreachable"];
 const CRM_TABLES: BotTable[] = ["crm_products", "crm_leads", "crm_quotes", "crm_quote_items", "crm_followups"];
+const CAFE_TABLES: BotTable[] = ["cafe_event_enquiries", "cafe_orders"];
+/** The organization that owns a table's demo rows. */
+const ownerOf = (t: BotTable) => (CRM_TABLES.includes(t) ? KALYANI : CAFE_TABLES.includes(t) ? SOLSTICE : LOTUS);
 /** Where the old schema ends: everything before this statement is what Neon runs today. */
 const ORGS_AT = statements.findIndex((s) => s.startsWith("CREATE TABLE IF NOT EXISTS organizations"));
 
@@ -77,8 +81,12 @@ async function snapshot(db: PGlite) {
   return out;
 }
 
-/** Inserts rows the way the app does: never with org_id. The triggers and defaults fill it. */
-async function insertDemoRows(db: PGlite) {
+const CAFE_ENQUIRY = `INSERT INTO cafe_event_enquiries (cafe_slug, venue, event_type, date, slot, guests, name, phone) VALUES ('solstice-cafe', 'courtyard', 'birthday', '2026-12-12', 'evening', 20, 'Test Guest', '9000000005') RETURNING id, org_id`;
+
+const CAFE_ORDER = `INSERT INTO cafe_orders (cafe_slug, channel, items, item_count, total, name, phone) VALUES ('solstice-cafe', 'website', '[{"id":"niloufer-heritage-chai","name":"Niloufer Heritage Chai","category":"Artisanal Irani Chai","qty":2,"unitPrice":220}]', 2, 440, 'Test Guest', '9000000006') RETURNING id, org_id`;
+
+/** Inserts rows the way the app does: never with org_id. The triggers and defaults fill it. `cafe: false` skips the table older schemas lack. */
+async function insertDemoRows(db: PGlite, { cafe = true } = {}) {
   const ids: Row = {};
   ids.booking = (await one(db, `INSERT INTO bookings (clinic_slug, name, phone, visit_type, date, slot, reason) VALUES ('lotus-clinic', 'Test Patient', '9000000001', 'clinic', '2026-11-20', 'Morning', 'Checkup') RETURNING id`)).id;
   await one(db, `INSERT INTO messages (booking_id, kind, to_masked, template) VALUES ($1, 'confirmation', '****0001', 'booking_confirmed')`, [ids.booking]);
@@ -92,6 +100,8 @@ async function insertDemoRows(db: PGlite) {
   await one(db, `INSERT INTO crm_followups (lead_id, kind, due_at) VALUES ($1, 'call', now())`, [ids.lead]);
   // A CRM WhatsApp send, the way lib/crm/postgres.ts logs it. It shares the messages table with clinic sends.
   await one(db, `INSERT INTO messages (crm_lead_id, crm_quote_id, kind, channel, provider, to_masked, template, status) VALUES ($1, $2, 'quote_sent', 'whatsapp', 'fake', '****0004', 'quote', 'sent')`, [ids.lead, ids.quote]);
+  if (cafe) ids.enquiry = (await one(db, CAFE_ENQUIRY)).id;
+  if (cafe) ids.order = (await one(db, CAFE_ORDER)).id;
   return ids;
 }
 
@@ -112,12 +122,13 @@ describe("organizations and org_id on real Postgres (PGlite)", () => {
     await db?.close();
   });
 
-  it("seeds the two organizations with their fixed ids, once", async () => {
+  it("seeds the three organizations with their fixed ids, once", async () => {
     await migrate(db, ORGS_AT, ORGS_AT + 2);
     const { rows } = await db.query(`SELECT id, slug, name, product FROM organizations ORDER BY slug`);
     expect(rows).toEqual([
       { id: KALYANI, slug: "kalyani-tiles", name: "Kalyani Tiles", product: "tiles" },
       { id: LOTUS, slug: "lotus-clinic", name: "Lotus Women's Clinic", product: "clinic" },
+      { id: SOLSTICE, slug: "solstice-cafe", name: "Solstice Roastery & Bakehouse", product: "cafe" },
     ]);
   });
 
@@ -188,6 +199,10 @@ describe("organizations and org_id on real Postgres (PGlite)", () => {
       const { rows } = await db.query<{ org_id: string }>(`SELECT DISTINCT org_id FROM ${t}`);
       expect(rows.map((r) => r.org_id), t).toEqual([KALYANI]);
     }
+    for (const t of CAFE_TABLES) {
+      const { rows } = await db.query<{ org_id: string }>(`SELECT DISTINCT org_id FROM ${t}`);
+      expect(rows.map((r) => r.org_id), t).toEqual([SOLSTICE]);
+    }
     const { rows } = await db.query(`SELECT template, org_id FROM messages ORDER BY template`);
     expect(rows).toEqual([
       { template: "booking_confirmed", org_id: LOTUS },
@@ -197,17 +212,23 @@ describe("organizations and org_id on real Postgres (PGlite)", () => {
   });
 
   it("attack: the bot for Lotus sees zero CRM rows, and only clinic messages", async () => {
-    for (const t of CRM_TABLES) expect(await count(db, LOTUS, t), t).toBe(0);
+    for (const t of [...CRM_TABLES, ...CAFE_TABLES]) expect(await count(db, LOTUS, t), t).toBe(0);
     for (const t of CLINIC_TABLES) expect(await count(db, LOTUS, t), t).toBeGreaterThan(0);
     const msgs = await botRead(db, LOTUS, `SELECT kind, booking_id, crm_lead_id FROM messages`);
     expect(msgs).toEqual([{ kind: "confirmation", booking_id: ids.booking, crm_lead_id: null }]);
   });
 
   it("attack: the bot for Kalyani sees zero clinic rows, and gets the CRM messages, even one inserted claiming Lotus", async () => {
-    for (const t of CLINIC_TABLES.filter((t) => t !== "messages")) expect(await count(db, KALYANI, t), t).toBe(0);
+    for (const t of [...CLINIC_TABLES.filter((t) => t !== "messages"), ...CAFE_TABLES]) expect(await count(db, KALYANI, t), t).toBe(0);
     for (const t of CRM_TABLES) expect(await count(db, KALYANI, t), t).toBeGreaterThan(0);
     const msgs = await botRead(db, KALYANI, `SELECT kind FROM messages ORDER BY kind`);
     expect(msgs.map((m) => m.kind)).toEqual(["crm_reminder", "quote_sent"]);
+  });
+
+  it("attack: the bot for the Solstice cafe sees its event enquiries and zero clinic or CRM rows", async () => {
+    for (const t of CAFE_TABLES) expect(await count(db, SOLSTICE, t), t).toBe(1);
+    for (const t of [...CLINIC_TABLES, ...CRM_TABLES]) expect(await count(db, SOLSTICE, t), t).toBe(0);
+    expect(await botRead(db, SOLSTICE, `SELECT name, org_id FROM cafe_event_enquiries`)).toEqual([{ name: "Test Guest", org_id: SOLSTICE }]);
   });
 
   it("attack: a bot query that asks for another organization by WHERE still gets nothing", async () => {
@@ -226,7 +247,7 @@ describe("organizations and org_id on real Postgres (PGlite)", () => {
 
   it("attack: ogi_bot cannot INSERT, UPDATE, DELETE or TRUNCATE any table, even in a read-write transaction with its own organization set", async () => {
     for (const t of TABLES) {
-      const org = CRM_TABLES.includes(t) ? KALYANI : LOTUS;
+      const org = ownerOf(t);
       for (const write of [`INSERT INTO ${t} (org_id) VALUES ('${org}')`, `UPDATE ${t} SET org_id = org_id`, `DELETE FROM ${t}`, `TRUNCATE ${t} CASCADE`]) {
         await expect(rawBot(db, asOrg(org), write, { readOnly: false }), `${t}: ${write}`).rejects.toThrow(/permission denied/);
       }
@@ -264,6 +285,8 @@ describe("organizations and org_id on real Postgres (PGlite)", () => {
     await db.query(`UPDATE bookings SET org_id = '${KALYANI}' WHERE id = $1`, [b.id]);
     await db.query(`UPDATE crm_leads SET org_id = '${LOTUS}' WHERE id = $1`, [ids.lead]);
     await db.query(`UPDATE crm_quote_items SET org_id = '${LOTUS}' WHERE quote_id = $1`, [ids.quote]);
+    await db.query(`UPDATE cafe_event_enquiries SET org_id = '${LOTUS}' WHERE id = $1`, [ids.enquiry]);
+    expect((await one(db, `SELECT org_id FROM cafe_event_enquiries WHERE id = $1`, [ids.enquiry])).org_id).toBe(SOLSTICE);
     await db.query(`UPDATE messages SET org_id = '${LOTUS}' WHERE crm_lead_id = $1`, [ids.lead]);
     expect((await one(db, `SELECT org_id FROM bookings WHERE id = $1`, [b.id])).org_id).toBe(LOTUS);
     expect((await one(db, `SELECT org_id FROM crm_leads WHERE id = $1`, [ids.lead])).org_id).toBe(KALYANI);
@@ -280,6 +303,7 @@ describe("organizations and org_id on real Postgres (PGlite)", () => {
       `INSERT INTO crm_leads (shop_slug, name, phone, source) VALUES ('no-such-shop', 'X', '9000000021', 'walk-in')`,
       `INSERT INTO crm_quotes (shop_slug, lead_id, seq, number, public_key) VALUES ('no-such-shop', '${ids.lead}', 99, 'KT-0099', 'pk-x')`,
       `INSERT INTO crm_followups (shop_slug, lead_id, kind, due_at) VALUES ('no-such-shop', '${ids.lead}', 'call', now())`,
+      `INSERT INTO cafe_event_enquiries (cafe_slug, venue, event_type, date, slot, guests, name, phone) VALUES ('no-such-cafe', 'courtyard', 'other', '2026-12-12', 'evening', 20, 'X', '9000000021')`,
     ];
     for (const sql of tries) await expect(db.query(sql), sql).rejects.toThrow(/no organization has this/);
     // Moving a row to an unknown slug is refused too.
@@ -399,14 +423,17 @@ describe("migrating a database on today's schema (what Neon holds now)", () => {
       await migrate(db, 0, ORGS_AT); // The old schema: no organizations, no org_id.
       const { rows: cols } = await db.query(`SELECT 1 FROM information_schema.columns WHERE column_name = 'org_id'`);
       expect(cols).toEqual([]);
-      await insertDemoRows(db); // Rows written before org_id existed.
+      await insertDemoRows(db, { cafe: false }); // Rows written before org_id existed. The cafe table is new.
       await migrate(db); // The final deploy runs the whole file.
       for (const t of TABLES) {
         const { rows } = await db.query<{ org_id: string; n: number }>(`SELECT org_id, count(*)::int AS n FROM ${t} GROUP BY 1 ORDER BY 1`);
         const expected =
-          t === "messages" ? [{ org_id: KALYANI, n: 1 }, { org_id: LOTUS, n: 1 }] : [{ org_id: CRM_TABLES.includes(t) ? KALYANI : LOTUS, n: 1 }];
+          t === "messages" ? [{ org_id: KALYANI, n: 1 }, { org_id: LOTUS, n: 1 }] : CAFE_TABLES.includes(t) ? [] : [{ org_id: ownerOf(t), n: 1 }];
         expect(rows, t).toEqual(expected);
       }
+      // The new table works straight after the migration, labelled by the database.
+      expect((await one(db, CAFE_ENQUIRY)).org_id).toBe(SOLSTICE);
+      expect((await one(db, CAFE_ORDER)).org_id).toBe(SOLSTICE);
       expect(await count(db, LOTUS, "bookings")).toBe(1);
       expect(await count(db, LOTUS, "crm_leads")).toBe(0);
       const before = await snapshot(db);

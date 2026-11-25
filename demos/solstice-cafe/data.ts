@@ -20,6 +20,8 @@ export const cafe = {
     "A sunlit specialty coffee roastery, artisanal Irani chai bar, and sourdough bakehouse on Road No. 45, Jubilee Hills, Hyderabad.",
   address: "Plot 284/A, Road No. 45, Nandagiri Hills Junction, Jubilee Hills, Hyderabad, Telangana 500033",
   shortAddress: "Plot 284/A, Road No. 45, Jubilee Hills, Hyderabad",
+  /** The same hours the Location section shows. Ogi answers from this line. */
+  hours: "Monday to Sunday, 07:30 AM to 11:00 PM. The wood-fired pizza oven is on from 11:30 AM.",
 };
 
 export type Category =
@@ -254,8 +256,8 @@ export type DeliveryOption = (typeof DELIVERY_OPTIONS)[number];
 
 export type CartEntry = { item: MenuItem; qty: number };
 
-/** The order text sent to WhatsApp, as the original site built it. */
-export function orderMessage(entries: CartEntry[], delivery: DeliveryOption, name: string) {
+/** The order text sent to WhatsApp, as the original site built it. With `reference`, the saved order's reference too. */
+export function orderMessage(entries: CartEntry[], delivery: DeliveryOption, name: string, reference?: string) {
   const total = entries.reduce((sum, e) => sum + e.item.price * e.qty, 0);
   return [
     `Hello Solstice Jubilee Hills! I would like to place an order (${delivery}):`,
@@ -264,6 +266,7 @@ export function orderMessage(entries: CartEntry[], delivery: DeliveryOption, nam
     "",
     `Total: ₹${total}`,
     name.trim() ? `Name: ${name.trim()}` : "",
+    reference ? `Order ref: ${reference}` : "",
   ]
     .filter(Boolean)
     .join("\n");

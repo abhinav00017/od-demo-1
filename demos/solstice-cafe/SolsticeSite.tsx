@@ -1,8 +1,13 @@
 import { ArrowUpRight, Clock, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { jetbrainsMono } from "@/lib/fonts";
 import { HeroSunlitTableScene, SectionPhoto } from "./CafeArtVisuals";
 import { RUNNING_STRIP_ANNOUNCEMENTS, VIBE_SPACES, WHATSAPP_DISPLAY, cafe, images, whatsAppHref } from "./data";
+import { EVENTS_BASE } from "./events";
+import { CafeAttributionCapture } from "./attribution";
+import { EventsSection } from "./EventsSection";
+import { CafeOgiBubble } from "./OgiBubble";
 import { MagneticButton } from "./MagneticButton";
 import { MenuGrid } from "./Menu";
 import { CardRise, HeroRise, SolsticeMotion } from "./Motion";
@@ -12,12 +17,19 @@ import { ReservationForm } from "./Reservation";
 /** Without JavaScript nothing animates, so everything that waits hidden for its entrance shows at once. */
 const NO_SCRIPT_CSS = "[data-motion]{opacity:1!important;transform:none!important}";
 
-const NAV = [
-  { href: "#menu", label: "Menu" },
-  { href: "#vibe", label: "Vibe" },
-  { href: "#location", label: "Location" },
-  { href: "#reserve", label: "Reserve" },
+/** The cafe home page. Inner pages (the venue pages, the owner list) link back to its sections. */
+const HOME = "/cafe/website";
+
+const SECTIONS = [
+  { id: "menu", label: "Menu" },
+  { id: "vibe", label: "Vibe" },
+  { id: "events", label: "Events" },
+  { id: "location", label: "Location" },
+  { id: "reserve", label: "Reserve" },
 ];
+
+/** On the home page the nav jumps within the page; elsewhere it goes to the home page's section. */
+const navHref = (home: boolean, id: string) => (home ? `#${id}` : `${HOME}#${id}`);
 
 /** The demo bar: tells the viewer this is an onlydevs demo and takes them back to the hub. */
 function DemoBar({ hubHref }: { hubHref: string }) {
@@ -47,10 +59,11 @@ const PROOF = [
 ];
 
 /**
- * Solstice Roastery & Bakehouse, the Cafe → Website live demo: one page with in-page anchors.
- * The page itself is server-rendered; the order tray, menu filters, reservation form and motion are client parts.
+ * The Solstice frame every cafe page shares: the onlydevs demo bar, the sticky header with the nav and the order
+ * button, the announcement ticker, and the footer. `home` is true on /cafe/website, where the nav jumps within the page.
+ * `visitor` (default) adds Ogi and keeps the visitor's first touch; the owner page turns both off.
  */
-export function SolsticeSite({ hubHref }: { hubHref: string }) {
+export function SolsticeShell({ hubHref, home = false, visitor = true, children }: { hubHref: string; home?: boolean; visitor?: boolean; children: ReactNode }) {
   return (
     <SolsticeMotion>
       <OrderProvider>
@@ -64,24 +77,31 @@ export function SolsticeSite({ hubHref }: { hubHref: string }) {
           <DemoBar hubHref={hubHref} />
 
           <header className="sticky top-0 z-40 w-full border-b border-sol-stone-200/80 bg-sol-paper/85 backdrop-blur-md">
-            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-6 sm:gap-8 lg:px-8">
-              <a href="#" className="shrink-0 font-sol-display text-xl font-semibold tracking-tight whitespace-nowrap text-sol-ink">
+            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-6 sm:gap-8 md:gap-6 lg:gap-8 lg:px-8">
+              <Link href={home ? "#" : HOME} className="shrink-0 font-sol-display text-xl font-semibold tracking-tight whitespace-nowrap text-sol-ink">
                 {cafe.wordmark}
-              </a>
+              </Link>
 
-              <nav aria-label="Primary Navigation" className="hidden items-center gap-8 text-sm font-medium text-sol-stone-600 md:flex">
-                {NAV.map((n) => (
+              <nav aria-label="Primary Navigation" className="hidden items-center gap-6 text-sm font-medium text-sol-stone-600 md:flex lg:gap-8">
+                {SECTIONS.map((s) => (
                   <a
-                    key={n.href}
-                    href={n.href}
+                    key={s.id}
+                    href={navHref(home, s.id)}
                     className="shrink-0 whitespace-nowrap underline-offset-8 transition-colors hover:text-sol-ink hover:underline"
                   >
-                    {n.label}
+                    {s.label}
                   </a>
                 ))}
               </nav>
 
-              <div className="flex shrink-0 items-center">
+              <div className="flex shrink-0 items-center gap-4">
+                {/* Phones have no nav row, so Events gets its own link next to the order button. */}
+                <a
+                  href={navHref(home, "events")}
+                  className="text-sm font-medium text-sol-stone-600 underline-offset-8 hover:text-sol-ink hover:underline md:hidden"
+                >
+                  Events
+                </a>
                 <HeaderOrderButton />
               </div>
             </div>
@@ -108,6 +128,52 @@ export function SolsticeSite({ hubHref }: { hubHref: string }) {
             </div>
           </div>
 
+          {children}
+
+          {/* Visitor pages keep the first touch for the enquiry form and show Ogi. The owner page does neither. */}
+          {visitor ? (
+            <>
+              <CafeAttributionCapture />
+              <CafeOgiBubble />
+            </>
+          ) : null}
+
+          <footer className="border-t border-sol-stone-200/80 bg-sol-paper py-12">
+            <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 sm:flex-row sm:items-center lg:px-8">
+              <div>
+                <p className="font-sol-display text-lg font-semibold text-sol-ink">{cafe.name}</p>
+                <p className="mt-1 text-xs text-sol-stone-500">{cafe.shortAddress} · Roasted &amp; Baked Fresh Daily</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-6 text-xs text-sol-stone-500">
+                {SECTIONS.slice(0, 3).map((s) => (
+                  <a key={s.id} href={navHref(home, s.id)} className="transition-colors hover:text-sol-ink">
+                    {s.label}
+                  </a>
+                ))}
+                <FooterOrderButton />
+              </div>
+            </div>
+            <div className="mx-auto mt-8 flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 text-xs text-sol-stone-500 lg:px-8">
+              <p>Demo website by onlydevs. Solstice Roastery &amp; Bakehouse is a made-up cafe.</p>
+              <Link href={`${EVENTS_BASE}/admin`} className="underline-offset-4 hover:text-sol-ink hover:underline">
+                Cafe owner login
+              </Link>
+            </div>
+          </footer>
+        </div>
+      </OrderProvider>
+    </SolsticeMotion>
+  );
+}
+
+/**
+ * Solstice Roastery & Bakehouse, the Cafe → Website live demo: the home page with in-page anchors.
+ * The page itself is server-rendered; the order tray, menu filters, reservation form and motion are client parts.
+ * The event venues have their own pages under /cafe/website/events.
+ */
+export function SolsticeSite({ hubHref }: { hubHref: string }) {
+  return (
+    <SolsticeShell hubHref={hubHref} home>
           <main>
             {/* Hero: editorial type on the left, the sunlit table photo on the right */}
             <section className="mx-auto max-w-7xl px-6 pt-10 pb-14 lg:px-8 lg:pt-14 lg:pb-20">
@@ -262,6 +328,9 @@ export function SolsticeSite({ hubHref }: { hubHref: string }) {
               </div>
             </section>
 
+            {/* Events: the two venues for parties and small functions, each with its own page */}
+            <EventsSection />
+
             {/* Location and the courtyard table reservation */}
             <section id="location" className="scroll-mt-24 border-t border-sol-stone-200/80 bg-white py-20 lg:py-24">
               <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-6 lg:grid-cols-12 lg:px-8">
@@ -327,29 +396,7 @@ export function SolsticeSite({ hubHref }: { hubHref: string }) {
                 <ReservationForm />
               </div>
             </section>
-          </main>
-
-          <footer className="border-t border-sol-stone-200/80 bg-sol-paper py-12">
-            <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 sm:flex-row sm:items-center lg:px-8">
-              <div>
-                <p className="font-sol-display text-lg font-semibold text-sol-ink">{cafe.name}</p>
-                <p className="mt-1 text-xs text-sol-stone-500">{cafe.shortAddress} · Roasted &amp; Baked Fresh Daily</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-6 text-xs text-sol-stone-500">
-                {NAV.slice(0, 3).map((n) => (
-                  <a key={n.href} href={n.href} className="transition-colors hover:text-sol-ink">
-                    {n.label}
-                  </a>
-                ))}
-                <FooterOrderButton />
-              </div>
-            </div>
-            <p className="mx-auto mt-8 max-w-7xl px-6 text-xs text-sol-stone-500 lg:px-8">
-              Demo website by onlydevs. Solstice Roastery &amp; Bakehouse is a made-up cafe.
-            </p>
-          </footer>
-        </div>
-      </OrderProvider>
-    </SolsticeMotion>
+    </main>
+  </SolsticeShell>
   );
 }

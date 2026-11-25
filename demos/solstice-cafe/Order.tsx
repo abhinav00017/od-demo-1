@@ -13,7 +13,39 @@ import {
   type CartEntry,
   type DeliveryOption,
 } from "./data";
+import { cafeAttribution } from "./attribution";
 import { MagneticButton } from "./MagneticButton";
+
+/** The longest the tray waits for the order to save before it opens WhatsApp anyway. */
+const SAVE_WAIT_MS = 1500;
+
+/**
+ * Saves the tray as a website order (POST /api/cafe/orders) and returns its reference. Only ids and quantities are
+ * sent: the server prices the order from the menu. Undefined when the save fails or takes longer than 1.5 s.
+ */
+async function saveOrder(entries: CartEntry[], delivery: DeliveryOption, name: string): Promise<string | undefined> {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), SAVE_WAIT_MS);
+  try {
+    const res = await fetch("/api/cafe/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: entries.map((e) => ({ id: e.item.id, qty: e.qty })),
+        delivery,
+        ...(name.trim() ? { name: name.trim().slice(0, 80) } : {}),
+        ...(cafeAttribution()?.source ? { source: cafeAttribution()!.source } : {}),
+      }),
+      signal: abort.signal,
+    });
+    const data = (await res.json()) as { ok?: boolean; reference?: string };
+    return data.ok ? data.reference : undefined;
+  } catch {
+    return undefined;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** The order tray: what is in it and whether the drawer is open. Shared by the header, hero, menu, footer and drawer. */
 type Order = {
@@ -77,9 +109,9 @@ export function HeaderOrderButton() {
       ariaLabel={`Order on WhatsApp, ${totalItems} in tray`}
       className="cursor-pointer gap-2 rounded-lg bg-sol-sage px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-sol-sage-deep sm:px-5"
     >
-      {/* Phones show "Order (2)" so the header fits at 375px; the original button overflowed there. */}
+      {/* Phones and tablets show "Order (2)" so the header fits with the Events link and the five-link nav. */}
       <span>
-        Order<span className="hidden sm:inline"> on WhatsApp</span>
+        Order<span className="hidden lg:inline"> on WhatsApp</span>
       </span>
       <span className="font-sol-mono text-xs tabular-nums opacity-90">({totalItems})</span>
     </MagneticButton>
@@ -113,6 +145,29 @@ function OrderDrawer() {
   const [customerName, setCustomerName] = useState("");
   const [delivery, setDelivery] = useState<DeliveryOption>("Courtyard Pickup");
   const [orderSent, setOrderSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  /**
+   * Opens a blank tab first, inside the click (so pop-up blockers allow it), saves the order, then points the tab at
+   * WhatsApp with the order's reference in the message. A failed or slow save still opens WhatsApp, without a reference.
+   */
+  async function sendOrder(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (entries.length === 0) return; // nothing to save; the link opens WhatsApp as before
+    e.preventDefault();
+    if (sending) return;
+    setSending(true);
+    const tab = window.open("", "_blank");
+    const reference = await saveOrder(entries, delivery, customerName);
+    const href = whatsAppHref(orderMessage(entries, delivery, customerName, reference));
+    if (tab) {
+      tab.opener = null;
+      tab.location.href = href;
+    } else {
+      window.location.href = href;
+    }
+    setSending(false);
+    setOrderSent(true);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -265,11 +320,12 @@ function OrderDrawer() {
                   href={whatsAppHref(orderMessage(entries, delivery, customerName))}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => setOrderSent(true)}
+                  onClick={(e) => void sendOrder(e)}
+                  aria-busy={sending}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-sol-sage px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-sol-sage-deep"
                 >
                   <Send aria-hidden className="h-4 w-4" />
-                  <span>Send Order to Solstice WhatsApp</span>
+                  <span>{sending ? "Saving your order…" : "Send Order to Solstice WhatsApp"}</span>
                 </a>
                 {orderSent && (
                   <p role="status" className="text-center text-xs font-medium text-sol-sage">

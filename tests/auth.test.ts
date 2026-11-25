@@ -38,7 +38,7 @@ describe("admin config", () => {
   });
 
   it("accepts demo in development only", () => {
-    expect(adminConfig({ NODE_ENV: "development" })).toMatchObject({ configured: true, password: "demo", devFallback: true });
+    expect(adminConfig({ NODE_ENV: "development" })).toMatchObject({ configured: true, password: "testpass", devFallback: true });
     expect(adminConfig({ NODE_ENV: "production" })).toEqual({ configured: false });
     expect(adminConfig({ NODE_ENV: "test" })).toEqual({ configured: false });
   });

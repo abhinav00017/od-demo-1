@@ -3,6 +3,7 @@ import { parseDay } from "@/demos/lotus-clinic/booking";
 import { logOgi } from "./log";
 import { toPlainText } from "./plainText";
 import type { OgiProfile } from "./profiles";
+import type { BotRead } from "./cafeOwner";
 import { checkReply, safeHandOver } from "./replyCheck";
 import { buildTools, type ConfirmCard, type Role, type ToolContext } from "./tools";
 
@@ -20,7 +21,7 @@ export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export type OgiReply = {
   reply: string;
-  /** The visit summary with the Confirm button, when request_visit prepared one this turn. */
+  /** The summary with the Confirm button, when request_visit or request_event_enquiry prepared one this turn. */
   confirm?: ConfirmCard;
   /** Set when the reply is the fixed emergency, blocked or error message. */
   kind: "answer" | "emergency" | "blocked" | "error";
@@ -44,13 +45,12 @@ function weekday(day: string) {
 
 export function buildInstructions(profile: OgiProfile, today: string) {
   return [
-    `You are Ogi, the friendly assistant on the ${profile.businessName} website. You speak for this business only.`,
+    profile.intro ?? `You are Ogi, the friendly assistant on the ${profile.businessName} website. You speak for this business only.`,
     `Today is ${weekday(today)} (${today}).`,
     "Keep replies short: one to three plain sentences. Be warm and calm.",
     "Write plain text only. No markdown: no asterisks, no bold, no headings, no bullet symbols.",
     "Answer only from the business facts below or from your tools. If a fact is not there, say you don't know and use hand_over.",
-    "To request a visit, collect: full name, 10-digit mobile number, clinic visit or online consultation, preferred day, time window and reason. " +
-      "Then call request_visit. Never say a visit is booked or confirmed: the visitor must press Confirm on the summary.",
+    profile.requestHowTo,
     "Do not repeat the visitor's phone number back in your reply; the summary shows it.",
     "Rules:",
     ...profile.rules.map((r) => `- ${r}`),
@@ -69,6 +69,7 @@ export async function runOgi({
   model,
   today,
   timeoutMs = MODEL_TIMEOUT_MS,
+  botRead,
 }: {
   profile: OgiProfile;
   role: Role;
@@ -76,6 +77,8 @@ export async function runOgi({
   model: LanguageModel;
   today: string;
   timeoutMs?: number;
+  /** Owner tools only: how to run a bot read. Tests pass PGlite; the app leaves it unset. */
+  botRead?: BotRead;
 }): Promise<OgiReply> {
   const last = messages[messages.length - 1];
   if (last?.role === "user" && isEmergency(last.content)) {
@@ -83,7 +86,7 @@ export async function runOgi({
     return { reply: emergencyReply(profile), kind: "emergency" };
   }
 
-  const ctx: ToolContext = { profile, orgId: profile.orgId, role, today, pending: {}, results: [] };
+  const ctx: ToolContext = { profile, orgId: profile.orgId, role, today, pending: {}, results: [], botRead };
   const tools = buildTools(ctx);
 
   let text: string;
@@ -111,9 +114,10 @@ export async function runOgi({
     return { reply: safeHandOver(profile), kind: "error" };
   }
 
-  if (!text) text = ctx.pending.card ? "Here's your visit request. Please check it and press Confirm to send it to the clinic." : safeHandOver(profile);
+  if (!text) text = ctx.pending.card ? profile.confirmPrompt : safeHandOver(profile);
 
-  const check = checkReply(text, { profile, toolResults: ctx.results });
+  // The owner's own question and today's date may be repeated back ("top 3", "25 November").
+  const check = checkReply(text, { profile, toolResults: ctx.results, extra: [today, last?.role === "user" ? last.content : ""] });
   if (!check.ok) {
     logOgi({ event: "reply_blocked", page: profile.key, role, outcome: check.reasons.join(",") });
     return { reply: safeHandOver(profile), kind: "blocked" };

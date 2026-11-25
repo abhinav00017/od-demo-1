@@ -61,10 +61,19 @@ export function findAmounts(text: string) {
 
 const DOSE = /\b\d+(?:\.\d+)?\s?(?:mg|mcg|µg|ml|iu|units?|tablets?|tabs?|capsules?|pills?)\b/i;
 
-export type ReplyCheck = { ok: true } | { ok: false; reasons: ("business_name" | "phone" | "money" | "dose")[] };
+/** Every number in a text, commas dropped: "₹1,23,450" and "123450" are the same number; "2026-11-25" gives 2026, 11, 25. */
+export function findNumbers(text: string) {
+  return [...text.matchAll(/\d[\d,]*(?:\.\d+)?/g)].map((m) => String(Number(m[0].replace(/,/g, "").replace(/\.$/, ""))));
+}
 
-export function checkReply(text: string, { profile, toolResults = [] }: { profile: OgiProfile; toolResults?: string[] }): ReplyCheck {
-  const reasons = new Set<"business_name" | "phone" | "money" | "dose">();
+type Reason = "business_name" | "phone" | "money" | "dose" | "number";
+export type ReplyCheck = { ok: true } | { ok: false; reasons: Reason[] };
+
+export function checkReply(
+  text: string,
+  { profile, toolResults = [], extra = [] }: { profile: OgiProfile; toolResults?: string[]; /** Owner pages: today and the owner's question. */ extra?: string[] },
+): ReplyCheck {
+  const reasons = new Set<Reason>();
   const flat = squash(text);
   const own = squash(profile.businessName);
   for (const name of DEMO_BUSINESS_NAMES) {
@@ -81,10 +90,17 @@ export function checkReply(text: string, { profile, toolResults = [] }: { profil
 
   if (profile.kind === "clinic" && DOSE.test(text)) reasons.add("dose");
 
+  // Owner pages: a number the tools did not return is a number the model made up (or worked out). Block it.
+  if (profile.strictNumbers) {
+    const allowed = new Set(findNumbers([JSON.stringify(profile.facts), ...toolResults, ...extra].join(" ")));
+    for (const n of findNumbers(text)) if (!allowed.has(n)) reasons.add("number");
+  }
+
   return reasons.size ? { ok: false, reasons: [...reasons] } : { ok: true };
 }
 
 /** What the visitor sees instead of a blocked reply. */
 export function safeHandOver(profile: OgiProfile) {
+  if (profile.fallback) return profile.fallback;
   return `Sorry, I can't help with that here. Please call or WhatsApp the ${profile.businessName} team on ${profile.contact.phone}. They'll be glad to help.`;
 }

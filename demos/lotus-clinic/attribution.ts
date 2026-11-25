@@ -72,14 +72,17 @@ export function attributionFrom(href: string, referrer: string): Attribution {
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
-/** The stored first touch, or null when there is none, it is older than 30 days, or storage fails. */
-export function readAttribution(storage: StorageLike | undefined, now = Date.now()): Attribution | null {
+/**
+ * The stored first touch, or null when there is none, it is older than 30 days, or storage fails.
+ * `key` lets another demo keep its own first touch (the Solstice cafe uses "solstice_first_touch").
+ */
+export function readAttribution(storage: StorageLike | undefined, now = Date.now(), key = ATTRIBUTION_KEY): Attribution | null {
   try {
-    const raw = storage?.getItem(ATTRIBUTION_KEY);
+    const raw = storage?.getItem(key);
     if (!raw) return null;
     const data = JSON.parse(raw) as Partial<Stored>;
     if (typeof data.at !== "number" || now - data.at > ATTRIBUTION_TTL_MS || typeof data.source !== "string") {
-      storage?.removeItem(ATTRIBUTION_KEY);
+      storage?.removeItem(key);
       return null;
     }
     return { source: data.source, campaign: data.campaign ?? null, utm: data.utm ?? null };
@@ -89,12 +92,12 @@ export function readAttribution(storage: StorageLike | undefined, now = Date.now
 }
 
 /** Keeps the first touch: writes only when nothing valid is stored. Never throws. */
-export function captureFirstTouch(storage: StorageLike | undefined, href: string, referrer: string, now = Date.now()): Attribution | null {
+export function captureFirstTouch(storage: StorageLike | undefined, href: string, referrer: string, now = Date.now(), key = ATTRIBUTION_KEY): Attribution | null {
   try {
-    const kept = readAttribution(storage, now);
+    const kept = readAttribution(storage, now, key);
     if (kept) return kept;
     const fresh = attributionFrom(href, referrer);
-    storage?.setItem(ATTRIBUTION_KEY, JSON.stringify({ ...fresh, at: now } satisfies Stored));
+    storage?.setItem(key, JSON.stringify({ ...fresh, at: now } satisfies Stored));
     return fresh;
   } catch {
     return null;

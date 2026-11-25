@@ -8,6 +8,7 @@
 export const ORGS = [
   { id: "org_7f3k2a", slug: "lotus-clinic", name: "Lotus Women's Clinic", product: "clinic" },
   { id: "org_2m9qd1", slug: "kalyani-tiles", name: "Kalyani Tiles", product: "tiles" },
+  { id: "org_4v8c1n", slug: "solstice-cafe", name: "Solstice Roastery & Bakehouse", product: "cafe" },
 ] as const;
 
 type KnownOrgId = (typeof ORGS)[number]["id"];

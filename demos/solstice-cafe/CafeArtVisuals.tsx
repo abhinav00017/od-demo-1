@@ -74,7 +74,8 @@ export function MenuCardPhoto({ imageUrl, alt, variant }: { imageUrl: string; al
   return <MenuCardIllustration variant={variant} />;
 }
 
-export function SectionPhoto({ imageUrl, alt, sizes, className = "" }: { imageUrl: string; alt: string; sizes: string; className?: string }) {
+/** `eager` for a photo that is above the fold on first load (it is then the Largest Contentful Paint). */
+export function SectionPhoto({ imageUrl, alt, sizes, className = "", eager = false }: { imageUrl: string; alt: string; sizes: string; className?: string; eager?: boolean }) {
   const [imgError, setImgError] = useState(false);
 
   return (
@@ -85,6 +86,7 @@ export function SectionPhoto({ imageUrl, alt, sizes, className = "" }: { imageUr
           alt={alt}
           fill
           sizes={sizes}
+          {...(eager ? { loading: "eager" as const, fetchPriority: "high" as const } : {})}
           onError={() => setImgError(true)}
           className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
         />
